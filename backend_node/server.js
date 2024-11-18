@@ -35,8 +35,12 @@ const userSchema = new mongoose.Schema({
     email: String,
     role: String,
     department: String,
+    manager : {type : String ,default : ''},
     status: String,
     delete: Boolean,
+    subDepartment: { type: String, default : '' },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
 });
 
 const taskSchema = new mongoose.Schema({
@@ -76,6 +80,7 @@ app.post('/api/save_entries', async (req, res) => {
 
 // User Routes
 app.post('/api/users/add', async (req, res) => {
+    console.log("respinsefrom teh server : "  + req.body);
     try {
         const user = new User(req.body);
         await user.save();
@@ -218,164 +223,3 @@ app.listen(PORT, () => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const express = require('express');
-// const mongoose = require('mongoose');
-// const cors = require('cors');
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json()); // Middleware to parse JSON
-
-// // Database connection
-// mongoose.connect("mongodb://localhost:27017/ETS", {
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true,
-// })
-// .then(() => {
-//     console.log("Connected to the ETS database successfully");
-// })
-// .catch((error) => {
-//     console.error("Error connecting to the ETS database:", error);
-// });
-
-// // Create the schema for timesheets
-// const timesheetSchema = new mongoose.Schema({
-//     date: Date,
-//     entries: [
-//        {
-//          project: String,
-//          hours: Number,
-//          description: String,
-//          task: String
-//        }
-//     ]
-// });
-
-// // Define the model using the "timesheet" collection
-// const Timesheet = mongoose.model('timesheet', timesheetSchema);
-
-// // Define the routes
-// app.post('/api/save_entries', async (req, res) => {
-//     console.log("Request received on the server");
-
-//     const { date, entries } = req.body;
-//     console.log("Request body:", req.body);
-
-//     try {
-//         // Create a new timesheet entry
-//         const newTimesheet = new Timesheet({
-//             date,
-//             entries,
-//         });
-
-//         // Save the entry to the database
-//         await newTimesheet.save();
-//         console.log("Saving the timesheet:", newTimesheet);
-
-//         // Send back the saved timesheet
-//         return res.status(200).send(newTimesheet);
-//     } catch (error) {
-//         console.log("Error saving the entry:", error);
-//         return res.status(500).send("Error saving the entries");
-//     }
-// });
-
-// //schema for the users :
-
-// const userSchema = new mongoose.Schema({
-//     adminId: { type: String}, 
-//     name: String,
-//     password: String,
-//     email: String,
-//     role : String ,
-//     department : String ,
-//     status : String,
-//     delete : Boolean,
-// });
-
-// // Define the model using the "users" collection
-// const User = mongoose.model('users', userSchema);
-// console.log(User)
-
-// //route to users : 
-
-// app.post('/api/users/add', async (req, res) => {
-//     console.log("Request received on the server");
-//     const body = req.body;
-//     console.log(" body", body);
-//     try{
-//         const user = new User(body);
-//         console.log("inside try")
-//         await user.save();
-//         console.log(userSchema)
-//         return res.status(200).send("user added successfully");
-//     }
-//     catch(error){
-//         res.status(400).send(error);
-//         console.log(User)
-//     }
-// });
-
-// app.post('/api/usersData', async (req, res) => {
-//     const { adminId } = req.body; // Fetch adminId from the request body
-//     try {
-//         const users = await User.find({ adminId }); // Assuming User is your model
-//         res.json(users);
-//     } catch (error) {
-//         res.status(500).json({ error: 'Failed to fetch users' });
-//     }
-// });
-
-// app.delete('/api/users/:userId', async (req, res) => {
-//     const { userId } = req.params; // Fetch userId from URL params
-
-//     try {
-//         // Attempt to delete the user with the specified userId
-//         const deletedUser = await User.findByIdAndDelete(userId);
-
-//         if (!deletedUser) {
-//             return res.status(404).json({ error: 'User not found' });
-//         }
-
-//         res.status(200).json({ message: 'User deleted successfully' });
-//     } catch (error) {
-//         console.error('Error deleting user:', error);
-//         res.status(500).json({ error: 'Failed to delete user' });
-//     }
-// });
-
-
-// const PORT = 5000;
-// app.listen(PORT, () => {
-//     console.log(`Server is running on port: ${PORT}...`);
-// });
