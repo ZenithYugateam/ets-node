@@ -30,9 +30,13 @@ interface FormData {
     password: string;
     role: string;
     department: string;
+    subDomain?: string;
+    manager?: string; // Already present
+    subDepartment?: string; // Add this field
     status: 'active' | 'inactive';
-    delete: boolean;
 }
+
+
 
 const UserManagement = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -46,10 +50,16 @@ const UserManagement = () => {
         password: '',
         role: '',
         department: '',
+        subDomain: '',
+        manager: '',
+        subDepartment: '', // Initialize here
         status: 'active',
-        delete: false,
     });
+    const [showManagerField, setShowManagerField] = useState(false);
+    const [selectedMainDepartment, setSelectedMainDepartment] = useState('');
+    const [subDomains, setSubDomains] = useState<string[]>([]);
 
+    // Fetch users
     useEffect(() => {
         const fetchAllUsers = async () => {
             try {
@@ -73,13 +83,23 @@ const UserManagement = () => {
         fetchAllUsers();
     }, []);
 
+    // Save user
     const handleSave = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/users/add', {
-                method: 'POST',
+            const url = selectedUser
+                ? `http://localhost:5000/api/users/${selectedUser._id}`
+                : 'http://localhost:5000/api/users/add';
+
+            console.log("url : " + url );
+            const method = selectedUser ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
+
+            console.log("send data  : " + JSON.stringify(formData));
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -87,25 +107,26 @@ const UserManagement = () => {
             }
 
             const data = await response.json();
-            setUsers((prevUsers) => [...prevUsers, data]); // Automatically update DataGrid
-            toast.success('User saved successfully');
+
+            console.log("DAta" + data);
+            console.log("selected user : " + selectedUser);
+
+            if (selectedUser) {
+                setUsers((prevUsers) =>
+                    prevUsers.map((user) => (user._id === data._id ? data : user))
+                );
+            } else {
+                setUsers((prevUsers) => [...prevUsers, data]);
+            }
+
+            toast.success(`User ${selectedUser ? 'updated' : 'added'} successfully`);
+            handleCloseModal();
         } catch (error) {
             toast.error(`Error saving user: ${error.message}`);
-        } finally {
-            setShowModal(false);
-            setFormData({
-                adminId: '507f1f77bcf86cd799439011',
-                name: '',
-                email: '',
-                password: '',
-                role: '',
-                department: '',
-                status: 'active',
-                delete: false,
-            });
         }
     };
 
+    // Delete user
     const handleDelete = async (userId: string) => {
         if (window.confirm('Are you sure you want to delete this user?')) {
             try {
@@ -117,7 +138,7 @@ const UserManagement = () => {
                     throw new Error('Failed to delete user');
                 }
 
-                setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId)); // Remove deleted user from DataGrid
+                setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId));
                 toast.success('User deleted successfully');
             } catch (error) {
                 toast.error(`Error deleting user: ${error.message}`);
@@ -125,6 +146,7 @@ const UserManagement = () => {
         }
     };
 
+    // Open modal for editing or adding user
     const handleOpenModal = (user: User | null = null) => {
         setSelectedUser(user);
         setFormData(
@@ -137,7 +159,6 @@ const UserManagement = () => {
                       role: user.role,
                       department: user.department,
                       status: user.status,
-                      delete: false,
                   }
                 : {
                       adminId: '507f1f77bcf86cd799439011',
@@ -147,23 +168,53 @@ const UserManagement = () => {
                       role: '',
                       department: '',
                       status: 'active',
-                      delete: false,
                   }
         );
         setShowModal(true);
     };
 
+    // Close modal
     const handleCloseModal = () => {
         setShowModal(false);
         setSelectedUser(null);
+        setShowManagerField(false);
+        setSelectedMainDepartment('');
+        setSubDomains([]);
     };
 
+
+    // Handle role change
+    const handleRoleChange = (role: string) => {
+        setFormData({ ...formData, role });
+        setShowManagerField(role === 'Employee');
+    };
+
+    // Handle main department change
+    const handleMainDepartmentChange = (mainDepartment: string) => {
+        setSelectedMainDepartment(mainDepartment);
+        setFormData({ ...formData, department: mainDepartment });
+        setSubDomains(departmentOptions[mainDepartment] || []);
+    };
+
+    // Filter users based on search term
     const filteredUsers = users.filter(
-        (user: User) =>
+        (user) =>
             user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const handleSubDepartmentChange = (subDepartment: string) => {
+        setFormData({ ...formData, subDepartment });
+    };
+
+    // Department options
+    const departmentOptions = {
+        Engineering: ['Software Development', 'QA', 'DevOps'],
+        Marketing: ['SEO', 'Content', 'Social Media'],
+        Sales: ['Domestic Sales', 'International Sales', 'Account Management'],
+    };
+
+    // Columns for DataGrid
     const columns = [
         { field: 'name', headerName: 'Name', flex: 1 },
         { field: 'email', headerName: 'Email', flex: 1 },
@@ -236,11 +287,7 @@ const UserManagement = () => {
             </Box>
 
             <div style={{ height: 400, width: '100%' }}>
-                <DataGrid
-                    rows={filteredUsers}
-                    columns={columns}
-                    getRowId={(row) => row._id}
-                />
+                <DataGrid rows={filteredUsers} columns={columns} getRowId={(row) => row._id} />
             </div>
 
             <Modal open={showModal} onClose={handleCloseModal}>
@@ -278,36 +325,66 @@ const UserManagement = () => {
                         />
                         <TextField
                             label="Password"
-                            type="password"
                             value={formData.password}
                             onChange={(e) =>
                                 setFormData({ ...formData, password: e.target.value })
                             }
+                            type="password"
                             fullWidth
                         />
                         <TextField
-                            label="Role"
                             select
+                            label="Role"
                             value={formData.role}
-                            onChange={(e) =>
-                                setFormData({ ...formData, role: e.target.value })
-                            }
+                            onChange={(e) => handleRoleChange(e.target.value)}
                             fullWidth
                         >
-                            <MenuItem value="Employee">Employee</MenuItem>
                             <MenuItem value="Manager">Manager</MenuItem>
+                            <MenuItem value="Employee">Employee</MenuItem>
                         </TextField>
-                        <TextField
-                            label="Department"
-                            value={formData.department}
+                        {showManagerField && (
+                            <TextField
+                            label="Manager"
+                            value={formData.manager}
                             onChange={(e) =>
-                                setFormData({ ...formData, department: e.target.value })
+                                setFormData({ ...formData, manager: e.target.value })
                             }
                             fullWidth
                         />
+                        )}
+                         <TextField
+        select
+        label="Main Department"
+        value={selectedMainDepartment}
+        onChange={(e) => handleMainDepartmentChange(e.target.value)}
+        fullWidth
+    >
+        {Object.keys(departmentOptions).map((key) => (
+            <MenuItem key={key} value={key}>
+                {key}
+            </MenuItem>
+        ))}
+    </TextField>
+                        {subDomains.length > 0 && (
+                            <TextField
+                                select
+                                label="Sub-Domain"
+                                value={formData.subDepartment}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, subDepartment: e.target.value })
+                                }
+                                fullWidth
+                            >
+                                {subDomains.map((subDomain) => (
+                                    <MenuItem key={subDomain} value={subDomain}>
+                                        {subDomain}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        )}
                         <TextField
-                            label="Status"
                             select
+                            label="Status"
                             value={formData.status}
                             onChange={(e) =>
                                 setFormData({
@@ -320,16 +397,12 @@ const UserManagement = () => {
                             <MenuItem value="active">Active</MenuItem>
                             <MenuItem value="inactive">Inactive</MenuItem>
                         </TextField>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Button
-                                variant="outlined"
-                                onClick={handleCloseModal}
-                                color="error"
-                            >
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                            <Button variant="outlined" onClick={handleCloseModal}>
                                 Cancel
                             </Button>
                             <Button variant="contained" color="primary" onClick={handleSave}>
-                                {selectedUser ? 'Save Changes' : 'Save'}
+                                Save
                             </Button>
                         </Box>
                     </Box>

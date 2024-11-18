@@ -208,63 +208,6 @@ const TaskManagement = () => {
   };
   
 
-
-  const columns = [
-    { field: "title", headerName: "Task Name", flex: 1 },
-    { field: "priority", headerName: "Priority", flex: 1 },
-    {
-      field: "deadline",
-      headerName: "Deadline",
-      flex: 1,
-      renderCell: (params: any) => (
-        <Typography>{new Date(params.value).toLocaleDateString()}</Typography>
-      ),
-    },
-    { field: "status", headerName: "Status", flex: 1 },
-   
-    { field: "department", headerName: "Department", flex: 1 },
-    {
-      field: "assignee",
-      headerName: "Assignee",
-      flex: 1,
-      renderCell: (params: any) => (
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <img
-            src={params.value.avatar}
-            alt={params.value.name}
-            style={{ width: 32, height: 32, borderRadius: "50%" }}
-          />
-          <Typography>{params.value.name}</Typography>
-        </div>
-      ),
-    },
-    {
-      field: "actions",
-      headerName: "Actions",
-      flex: 1,
-      renderCell: (params: any) => (
-        <div style={{ display: "flex", gap: "8px" }}>
-          <Button
-            size="small"
-            variant="outlined"
-            color="primary"
-            onClick={() => handleEdit(params.row)}
-          >
-            Edit
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            color="error"
-            onClick={() => handleDelete(params.row._id)}
-          >
-            Delete
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6">
@@ -512,7 +455,7 @@ const TaskManagement = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
               <div>
@@ -549,19 +492,6 @@ const TaskManagement = () => {
                 </button>
               </div>
             </form>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <DataGrid
-              rows={taskData || []}
-              columns={columns}
-              getRowId={(row) => row._id}
-              autoHeight
-              pageSize={4}
-              rowsPerPageOptions={[5, 10, 20]}
-              loading={isLoading}
-              error={error}
-            />
           </div>
         </div>
       )}
