@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { Users, Building2, ClipboardList, AlertCircle } from 'lucide-react';
+import { Users, Building2, ClipboardList, AlertCircle, LogOut } from 'lucide-react';
 import UserManagement from '../components/admin/UserManagement';
 import TaskManagement from '../components/admin/TaskManagement';
 import DepartmentConfig from '../components/admin/DepartmentConfig';
 import ActivityLogs from '../components/admin/ActivityLogs';
+import ProjectManagement from '../components/admin/ProjectManagement'
 import { fetchDashboardStats } from '../api/admin';
 import { toast } from 'react-toastify';
 
@@ -42,7 +43,7 @@ const AdminDashboard = () => {
         setUsers(data);
 
         // Calculate the count of users with role 'user'
-        const userRoleCount = data.filter((user: { role: string }) => user.role === 'Employee').length;
+        const userRoleCount = data.filter((user: { role: string }) => user.role === 'Admin').length;
         setUserCount(userRoleCount);
 
         // Group users by department
@@ -107,6 +108,10 @@ const AdminDashboard = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+        <button className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            <LogOut className="h-5 w-5 mr-2" />
+            Logout
+          </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -135,7 +140,7 @@ const AdminDashboard = () => {
         })}
       </div>
       <UserManagement />
-      <TaskManagement />
+      <ProjectManagement />
       <ActivityLogs />
     </div>
   );

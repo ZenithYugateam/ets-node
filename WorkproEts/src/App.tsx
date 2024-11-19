@@ -26,9 +26,9 @@ function App() {
               path="/admin"
               element={
                 <PrivateRoute requiredRole="Admin">
-                  <Navbar />
+                  <Navbar  />
                   <div className="flex">
-                    <Sidebar />
+                    <Sidebar role={{ role: "Admin" }} />
                     <main className="flex-1 p-8">
                       <AdminDashboard />
                     </main>
@@ -43,7 +43,7 @@ function App() {
                 <PrivateRoute requiredRole="Manager">
                   <Navbar />
                   <div className="flex">
-                    <Sidebar />
+                    <Sidebar  role={{ role: "Manager" }}/>
                     <main className="flex-1 p-8">
                       <ManagerDashboard />
                     </main>
@@ -58,7 +58,7 @@ function App() {
                 <PrivateRoute requiredRole="Employee">
                   <Navbar />
                   <div className="flex">
-                    <Sidebar />
+                    <Sidebar  role={{ role: "Employee" }}/>
                     <main className="flex-1 p-8">
                       <EmployeeDashboard />
                     </main>
@@ -73,7 +73,35 @@ function App() {
                 <PrivateRoute requiredRole="Employee">
                   <Navbar />
                   <div className="flex">
-                    <Sidebar />
+                    <Sidebar  role={{ role: "Employee" }} />
+                    <main className="flex-1 p-8">
+                      <Timesheets />
+                    </main>
+                  </div>
+                </PrivateRoute>
+              }
+            />
+             <Route
+              path="/timesheets"
+              element={
+                <PrivateRoute requiredRole="Manager">
+                  <Navbar />
+                  <div className="flex">
+                    <Sidebar  role={{ role: "Manager" }} />
+                    <main className="flex-1 p-8">
+                      <Timesheets />
+                    </main>
+                  </div>
+                </PrivateRoute>
+              }
+            />
+             <Route
+              path="/timesheets"
+              element={
+                <PrivateRoute requiredRole="Admin">
+                  <Navbar />
+                  <div className="flex">
+                    <Sidebar  role={{ role: "Admin" }} />
                     <main className="flex-1 p-8">
                       <Timesheets />
                     </main>

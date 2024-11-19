@@ -4,6 +4,7 @@ import { Clock, MoreVertical, Tag } from 'lucide-react';
 const tasks = [
   {
     id: 1,
+    project:'hi',
     title: 'Implement new feature',
     assignee: {
       name: 'Sarah Wilson',
@@ -17,6 +18,7 @@ const tasks = [
   },
   {
     id: 2,
+    project:'hi',
     title: 'Code review for PR #234',
     assignee: {
       name: 'Michael Chen',
@@ -30,6 +32,7 @@ const tasks = [
   },
   {
     id: 3,
+    project:'hi',
     title: 'Update design system',
     assignee: {
       name: 'Emma Garcia',
@@ -48,7 +51,7 @@ const TaskManager = () => {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-medium text-gray-900">Task Management</h2>
+          <h2 className="text-lg font-medium text-gray-900">Task Overview</h2>
           <div className="flex items-center space-x-2">
             <button className="p-2 hover:bg-gray-100 rounded-lg"></button>
             <select className="border-gray-300 rounded-lg text-sm">
@@ -64,6 +67,9 @@ const TaskManager = () => {
           <table className="min-w-full">
             <thead>
               <tr className="border-b border-gray-200">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Project
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Task
                 </th>

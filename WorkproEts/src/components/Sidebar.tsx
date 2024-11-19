@@ -5,18 +5,30 @@ import {
   Users, 
   ClipboardList, 
   Clock,
-  Settings
+  Settings,
+  Calendar
 } from 'lucide-react';
 
-const Sidebar = () => {
+ 
+const Sidebar = ({ role: { role  }}) => {
   const location = useLocation();
 
   const links = [
     { to: '/', icon: LayoutDashboard, label: 'Overview' },
-    { to: '/employee', icon: Users, label: 'Employee Dashboard' },
-    { to: '/manager', icon: ClipboardList, label: 'Manager Dashboard' },
-    { to: '/admin', icon: Settings, label: 'Admin Dashboard' },
-    { to: '/timesheets', icon: Clock, label: 'Timesheets' },
+    ...(role === 'Employee'
+      ? [{ to: '/employee', icon: Users, label: 'Employee Dashboard' }]
+      : []),
+    ...(role === 'Manager'
+      ? [{ to: '/manager', icon: ClipboardList, label: 'Manager Dashboard' }]
+      : []),
+      ...(role === 'Admin'
+        ? [{ to: '/admin', icon: ClipboardList, label: 'Admin Dashboard' }]
+        : []),
+        ...(role === 'Admin'||'Manager'||'Employee'
+          ? [{ to: '/timesheets', icon: ClipboardList, label: 'Timesheets' }]
+          : []),
+    
+    { to: '/leave requests', icon: Calendar, label: 'Leave Request' },
   ];
 
   return (

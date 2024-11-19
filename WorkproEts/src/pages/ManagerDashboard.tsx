@@ -1,7 +1,8 @@
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, LogOut } from 'lucide-react';
 import TeamOverview from '../components/manager/TeamOverview';
 import TaskManager from '../components/manager/TaskManager';
 import PerformanceOverview from '../components/manager/PerformanceOverview';
+import TaskManagement from '../components/admin/TaskManagement';
 
 const ManagerDashboard = () => {
   return (
@@ -21,10 +22,16 @@ const ManagerDashboard = () => {
             <Plus className="h-5 w-5 mr-2" />
             New Task
           </button>
+          <button className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            <LogOut className="h-5 w-5 mr-2" />
+            Logout
+          </button>
+
         </div>
       </div>
 
       <TeamOverview />
+      <TaskManagement />
       <TaskManager />
       <PerformanceOverview />
     </div>

@@ -213,7 +213,7 @@ const TaskManagement = () => {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-medium text-gray-900">
-            Task Management
+            Project Management
           </h2>
           <div className="flex items-center space-x-4">
             <button
@@ -225,7 +225,7 @@ const TaskManagement = () => {
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Task
+              Add Project
             </button>
           </div>
         </div>
@@ -234,11 +234,8 @@ const TaskManagement = () => {
           <table className="min-w-full">
             <thead>
               <tr className="border-b border-gray-200">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Project
-                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Task
+                  Project
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Assignee
@@ -364,23 +361,9 @@ const TaskManagement = () => {
               </button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Project Title
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  required
-                />
-              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Task Name 
+                  Title
                 </label>
                 <input
                   type="text"
