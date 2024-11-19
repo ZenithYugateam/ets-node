@@ -1,34 +1,29 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  ClipboardList, 
-  Clock,
-  Settings,
-  Calendar
-} from 'lucide-react';
+import { LayoutDashboard, ClipboardList, Calendar } from 'lucide-react';
 
- 
-const Sidebar = ({ role: { role  }}) => {
+const Sidebar = () => {
   const location = useLocation();
+  const role = localStorage.getItem('role'); // Fetch the role from localStorage
+
+  // Dynamically set the dashboard route based on the role
+  const dashboardRoute = (() => {
+    switch (role) {
+      case 'Admin':
+        return '/admin';
+      case 'Manager':
+        return '/manager';
+      case 'Employee':
+        return '/employee';
+      default:
+        return '/'; // Fallback route
+    }
+  })();
 
   const links = [
-    { to: '/', icon: LayoutDashboard, label: 'Overview' },
-    ...(role === 'Employee'
-      ? [{ to: '/employee', icon: Users, label: 'Employee Dashboard' }]
-      : []),
-    ...(role === 'Manager'
-      ? [{ to: '/manager', icon: ClipboardList, label: 'Manager Dashboard' }]
-      : []),
-      ...(role === 'Admin'
-        ? [{ to: '/admin', icon: ClipboardList, label: 'Admin Dashboard' }]
-        : []),
-        ...(role === 'Admin'||'Manager'||'Employee'
-          ? [{ to: '/timesheets', icon: ClipboardList, label: 'Timesheets' }]
-          : []),
-    
-    { to: '/leave requests', icon: Calendar, label: 'Leave Request' },
+    { to: dashboardRoute, icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/timesheets', icon: ClipboardList, label: 'Timesheets' },
+    { to: '/leave-requests', icon: Calendar, label: 'Leave Requests' },
   ];
 
   return (
@@ -38,7 +33,7 @@ const Sidebar = ({ role: { role  }}) => {
           {links.map((link) => {
             const Icon = link.icon;
             const isActive = location.pathname === link.to;
-            
+
             return (
               <Link
                 key={link.to}

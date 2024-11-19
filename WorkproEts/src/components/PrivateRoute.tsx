@@ -3,20 +3,20 @@ import { Navigate } from 'react-router-dom';
 
 interface PrivateRouteProps {
   children: JSX.Element;
-  requiredRole: string;
+  requiredRole?: string;
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requiredRole }) => {
   const userId = localStorage.getItem('userId');
   const role = localStorage.getItem('role');
 
-  // Redirect to login if no session is found
+  // Redirect to login if no session exists
   if (!userId || !role) {
     return <Navigate to="/" />;
   }
 
-  // Redirect to login if the user's role does not match the required role
-  if (role !== requiredRole) {
+  // If a specific role is required, ensure the user's role matches
+  if (requiredRole && role !== requiredRole) {
     return <Navigate to="/" />;
   }
 

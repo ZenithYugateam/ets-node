@@ -31,6 +31,7 @@ const ManagerDashboard = () => {
       </div>
 
       <TeamOverview />
+      
       <TaskManagement />
       <TaskManager />
       <PerformanceOverview />

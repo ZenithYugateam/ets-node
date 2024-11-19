@@ -19,14 +19,18 @@ mongoose.connect("mongodb://localhost:27017/ETS", {
 
 // Schemas
 const timesheetSchema = new mongoose.Schema({
-    date: Date,
-    entries: [{
-        project: String,
-        hours: Number,
-        description: String,
-        task: String
-    }]
+  date: { type: Date, required: true },
+  entries: [
+    {
+      project: { type: String, required: true },
+      task: { type: String, required: true },
+      description: { type: String, required: true },
+    },
+  ],
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Reference User
+  status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
 });
+
 
 const userSchema = new mongoose.Schema({
     adminId: { type: String }, 
@@ -61,7 +65,6 @@ const taskSchema = new mongoose.Schema({
 const Task = mongoose.model('Task', taskSchema);
 
 // Models
-const Timesheet = mongoose.model('timesheet', timesheetSchema);
 const User = mongoose.model('users', userSchema);
 
 
@@ -418,12 +421,100 @@ app.post('/api/auth/login', async (req, res) => {
   // Start Server
   const PORT = 5000;
   app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+  
 
 
+  app.get('/api/timesheets', async (req, res) => {
+    try {
+      const timesheets = await Timesheet.find()
+        .populate('userId', 'name email') // Populate user details
+        .sort({ date: -1 });
+  
+      res.status(200).json(timesheets);
+    } catch (error) {
+      console.error('Error fetching timesheets:', error);
+      res.status(500).json({ message: 'Failed to fetch timesheets', error: error.message });
+    }
+  });
+  app.get('/api/timesheets/user', async (req, res) => {
+    const userId = req.headers['user-id']; // Extract userId from headers
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    try {
+      const userTimesheets = await Timesheet.find({ userId });
+      res.status(200).json(userTimesheets);
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching timesheets', error: error.message });
+    }
+  });
+  
+  app.post('/api/timesheets/save_entries', async (req, res) => {
+    console.log('Saving entries:', req.body);
+    const { userId, entries } = req.body;
+  
+    try {
+      if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: 'Invalid or missing userId' });
+      }
+  
+      if (!entries || !Array.isArray(entries) || entries.length === 0) {
+        return res.status(400).json({ message: 'No entries provided' });
+      }
+  
+      const timesheetsToSave = entries.map((entry) => ({
+        ...entry,
+        userId,
+        date: entry.date || new Date(),
+        status: 'Pending',
+      }));
+  
+      const savedTimesheets = await Timesheet.insertMany(timesheetsToSave);
+      console.log('Saved timesheets:', savedTimesheets);
+  
+      res.status(200).json({ message: 'Entries saved successfully', savedTimesheets });
+    } catch (error) {
+      console.error('Error saving timesheets:', error.message);
+      res.status(500).json({ message: 'Error saving timesheets', error: error.message });
+    }
+  });
+      
 
 
-
-
+ 
+  const Timesheet = mongoose.model('Timesheet', timesheetSchema);
+  
+  module.exports = Timesheet;
+  app.post('/api/timesheets/save_entries', async (req, res) => {
+    const { userId, entries } = req.body;
+  
+    try {
+      // Validate `userId` and `entries`
+      if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ message: 'Invalid or missing userId' });
+      }
+      if (!entries || !Array.isArray(entries) || entries.length === 0) {
+        return res.status(400).json({ message: 'No entries provided' });
+      }
+  
+      // Prepare entries for saving
+      const timesheetsToSave = entries.map((entry) => ({
+        ...entry,
+        userId,
+        date: entry.date || new Date(), // Use provided date or default to now
+        status: 'Pending',
+      }));
+  
+      // Save timesheets to MongoDB
+      const savedTimesheets = await Timesheet.insertMany(timesheetsToSave);
+  
+      res.status(200).json({ message: 'Entries saved successfully', savedTimesheets });
+    } catch (error) {
+      console.error('Error saving timesheets:', error.message);
+      res.status(500).json({ message: 'Error saving timesheets', error: error.message });
+    }
+  });
+  
 
 
 

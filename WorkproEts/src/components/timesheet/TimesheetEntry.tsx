@@ -1,223 +1,192 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Save, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { Snackbar, IconButton } from '@mui/material';
-import { CheckCircle, Error } from '@mui/icons-material';
 
-interface TimesheetEntryProps {
-  selectedDate: Date;
+interface TimesheetEntry {
+  _id?: string;
+  project: string;
+  task: string;
+  description: string;
+  date: string;
 }
 
-const TimesheetEntry: React.FC<TimesheetEntryProps> = ({ selectedDate }) => {
-  const [entries, setEntries] = useState([
-    { id: 1, project: '', task: '', Date: '', description: '' },
-  ]);
-
-  const [open, setOpen] = useState(false);
+const TimesheetEntry: React.FC = () => {
+  const [timesheets, setTimesheets] = useState<TimesheetEntry[]>([]);
+  const [newEntries, setNewEntries] = useState<TimesheetEntry[]>([]);
+  const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [severity, setSeverity] = useState<'success' | 'error'>('success');
 
-  const addEntry = () => {
-    setEntries([
-      ...entries,
-      {
-        id: entries.length + 1,
-        project: '',
-        task: '',
-        Date: '',
-        description: '',
-      },
+  const fetchTimesheets = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/timesheets');
+      if (!response.ok) {
+        throw new Error('Failed to fetch timesheets');
+      }
+      const data = await response.json();
+      setTimesheets(data);
+    } catch (error) {
+      console.error('Error fetching timesheets:', error);
+      setError('Failed to fetch timesheets. Please try again.');
+    }
+  };
+
+  const addNewEntry = () => {
+    setNewEntries([
+      ...newEntries,
+      { project: '', task: '', description: '', date: new Date().toISOString().split('T')[0] },
     ]);
   };
 
-  const removeEntry = (id: number) => {
-    setEntries(entries.filter((entry) => entry.id !== id));
-  };
-
-  const updateEntry = (id: number, field: string, value: string) => {
-    setEntries(
-      entries.map((entry) =>
-        entry.id === id ? { ...entry, [field]: value } : entry
+  const updateNewEntry = (index: number, field: string, value: string) => {
+    setNewEntries(
+      newEntries.map((entry, i) =>
+        i === index ? { ...entry, [field]: value } : entry
       )
     );
   };
 
-  const handleButton = async () => {
+  const removeNewEntry = (index: number) => {
+    setNewEntries(newEntries.filter((_, i) => i !== index));
+  };
+
+  const saveEntries = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/save_entries', {
+      const response = await fetch('http://localhost:5000/api/timesheets/save_entries', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          date: selectedDate,
-          entries: entries.map(({ project, task, Date, description }) => ({
-            project,
-            task,
-            Date: Number(Date),
-            description,
-          })),
+          userId: localStorage.getItem('userId'),
+          entries: newEntries,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save entries');
+        throw new Error('Failed to save timesheet entries');
       }
 
-      const result = await response.json();
-      console.log('Entries saved:...............', result);
-      setMessage('Entries saved successfully!');
-      setSeverity('success');
+      setMessage('Timesheet entries saved successfully.');
+      setNewEntries([]);
+      fetchTimesheets();
     } catch (error) {
-      console.error('Error saving entries:', error);
-      setMessage('Error saving entries!');
-      setSeverity('error');
-    } finally {
-      setOpen(true);
+      console.error('Error saving timesheet entries:', error);
+      setError('Failed to save timesheet entries.');
     }
   };
 
-  const handleCloseSnackbar = () => {
-    setOpen(false);
-  };
+  useEffect(() => {
+    fetchTimesheets();
+  }, []);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-medium text-gray-900">
-            Time Entry for {format(selectedDate, 'MMMM d, yyyy')}
-          </h2>
-          <button
-            onClick={addEntry}
-            className="flex items-center px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg"
+    <div className="p-6 bg-white shadow rounded-lg">
+      <h2 className="text-lg font-medium mb-4">Timesheets</h2>
+
+      {/* Error and Success Messages */}
+      {error && <p className="text-red-500">{error}</p>}
+      {message && <p className="text-green-500">{message}</p>}
+
+      {/* Existing Timesheets */}
+      {timesheets.length > 0 ? (
+        timesheets.map((timesheet) => (
+          <div
+            key={timesheet._id} // Unique key
+            className="p-4 border border-gray-200 rounded-lg mb-4"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Entry
-          </button>
-        </div>
+            <h3 className="font-semibold">
+              Date: {new Date(timesheet.date).toLocaleDateString()}
+            </h3>
+            <ul className="mt-2 space-y-2">
+              {timesheet.entries.map((entry, index) => (
+                <li
+                  key={`${timesheet._id}-${index}`} // Unique key for list item
+                  className="text-sm"
+                >
+                  <strong>Project:</strong> {entry.project} <br />
+                  <strong>Task:</strong> {entry.task} <br />
+                  <strong>Description:</strong> {entry.description}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      ) : (
+        <p>No timesheets available.</p>
+      )}
 
-        <div className="space-y-4">
-          {entries.map((entry) => (
-            <div
-              key={entry.id}
-              className="grid grid-cols-12 gap-4 p-4 border border-gray-100 rounded-lg"
+      {/* Add New Entries */}
+      <h3 className="text-lg font-medium mt-6">Add New Timesheet Entries</h3>
+      {newEntries.map((entry, index) => (
+        <div
+          key={index} // Use index for temporary key
+          className="grid grid-cols-12 gap-4 p-4 border border-gray-200 rounded-lg mb-4"
+        >
+          <div className="col-span-3">
+            <label className="block text-sm font-medium mb-1">Project</label>
+            <input
+              type="text"
+              value={entry.project}
+              onChange={(e) => updateNewEntry(index, 'project', e.target.value)}
+              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <div className="col-span-3">
+            <label className="block text-sm font-medium mb-1">Task</label>
+            <input
+              type="text"
+              value={entry.task}
+              onChange={(e) => updateNewEntry(index, 'task', e.target.value)}
+              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium mb-1">Date</label>
+            <input
+              type="date"
+              value={entry.date}
+              onChange={(e) => updateNewEntry(index, 'date', e.target.value)}
+              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <div className="col-span-3">
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <input
+              type="text"
+              value={entry.description}
+              onChange={(e) =>
+                updateNewEntry(index, 'description', e.target.value)
+              }
+              className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          <div className="col-span-1 flex items-end justify-end">
+            <button
+              onClick={() => removeNewEntry(index)}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
             >
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Project
-                </label>
-                <select
-                  value={entry.project}
-                  onChange={(e) =>
-                    updateEntry(entry.id, 'project', e.target.value)
-                  }
-                  className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">Select Project</option>
-                  <option value="project1">Project Alpha</option>
-                  <option value="project2">Project Beta</option>
-                </select>
-              </div>
-
-              <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Task
-                </label>
-                <select
-                  value={entry.task}
-                  onChange={(e) =>
-                    updateEntry(entry.id, 'task', e.target.value)
-                  }
-                  className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">Select Task</option>
-                  <option value="task1">Development</option>
-                  <option value="task2">Design</option>
-                  <option value="task3">Testing</option>
-                </select>
-              </div>
-
-              <div className="col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date
-                </label>
-                <input
-                  type="Date"
-                  // min="0"
-                  // max="24"
-                  value={entry.Date}
-                  onChange={(e) =>
-                    updateEntry(entry.id, 'Date', e.target.value)
-                  }
-                  className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="col-span-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  value={entry.description}
-                  onChange={(e) =>
-                    updateEntry(entry.id, 'description', e.target.value)
-                  }
-                  className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="col-span-1 flex items-end justify-end">
-                <button
-                  onClick={() => removeEntry(entry.id)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          ))}
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
         </div>
+      ))}
 
-        <div className="mt-6 flex justify-end">
+      {/* Buttons */}
+      <div className="mt-4 flex space-x-4">
+        <button
+          onClick={addNewEntry}
+          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Add Entry
+        </button>
+        {newEntries.length > 0 && (
           <button
-            onClick={handleButton}
-            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            onClick={saveEntries}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
             <Save className="h-5 w-5 mr-2" />
             Save Entries
           </button>
-        </div>
+        )}
       </div>
-
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={open}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        message={message}
-        action={
-          <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleCloseSnackbar}
-          >
-            {severity === 'success' ? (
-              <CheckCircle className="text-green-500" />
-            ) : (
-              <Error className="text-red-500" />
-            )}
-          </IconButton>
-        }
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        ContentProps={{
-          style: {
-            backgroundColor: severity === 'success' ? '#4caf50' : '#f44336',
-          },
-        }}
-      />
     </div>
   );
 };
