@@ -86,9 +86,9 @@ app.post('/api/users/add', async (req, res) => {
     console.log("respinsefrom teh server : "  + req.body);
     try {
         const user = new User(req.body);
-        await user.save();
+       let result = await user.save();
         console.log("give me update");
-        return res.status(200).send("User added successfully");
+        return res.status(200).send(result);
     } catch (error) {
         res.status(400).send(error);
     }
