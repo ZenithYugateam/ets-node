@@ -44,7 +44,7 @@ const UserManagement = () => {
     const [showModal, setShowModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [formData, setFormData] = useState<FormData>({
-        adminId: '507f1f77bcf86cd799439011',
+        adminId: '',
         name: '',
         email: '',
         password: '',
@@ -58,7 +58,7 @@ const UserManagement = () => {
     const [showManagerField, setShowManagerField] = useState(false);
     const [selectedMainDepartment, setSelectedMainDepartment] = useState('');
     const [subDomains, setSubDomains] = useState<string[]>([]);
-
+    const USER_ID = localStorage.getItem('userId') ??"";
     // Fetch users
     useEffect(() => {
         const fetchAllUsers = async () => {
@@ -66,7 +66,7 @@ const UserManagement = () => {
                 const response = await fetch('http://localhost:5000/api/usersData', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminId: '507f1f77bcf86cd799439011' }),
+                    body: JSON.stringify({ adminId: USER_ID }),
                 });
 
                 if (!response.ok) {
@@ -75,7 +75,7 @@ const UserManagement = () => {
 
                 const data = await response.json();
                 setUsers(data);
-            } catch (error) {
+            } catch (error:any) {
                 toast.error(`Error fetching users: ${error.message}`);
             }
         };
@@ -121,7 +121,7 @@ const UserManagement = () => {
 
             toast.success(`User ${selectedUser ? 'updated' : 'added'} successfully`);
             handleCloseModal();
-        } catch (error) {
+        } catch (error:any) {
             toast.error(`Error saving user: ${error.message}`);
         }
     };
@@ -133,14 +133,13 @@ const UserManagement = () => {
                 const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
                     method: 'DELETE',
                 });
-
                 if (!response.ok) {
                     throw new Error('Failed to delete user');
                 }
 
                 setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId));
                 toast.success('User deleted successfully');
-            } catch (error) {
+            } catch (error:any) {
                 toast.error(`Error deleting user: ${error.message}`);
             }
         }
@@ -152,7 +151,7 @@ const UserManagement = () => {
         setFormData(
             user
                 ? {
-                      adminId: '507f1f77bcf86cd799439011',
+                      adminId: USER_ID,
                       name: user.name,
                       email: user.email,
                       password: '',
@@ -161,7 +160,7 @@ const UserManagement = () => {
                       status: user.status,
                   }
                 : {
-                      adminId: '507f1f77bcf86cd799439011',
+                      adminId: USER_ID,
                       name: '',
                       email: '',
                       password: '',
@@ -190,7 +189,7 @@ const UserManagement = () => {
     };
 
     // Handle main department change
-    const handleMainDepartmentChange = (mainDepartment: string) => {
+    const handleMainDepartmentChange = (mainDepartment: any) => {
         setSelectedMainDepartment(mainDepartment);
         setFormData({ ...formData, department: mainDepartment });
         setSubDomains(departmentOptions[mainDepartment] || []);

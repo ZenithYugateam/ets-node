@@ -23,8 +23,11 @@ const AdminDashboard = () => {
   const [userCount, setUserCount] = useState(0);
   const [groupedByDepartment, setGroupedByDepartment] = useState<Record<string, User[]>>({});
   const [users, setUsers] = useState<User[]>([]);
+  const [adminId,setAdminId]=useState<string>('')//in this we generate a veriable to make user id dynamically generated
 
   useEffect(() => {
+    let userId:string | any = localStorage.getItem('userId')//in this we stored in  the localstorage
+    setAdminId(userId)//and finally set userId
     const fetchAllUsers = async () => {
       try {
         const response = await fetch('http://localhost:5000/api/usersData', {
@@ -139,7 +142,8 @@ const AdminDashboard = () => {
           );
         })}
       </div>
-      <UserManagement />
+    {/* and in this we prope add */}
+      <UserManagement  adminId={adminId} />    
       <ProjectManagement />
       <ActivityLogs />
     </div>
