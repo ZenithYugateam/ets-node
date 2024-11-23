@@ -9,6 +9,7 @@ interface TimesheetEntry {
   date: string;
 }
 
+
 const TimesheetEntry: React.FC = () => {
   const [timesheets, setTimesheets] = useState<TimesheetEntry[]>([]);
   const [newEntries, setNewEntries] = useState<TimesheetEntry[]>([]);
@@ -174,7 +175,7 @@ const TimesheetEntry: React.FC = () => {
           onClick={addNewEntry}
           className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
         >
-          <Plus className="h-5 w-5 mr-2" />
+          <Plus className="h-5 w-5 m  r-2" />
           Add Entry
         </button>
         {newEntries.length > 0 && (

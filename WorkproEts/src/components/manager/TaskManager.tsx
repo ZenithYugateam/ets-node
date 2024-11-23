@@ -1,10 +1,10 @@
 import React from 'react';
-import { Clock, MoreVertical, Tag } from 'lucide-react';
+import { Clock, MoreVertical } from 'lucide-react';
 
 const tasks = [
   {
     id: 1,
-    project:'hi',
+    project: 'Project Alpha',
     title: 'Implement new feature',
     assignee: {
       name: 'Sarah Wilson',
@@ -18,7 +18,7 @@ const tasks = [
   },
   {
     id: 2,
-    project:'hi',
+    project: 'Project Beta',
     title: 'Code review for PR #234',
     assignee: {
       name: 'Michael Chen',
@@ -32,7 +32,7 @@ const tasks = [
   },
   {
     id: 3,
-    project:'hi',
+    project: 'Project Gamma',
     title: 'Update design system',
     assignee: {
       name: 'Emma Garcia',
@@ -53,7 +53,6 @@ const TaskManager = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-medium text-gray-900">Task Overview</h2>
           <div className="flex items-center space-x-2">
-            <button className="p-2 hover:bg-gray-100 rounded-lg"></button>
             <select className="border-gray-300 rounded-lg text-sm">
               <option>All Tasks</option>
               <option>In Progress</option>
@@ -67,7 +66,7 @@ const TaskManager = () => {
           <table className="min-w-full">
             <thead>
               <tr className="border-b border-gray-200">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Project
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -97,9 +96,10 @@ const TaskManager = () => {
               {tasks.map((task) => (
                 <tr key={task.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {task.title}
-                    </div>
+                    <div className="text-sm font-medium text-gray-900">{task.project}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{task.title}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -109,9 +109,7 @@ const TaskManager = () => {
                         alt={task.assignee.name}
                       />
                       <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">
-                          {task.assignee.name}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{task.assignee.name}</div>
                       </div>
                     </div>
                   </td>

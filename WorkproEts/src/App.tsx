@@ -11,76 +11,60 @@ import ErrorBoundary from './components/ErrorBoundary';
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './AuthContext';
 
-function App() {
+const App: React.FC = () => {
   return (
     <AuthProvider>
       <ErrorBoundary>
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Routes>
-              {/* Login Route */}
+              {/* Public Route: Login */}
               <Route path="/" element={<LoginForm />} />
 
-              {/* Admin Route */}
+              {/* Private Route: Admin */}
               <Route
                 path="/admin"
                 element={
-                  <PrivateRoute roles={['Admin']}>
-                    <Navbar />
-                    <div className="flex">
-                      <Sidebar />
-                      <main className="flex-1 p-8">
-                        <AdminDashboard />
-                      </main>
-                    </div>
+                  <PrivateRoute requiredRoles={['Admin']}>
+                    <Layout>
+                      <AdminDashboard />
+                    </Layout>
                   </PrivateRoute>
                 }
               />
 
-              {/* Manager Route */}
+              {/* Private Route: Manager */}
               <Route
                 path="/manager"
                 element={
-                  <PrivateRoute roles={['Manager']}>
-                    <Navbar />
-                    <div className="flex">
-                      <Sidebar />
-                      <main className="flex-1 p-8">
-                        <ManagerDashboard />
-                      </main>
-                    </div>
+                  <PrivateRoute requiredRoles={['Manager']}>
+                    <Layout>
+                      <ManagerDashboard />
+                    </Layout>
                   </PrivateRoute>
                 }
               />
 
-              {/* Employee Route */}
+              {/* Private Route: Employee */}
               <Route
                 path="/employee"
                 element={
-                  <PrivateRoute roles={['Employee']}>
-                    <Navbar />
-                    <div className="flex">
-                      <Sidebar />
-                      <main className="flex-1 p-8">
-                        <EmployeeDashboard />
-                      </main>
-                    </div>
+                  <PrivateRoute requiredRoles={['Employee']}>
+                    <Layout>
+                      <EmployeeDashboard />
+                    </Layout>
                   </PrivateRoute>
                 }
               />
 
-              {/* Timesheets Route (Accessible to Admins, Managers, and Employees) */}
+              {/* Shared Route: Timesheets */}
               <Route
                 path="/timesheets"
                 element={
-                  <PrivateRoute roles={['Admin', 'Manager', 'Employee']}>
-                    <Navbar />
-                    <div className="flex">
-                      <Sidebar />
-                      <main className="flex-1 p-8">
-                        <Timesheets />
-                      </main>
-                    </div>
+                  <PrivateRoute requiredRoles={['Admin', 'Manager', 'Employee']}>
+                    <Layout>
+                      <Timesheets />
+                    </Layout>
                   </PrivateRoute>
                 }
               />
@@ -90,6 +74,22 @@ function App() {
       </ErrorBoundary>
     </AuthProvider>
   );
-}
+};
 
 export default App;
+
+/**
+ * Layout Component
+ * This reusable component ensures consistent layout structure across private routes.
+ */
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <>
+      <Navbar />
+      <div className="flex">
+        <Sidebar />
+        <main className="flex-1 p-8">{children}</main>
+      </div>
+    </>
+  );
+};
