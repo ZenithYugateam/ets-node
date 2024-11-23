@@ -1,6 +1,6 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Users, Bell, Settings } from 'lucide-react';
+import React from "react";
+import { Link } from "react-router-dom";
+import { Users, Bell, Settings } from "lucide-react";
 
 const Navbar = () => {
   return (
@@ -11,14 +11,14 @@ const Navbar = () => {
             <Users className="h-8 w-8 text-indigo-600" />
             <span className="ml-2 text-xl font-semibold">WorkForce Pro</span>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <button className="p-2 rounded-full hover:bg-gray-100">
               <Bell className="h-6 w-6 text-gray-500" />
             </button>
-            <button className="p-2 rounded-full hover:bg-gray-100">
+            <Link to="/profile" className="p-2 rounded-full hover:bg-gray-100">
               <Settings className="h-6 w-6 text-gray-500" />
-            </button>
+            </Lin
             <div className="flex items-center">
               <img
                 className="h-8 w-8 rounded-full"

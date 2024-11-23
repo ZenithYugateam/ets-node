@@ -8,6 +8,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Timesheets from './pages/Timesheets';
 import LoginForm from './pages/Login';
 import ErrorBoundary from './components/ErrorBoundary';
+import Profile from './pages/Profile'; // Import Profile component
 import PrivateRoute from './components/PrivateRoute';
 import { AuthProvider } from './AuthContext';
 
@@ -18,8 +19,12 @@ const App: React.FC = () => {
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Routes>
+
               {/* Public Route: Login */}
               <Route path="/" element={<LoginForm />} />
+
+              <Route path="/profile" element={<Profile />} /> {/* Add Profile Route */}
+
 
               {/* Private Route: Admin */}
               <Route
