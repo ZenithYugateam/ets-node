@@ -13,34 +13,24 @@ const LoginForm = () => {
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Store session details in localStorage
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('role', data.user.role);
-        localStorage.setItem('userName', data.user.name); // Store name in localStorage
+        sessionStorage.setItem('userId', data.user.id);
+        sessionStorage.setItem('role', JSON.stringify(data.user.role)); // Serialize role
+        sessionStorage.setItem('userName', data.user.name);
 
-        // Redirect based on role
-        switch (data.user.role) {
-          case 'Admin':
-            navigate('/admin');
-            break;
-          case 'Manager':
-            navigate('/manager');
-            break;
-          case 'Employee':
-            navigate('/employee');
-            break;
-          default:
-            navigate('/');
-        }
+        console.log('Session Storage after Login:', {
+          userId: sessionStorage.getItem('userId'),
+          role: sessionStorage.getItem('role'),
+          userName: sessionStorage.getItem('userName'),
+        });
+
+        navigate(`/${data.user.role.toLowerCase()}`);
       } else {
         setError(data.message || 'Login failed');
       }
@@ -51,10 +41,7 @@ const LoginForm = () => {
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white shadow-md rounded px-8 pt-6 pb-8 w-full max-w-md"
-      >
+      <form onSubmit={handleLogin} className="bg-white shadow-md rounded px-8 pt-6 pb-8 w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         <div className="mb-4">

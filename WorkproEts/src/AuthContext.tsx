@@ -1,45 +1,51 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 
 interface AuthContextType {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-  } | null;
-  setUser: (user: any) => void;
+  userId: string | null;
+  role: string | null;
+  userName: string | null;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType>({
+  userId: null,
+  role: null,
+  userName: null,
+  logout: () => {},
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  const [userId, setUserId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
-  const updateUser = (newUser: any) => {
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
-  };
+  useEffect(() => {
+    const storedUserId = sessionStorage.getItem('userId');
+    const storedRole = JSON.parse(sessionStorage.getItem('role') || 'null'); // Parse stored role
+    const storedUserName = sessionStorage.getItem('userName');
+
+    console.log('AuthProvider Session Storage:', {
+      userId: storedUserId,
+      role: storedRole,
+      userName: storedUserName,
+    });
+
+    setUserId(storedUserId);
+    setRole(storedRole);
+    setUserName(storedUserName);
+  }, []);
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+    sessionStorage.clear();
+    setUserId(null);
+    setRole(null);
+    setUserName(null);
+    window.location.href = '/';
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser: updateUser, logout }}>
+    <AuthContext.Provider value={{ userId, role, userName, logout }}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };
