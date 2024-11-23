@@ -22,9 +22,10 @@ const LoginForm = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Store the session in localStorage
+        // Store session details in localStorage
         localStorage.setItem('userId', data.user.id);
         localStorage.setItem('role', data.user.role);
+        localStorage.setItem('userName', data.user.name); // Store name in localStorage
 
         // Redirect based on role
         switch (data.user.role) {

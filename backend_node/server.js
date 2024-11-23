@@ -442,6 +442,20 @@ app.post("/api/timelog/checkout", async (req, res) => {
       .json({ message: "Error checking out", error: error.message });
   }
 });
+app.get('/api/users/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId); // Assuming `User` is your MongoDB model
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user details', error: error.message });
+  }
+});
 
 // Retrieve Logs Route
 app.get("/api/timelog/:userId", async (req, res) => {
