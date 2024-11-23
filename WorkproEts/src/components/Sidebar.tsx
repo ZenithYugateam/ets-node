@@ -1,24 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, ClipboardList, Calendar } from 'lucide-react';
 
 const Sidebar = () => {
   const location = useLocation();
-  const role = localStorage.getItem('role'); // Fetch the role from localStorage
+  const [role, setRole] = useState(() => {
+    const storedRole = sessionStorage.getItem('role');
+    return storedRole ? JSON.parse(storedRole) : null; // Parse role to ensure it's valid
+  });
 
-  // Dynamically set the dashboard route based on the role
-  const dashboardRoute = (() => {
-    switch (role) {
-      case 'Admin':
-        return '/admin';
-      case 'Manager':
-        return '/manager';
-      case 'Employee':
-        return '/employee';
-      default:
-        return '/'; // Fallback route
-    }
-  })();
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const updatedRole = sessionStorage.getItem('role');
+      setRole(updatedRole ? JSON.parse(updatedRole) : null); // Update role dynamically
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  const dashboardRoute = `/${role || 'default'}`; // Default to '/default' if role is null
 
   const links = [
     { to: dashboardRoute, icon: LayoutDashboard, label: 'Dashboard' },
