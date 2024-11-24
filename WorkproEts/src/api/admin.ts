@@ -69,7 +69,7 @@ export const fetchActivityLogs = async () => {
 // }
 
 export const createTask = async (taskData: Omit<Task, '_id'>) => {
-  const response = await axios.post(`${API_URL}/tasks`, taskData);
+  const response = await axios.post(`${API_URL}/tasks3`, taskData);
   return response.data;
 };
 

@@ -83,20 +83,20 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
-
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   assignee: {
-    userId: { type: String, default: "" },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" }, // Updated type
     name: { type: String, required: true },
     avatar: { type: String, default: "" },
   },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "users" }, // Added field
   priority: {
     type: String,
     enum: ["Low", "Medium", "High"],
     default: "Medium",
   },
-  deadline: { type: Date, required: false },
+  deadline: { type: Date },
   status: {
     type: String,
     enum: ["Pending", "In Progress", "Completed"],
@@ -151,6 +151,66 @@ app.post("/api/save_entries", async (req, res) => {
 //     res.status(400).send(error);
 //   }
 // });
+
+// Add this to your existing routes// Update your existing department route
+// Adjust path as needed
+
+// Route to get managers by department
+app.get("/users/managers/:departmentName", async (req, res) => {
+  try {
+    const { departmentName } = req.params;
+
+    // Find all users who are managers in the specified department
+    const managers = await User.find({
+      department: departmentName,
+      role: "Manager",
+    }).select("_id name email"); // Only select necessary fields
+
+    if (!managers || managers.length === 0) {
+      return res.status(200).json([]); // Return empty array if no managers found
+    }
+
+    res.status(200).json(managers);
+  } catch (error) {
+    console.error("Error fetching managers:", error);
+    res.status(500).json({
+      message: "Error fetching managers",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/departments/add", async (req, res) => {
+  try {
+    const { name, description, subDepartments } = req.body;
+
+    // Check if department already exists
+    const existingDepartment = await Department.findOne({ name });
+    if (existingDepartment) {
+      return res.status(400).json({ message: "Department already exists" });
+    }
+
+    // Create new department with the schema structure
+    const newDepartment = new Department({
+      name,
+      subDepartments: subDepartments.map((sub) => ({
+        name: sub.name,
+        description: sub.description,
+        employees: [], // Initialize with empty employees array
+      })),
+      createdAt: new Date(),
+    });
+
+    const savedDepartment = await newDepartment.save();
+    res.status(201).json(savedDepartment);
+  } catch (error) {
+    console.error("Error creating department:", error);
+    res.status(500).json({
+      message: "Failed to create department",
+      error: error.message,
+    });
+  }
+});
 
 app.post("/api/users/add", async (req, res) => {
   try {
@@ -476,18 +536,20 @@ app.post("/api/timelog/checkout", async (req, res) => {
       .json({ message: "Error checking out", error: error.message });
   }
 });
-app.get('/api/users/:userId', async (req, res) => {
+app.get("/api/users/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
     const user = await User.findById(userId); // Assuming `User` is your MongoDB model
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching user details', error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching user details", error: error.message });
   }
 });
 

@@ -1,16 +1,16 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
-import EmployeeDashboard from './pages/EmployeeDashboard';
-import ManagerDashboard from './pages/ManagerDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import Timesheets from './pages/Timesheets';
-import LoginForm from './pages/Login';
-import ErrorBoundary from './components/ErrorBoundary';
-import Profile from './pages/Profile'; // Import Profile component
-import PrivateRoute from './components/PrivateRoute';
-import { AuthProvider } from './AuthContext';
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
+import EmployeeDashboard from "./pages/EmployeeDashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import Timesheets from "./pages/Timesheets";
+import LoginForm from "./pages/Login";
+import ErrorBoundary from "./components/ErrorBoundary";
+import Profile from "./pages/Profile"; // Import Profile component
+import PrivateRoute from "./components/PrivateRoute";
+import { AuthProvider } from "./AuthContext";
 
 const App: React.FC = () => {
   return (
@@ -19,54 +19,50 @@ const App: React.FC = () => {
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Routes>
-
               {/* Public Route: Login */}
               <Route path="/" element={<LoginForm />} />
-
-              <Route path="/profile" element={<Profile />} /> {/* Add Profile Route */}
-
-
+              <Route path="/profile" element={<Profile />} />{" "}
+              {/* Add Profile Route */}
               {/* Private Route: Admin */}
               <Route
                 path="/admin"
                 element={
-                  <PrivateRoute requiredRoles={['Admin']}>
+                  <PrivateRoute requiredRoles={["Admin"]}>
                     <Layout>
                       <AdminDashboard />
                     </Layout>
                   </PrivateRoute>
                 }
               />
-
               {/* Private Route: Manager */}
               <Route
                 path="/manager"
                 element={
-                  <PrivateRoute requiredRoles={['Manager']}>
+                  <PrivateRoute requiredRoles={["Manager"]}>
                     <Layout>
                       <ManagerDashboard />
                     </Layout>
                   </PrivateRoute>
                 }
               />
-
               {/* Private Route: Employee */}
               <Route
                 path="/employee"
                 element={
-                  <PrivateRoute requiredRoles={['Employee']}>
+                  <PrivateRoute requiredRoles={["Employee"]}>
                     <Layout>
                       <EmployeeDashboard />
                     </Layout>
                   </PrivateRoute>
                 }
               />
-
               {/* Shared Route: Timesheets */}
               <Route
                 path="/timesheets"
                 element={
-                  <PrivateRoute requiredRoles={['Admin', 'Manager', 'Employee']}>
+                  <PrivateRoute
+                    requiredRoles={["Admin", "Manager", "Employee"]}
+                  >
                     <Layout>
                       <Timesheets />
                     </Layout>

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from "react";
 
 interface AuthContextType {
   userId: string | null;
@@ -14,17 +14,19 @@ export const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedUserId = sessionStorage.getItem('userId');
-    const storedRole = JSON.parse(sessionStorage.getItem('role') || 'null'); // Parse stored role
-    const storedUserName = sessionStorage.getItem('userName');
+    const storedUserId = sessionStorage.getItem("userId");
+    const storedRole = JSON.parse(sessionStorage.getItem("role") || "null"); // Parse stored role
+    const storedUserName = sessionStorage.getItem("userName");
 
-    console.log('AuthProvider Session Storage:', {
+    console.log("AuthProvider Session Storage:", {
       userId: storedUserId,
       role: storedRole,
       userName: storedUserName,
@@ -40,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserId(null);
     setRole(null);
     setUserName(null);
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   return (
