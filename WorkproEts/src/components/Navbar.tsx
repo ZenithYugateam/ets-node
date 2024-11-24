@@ -18,7 +18,7 @@ const Navbar = () => {
             </button>
             <Link to="/profile" className="p-2 rounded-full hover:bg-gray-100">
               <Settings className="h-6 w-6 text-gray-500" />
-            </Lin
+            </Link>
             <div className="flex items-center">
               <img
                 className="h-8 w-8 rounded-full"

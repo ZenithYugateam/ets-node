@@ -97,3 +97,13 @@ export const getTasksByAssignee = async (userId: string) => {
   const response = await axios.get(`${API_URL}/tasks/assignee/${userId}`);
   return response.data;
 };
+
+export const getProfileData = async (userId: string) => {
+  const response = await axios.post(`${API_URL}/getProfileData`, {userId});
+  return response.data;
+};
+
+export const updateProfileData = async (userId: string, newPassword: any) => {
+  const response = await axios.patch(`${API_URL}/usersData/${userId}`, {newPassword});
+  return response.data;
+};

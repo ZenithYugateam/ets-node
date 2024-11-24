@@ -112,6 +112,20 @@ const Task = mongoose.model("Task", taskSchema);
 // Models
 const User = mongoose.model("users", userSchema);
 
+app.post('/api/getProfileData', async (req, res) => {
+  const { userId } = req.body;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    return res.status(200).send(user);
+  } catch (error) {
+    console.log("Error fetching user profile:", error);
+    return res.status(500).send("Error fetching user profile");
+  } 
+})
+
 // Timesheet Routes
 app.post("/api/save_entries", async (req, res) => {
   const { date, entries } = req.body;
@@ -193,6 +207,31 @@ app.post("/api/usersData", async (req, res) => {
   }
 });
 
+
+app.patch("/api/usersData/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { newPassword } = req.body; 
+
+  console.log(newPassword   , " ", userId); 
+  try {
+    // Find the user by userId and update the password
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { password: newPassword }, // Assuming you want to directly set the new password
+      { new: true } // This option ensures that the updated document is returned
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ message: "Password updated successfully", user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update password" });
+  }
+});
+
+
 app.post("/api/fetchTaskData", async (req, res) => {
   const { userId } = req.body;
 
@@ -222,11 +261,7 @@ app.delete("/api/users/:userId", async (req, res) => {
 app.post("/api/tasks3", async (req, res) => {
   try {
     const task4 = new Task(req.body);
-    console.log("fetched succuesfully ", task4);
-
     await task4.save();
-    console.log("Received task data:", req.body);
-    console.log("task done", task4);
     res.status(201).json(task4);
   } catch (error) {
     res.status(400).json({ error: "Failed to create task" });
@@ -239,7 +274,6 @@ app.get("/api/tasks", async (req, res) => {
       .populate("assignee.userId", "name")
       .populate("createdBy", "name");
     res.json(tasks);
-    console.log("Received task data:", req.body);
   } catch (error) {
     console.error("Error fetching tasks:", error);
     res.status(500).json({ error: "Failed to fetch tasks" });
@@ -571,7 +605,6 @@ app.get("/api/timesheets/user", async (req, res) => {
 });
 
 app.post("/api/timesheets/save_entries", async (req, res) => {
-  console.log("Saving entries:", req.body);
   const { userId, entries } = req.body;
 
   try {
@@ -591,7 +624,6 @@ app.post("/api/timesheets/save_entries", async (req, res) => {
     }));
 
     const savedTimesheets = await Timesheet.insertMany(timesheetsToSave);
-    console.log("Saved timesheets:", savedTimesheets);
 
     res
       .status(200)
