@@ -137,12 +137,12 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
       );
 
       toast.success("Department created successfully");
-      onDepartmentCreated(response.data);
+      // onDepartmentCreated(response.data);
       resetForm();
       onClose();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message;
-      toast.error(`Error creating department: ${errorMessage}`);
+      // toast.error(`Error creating department: ${errorMessage}`);
     }
   };
 
