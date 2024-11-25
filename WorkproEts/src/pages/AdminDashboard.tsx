@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { Users, Building2, ClipboardList, AlertCircle, LogOut } from 'lucide-react';
 import UserManagement from '../components/admin/UserManagement';
+import LeaveApprovals from '../components/shared/LeaveApprovals';
 import TaskManagement from '../components/admin/TaskManagement';
 import DepartmentConfig from '../components/admin/DepartmentConfig';
 import ActivityLogs from '../components/admin/ActivityLogs';
 import ProjectManagement from '../components/admin/ProjectManagement';
+// import LeaveApprovals from '../components/shared/LeaveApprovals';
 import { fetchDashboardStats } from '../api/admin';
 import { toast } from 'react-toastify';
 
@@ -154,7 +156,11 @@ const AdminDashboard = () => {
       </div>
 
       {/* Admin components */}
-      <UserManagement adminId={localStorage.getItem('userId')!} />
+      <UserManagement adminId={localStorage.getItem('userId')} />
+      {/* <LeaveApprovals/> */}
+      <LeaveApprovals adminId={localStorage.getItem('userId')} />
+      
+       {/* <LeaveApprovals /> */}
       <ProjectManagement />
       <ActivityLogs />
     </div>
