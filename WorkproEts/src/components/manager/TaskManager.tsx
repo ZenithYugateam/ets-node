@@ -1,52 +1,68 @@
-import React from 'react';
-import { Clock, MoreVertical } from 'lucide-react';
+import React, { useEffect, useState, useContext } from "react";
+import { Clock, MoreVertical } from "lucide-react";
+import axios from "axios";
+import { AuthContext } from "../../AuthContext"; // Adjust the path based on your project structure
 
-const tasks = [
-  {
-    id: 1,
-    project: 'Project Alpha',
-    title: 'Implement new feature',
-    assignee: {
-      name: 'Sarah Wilson',
-      avatar:
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    },
-    priority: 'High',
-    deadline: '2024-03-25',
-    status: 'In Progress',
-    progress: 65,
-  },
-  {
-    id: 2,
-    project: 'Project Beta',
-    title: 'Code review for PR #234',
-    assignee: {
-      name: 'Michael Chen',
-      avatar:
-        'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    },
-    priority: 'Medium',
-    deadline: '2024-03-23',
-    status: 'Pending',
-    progress: 0,
-  },
-  {
-    id: 3,
-    project: 'Project Gamma',
-    title: 'Update design system',
-    assignee: {
-      name: 'Emma Garcia',
-      avatar:
-        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-    },
-    priority: 'Low',
-    deadline: '2024-03-28',
-    status: 'In Progress',
-    progress: 30,
-  },
-];
+interface AuthContextType {
+  userId: string;
+  role: string;
+  userName: string;
+  // Add any other properties as needed
+}
 
-const TaskManager = () => {
+interface Task {
+  _id: string;
+  title: string;
+  priority: string;
+  deadline: string;
+  status: string;
+  progress: number;
+  department: string;
+  description: string;
+  assignee: {
+    userId?: {
+      _id: string;
+      name: string;
+    };
+    name: string;
+    avatar: string;
+  };
+}
+
+const TaskManager: React.FC = () => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  // Access the manager's ID from AuthContext
+  const authContext = useContext<AuthContextType>(AuthContext);
+  const managerId = authContext.userId; // Ensure 'userId' exists on AuthContextType
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        // Fetch tasks using axios
+        const response = await axios.get<Task[]>(
+          "http://localhost:5000/api/tasks"
+        );
+        const allTasks = response.data;
+
+        // Filter tasks assigned to the manager
+        const managerTasks = allTasks.filter((task) => {
+          return (
+            task.assignee &&
+            task.assignee.userId &&
+            task.assignee.userId._id === managerId
+          );
+        });
+
+        setTasks(managerTasks);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+      }
+    };
+
+    fetchTasks();
+  }, [managerId]);
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="p-6">
@@ -66,6 +82,7 @@ const TaskManager = () => {
           <table className="min-w-full">
             <thead>
               <tr className="border-b border-gray-200">
+                {/* Table Headers */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Project
                 </th>
@@ -94,13 +111,20 @@ const TaskManager = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {tasks.map((task) => (
-                <tr key={task.id}>
+                <tr key={task._id}>
+                  {/* Project */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{task.project}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {task.department}
+                    </div>
                   </td>
+                  {/* Task */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{task.title}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {task.title}
+                    </div>
                   </td>
+                  {/* Assignee */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <img
@@ -109,29 +133,34 @@ const TaskManager = () => {
                         alt={task.assignee.name}
                       />
                       <div className="ml-3">
-                        <div className="text-sm font-medium text-gray-900">{task.assignee.name}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {task.assignee.name}
+                        </div>
                       </div>
                     </div>
                   </td>
+                  {/* Priority */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        task.priority === 'High'
-                          ? 'bg-red-100 text-red-800'
-                          : task.priority === 'Medium'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
+                        task.priority === "High"
+                          ? "bg-red-100 text-red-800"
+                          : task.priority === "Medium"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-green-100 text-green-800"
                       }`}
                     >
                       {task.priority}
                     </span>
                   </td>
+                  {/* Deadline */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="h-4 w-4 mr-1" />
-                      {task.deadline}
+                      {new Date(task.deadline).toLocaleDateString()}
                     </div>
                   </td>
+                  {/* Progress */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
@@ -140,19 +169,21 @@ const TaskManager = () => {
                       ></div>
                     </div>
                   </td>
+                  {/* Status */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        task.status === 'In Progress'
-                          ? 'bg-blue-100 text-blue-800'
-                          : task.status === 'Completed'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
+                        task.status === "In Progress"
+                          ? "bg-blue-100 text-blue-800"
+                          : task.status === "Completed"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
                       {task.status}
                     </span>
                   </td>
+                  {/* Actions */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button className="text-gray-400 hover:text-gray-500">
                       <MoreVertical className="h-5 w-5" />
@@ -160,6 +191,17 @@ const TaskManager = () => {
                   </td>
                 </tr>
               ))}
+              {/* No Tasks Message */}
+              {tasks.length === 0 && (
+                <tr>
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                    colSpan={8}
+                  >
+                    No tasks assigned to you.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
