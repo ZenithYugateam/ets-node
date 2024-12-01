@@ -307,7 +307,6 @@ const UserManagement = () => {
 
   const handleSave = async () => {
     try {
-      // Validate required fields
       if (
         !formData.name ||
         !formData.email ||
@@ -363,6 +362,8 @@ const UserManagement = () => {
     } catch (error: any) {
       console.error("Save error:", error);
       toast.error(`Error saving user: ${error.message}`);
+    } finally{
+      setShowModal(false);
     }
   };
   // Delete user

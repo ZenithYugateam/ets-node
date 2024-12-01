@@ -458,11 +458,9 @@ app.post("/api/departments/add", async (req, res) => {
 
 app.post("/api/users/add", async (req, res) => {
   try {
-    // Create the user
     const user = new User(req.body);
     const savedUser = await user.save();
 
-    // Find the department and sub-department
     const department = await Department.findOne({
       name: req.body.department,
       "subDepartments.name": req.body.subDepartment,
@@ -473,10 +471,13 @@ app.post("/api/users/add", async (req, res) => {
         .status(400)
         .json({ message: "Department or Sub-Department not found" });
     }
+    res.status(201).json(savedUser);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
 
 app.post("/api/usersData", async (req, res) => {
   const { adminId } = req.body;
