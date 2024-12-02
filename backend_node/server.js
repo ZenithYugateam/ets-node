@@ -585,6 +585,7 @@ app.post("/api/tasks3", async (req, res) => {
 app.get("/api/tasks", async (req, res) => {
   try {
     const tasks = await Task.find()
+      .sort({ _id: -1 })
       .populate("assignee.userId", "name")
       .populate("createdBy", "name");
     res.json(tasks);
