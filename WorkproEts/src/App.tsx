@@ -1,21 +1,22 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
-import EmployeeDashboard from './pages/EmployeeDashboard';
-import ManagerDashboard from './pages/ManagerDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import Timesheets from './pages/Timesheets';
-import LoginForm from './pages/Login';
-import ErrorBoundary from './components/ErrorBoundary';
-import Profile from './pages/Profile'; // Import Profile component
-import PrivateRoute from './components/PrivateRoute';
-import { AuthProvider } from './AuthContext';
-import LeaveApprovals from './components/shared/LeaveApprovals';
-import EmployeeLeaveManagement from './components/employee/EmployeeLeaveManagement';
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
+import LeaveRequests from "./components/LeaveRequests";
+import EmployeeDashboard from "./pages/EmployeeDashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import Timesheets from "./pages/Timesheets";
+import LoginForm from "./pages/Login";
+import ErrorBoundary from "./components/ErrorBoundary";
+import Profile from "./pages/Profile"; // Import Profile component
+import PrivateRoute from "./components/PrivateRoute";
+import { AuthProvider } from "./AuthContext";
+import LeaveApprovals from "./components/shared/LeaveApprovals";
+import EmployeeLeaveManagement from "./components/employee/EmployeeLeaveManagement";
 
-const CURRENT_USER_ROLE = 'employee';
-const adminId = '647f1f77bcf86cd799439011';
+const CURRENT_USER_ROLE = "employee";
+const adminId = "647f1f77bcf86cd799439011";
 
 // Layout Component
 /**
@@ -43,9 +44,8 @@ function App() {
             <Routes>
               {/* Public Route: Login */}
               <Route path="/" element={<LoginForm />} />
-
-              <Route path="/profile" element={<Profile />} /> {/* Add Profile Route */}
-
+              <Route path="/profile" element={<Profile />} />{" "}
+              {/* Add Profile Route */}
               {/* Private Route: Admin */}
               <Route
                 path="/admin"
@@ -87,6 +87,18 @@ function App() {
                   <PrivateRoute requiredRoles={["Employee"]}>
                     <Layout>
                       <EmployeeDashboard />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/leave-requests"
+                element={
+                  <PrivateRoute
+                    requiredRoles={["Admin", "Manager", "Employee"]}
+                  >
+                    <Layout>
+                      <LeaveRequests />
                     </Layout>
                   </PrivateRoute>
                 }
