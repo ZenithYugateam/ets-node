@@ -352,7 +352,7 @@ const UserManagement = () => {
           prevUsers.map((user) => (user._id === data._id ? data : user))
         );
       } else {
-        setUsers((prevUsers) => [...prevUsers, data]);
+        setUsers((prevUsers) => [data, ...prevUsers]);
       }
 
       toast.success(
