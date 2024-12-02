@@ -2,29 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { Clock, LogIn, LogOut, Pause, Play } from 'lucide-react';
 import { format } from 'date-fns';
 
-const TimeCard = () => {
+const TimeCard = ({ userId }: { userId: string }) => {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isOnBreak, setIsOnBreak] = useState(false);
   const [checkInTime, setCheckInTime] = useState<Date | null>(null);
   const [duration, setDuration] = useState<number>(0);
+  const [breakStartTime, setBreakStartTime] = useState<Date | null>(null);
+  const [totalPausedDuration, setTotalPausedDuration] = useState<number>(0);
   const [breakReason, setBreakReason] = useState('');
-  const userId = '673ba544bbb7e127b3004d98'; // Replace with actual user ID
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
+
     if (isCheckedIn && checkInTime && !isOnBreak) {
       interval = setInterval(() => {
         const now = new Date();
-        setDuration(now.getTime() - checkInTime.getTime());
+        const elapsedTime = now.getTime() - checkInTime.getTime();
+        const workingTime = elapsedTime - totalPausedDuration; // Subtract paused time
+        setDuration(workingTime);
       }, 1000);
-    } else {
-      clearInterval(interval);
     }
 
     return () => clearInterval(interval);
-  }, [isCheckedIn, checkInTime, isOnBreak]);
+  }, [isCheckedIn, checkInTime, isOnBreak, totalPausedDuration]);
 
   const handleCheckIn = async () => {
+    const now = new Date();
+
     try {
       const response = await fetch('http://localhost:5000/api/timelog/checkin', {
         method: 'POST',
@@ -34,12 +38,12 @@ const TimeCard = () => {
         body: JSON.stringify({ userId }),
       });
 
-      const data = await response.json();
       if (response.ok) {
-        setCheckInTime(new Date(data.timeLog.checkIn));
+        setCheckInTime(now);
         setIsCheckedIn(true);
-      } else {
-        console.error('Error:', data.message);
+        setDuration(0);
+        setTotalPausedDuration(0); // Reset pause duration on check-in
+        setBreakStartTime(null);
       }
     } catch (err) {
       console.error('Error during check-in:', err);
@@ -56,14 +60,13 @@ const TimeCard = () => {
         body: JSON.stringify({ userId }),
       });
 
-      const data = await response.json();
       if (response.ok) {
         setIsCheckedIn(false);
+        setIsOnBreak(false);
         setDuration(0);
         setCheckInTime(null);
-        console.log('Checked out successfully:', data.timeLog);
-      } else {
-        console.error('Error:', data.message);
+        setBreakStartTime(null);
+        setTotalPausedDuration(0);
       }
     } catch (err) {
       console.error('Error during check-out:', err);
@@ -71,6 +74,10 @@ const TimeCard = () => {
   };
 
   const handleStartBreak = async () => {
+    if (isOnBreak) return;
+
+    const now = new Date();
+
     try {
       const response = await fetch('http://localhost:5000/api/timelog/start-break', {
         method: 'POST',
@@ -80,20 +87,20 @@ const TimeCard = () => {
         body: JSON.stringify({ userId, reason: breakReason }),
       });
 
-      const data = await response.json();
       if (response.ok) {
+        setBreakStartTime(now); // Record break start time
         setIsOnBreak(true);
-        setBreakReason('');
-        console.log('Break started:', data.timeLog);
-      } else {
-        console.error('Error:', data.message);
       }
     } catch (err) {
-      console.error('Error starting break:', err);
+      console.error('Error during start break:', err);
     }
   };
 
   const handleEndBreak = async () => {
+    if (!isOnBreak || !breakStartTime) return;
+
+    const now = new Date();
+
     try {
       const response = await fetch('http://localhost:5000/api/timelog/end-break', {
         method: 'POST',
@@ -103,15 +110,14 @@ const TimeCard = () => {
         body: JSON.stringify({ userId }),
       });
 
-      const data = await response.json();
       if (response.ok) {
+        const pausedDuration = now.getTime() - breakStartTime.getTime(); // Calculate paused duration
+        setTotalPausedDuration((prev) => prev + pausedDuration); // Add paused duration to total
+        setBreakStartTime(null);
         setIsOnBreak(false);
-        console.log('Break ended:', data.timeLog);
-      } else {
-        console.error('Error:', data.message);
       }
     } catch (err) {
-      console.error('Error ending break:', err);
+      console.error('Error during end break:', err);
     }
   };
 
@@ -148,7 +154,7 @@ const TimeCard = () => {
           <p className={`text-lg font-semibold ${isCheckedIn ? 'text-green-600' : 'text-red-600'}`}>
             {isCheckedIn ? (isOnBreak ? 'On Break' : 'Working') : 'Checked Out'}
           </p>
-          {isCheckedIn && checkInTime && !isOnBreak && (
+          {isCheckedIn && checkInTime && (
             <p className="text-sm text-gray-500 mt-1">Working for {formatDuration(duration)}</p>
           )}
         </div>
