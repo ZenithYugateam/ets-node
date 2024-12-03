@@ -115,15 +115,12 @@ app.post("/api/usersData_total", async (req, res) => {
   try {
     let userId = req.body;
 
-    console.log("user id  .......", userId);
-
     const user = await User.findById(mongoose.Types.ObjectId(userId));
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Return the name of the user
     res.json({ name: user.name });
   } catch (error) {
     console.error(error);
@@ -199,13 +196,11 @@ const LeaveRequest = mongoose.model("LeaveRequest", leaveRequestSchema);
 app.post("/api/leave-requests", async (req, res) => {
   try {
     const { type, startDate, endDate, reason, userid, username } = req.body;
-    console.log("stage one sucesss.............." + req.body);
 
     if (new Date(startDate) > new Date(endDate)) {
       return res.status(400).send("End date cannot be earlier than start date");
     }
-    console.log("stage 2nd sucesss.............." + req.body);
-
+   
     const newLeaveRequest = new LeaveRequest({
       type,
       startDate,
@@ -215,11 +210,9 @@ app.post("/api/leave-requests", async (req, res) => {
       status: "pending",
       username: username,
     });
-    console.log("stage 3nd sucesss.............." + newLeaveRequest);
+
     await newLeaveRequest.save();
-    console.log("stage one sucesss.............." + newLeaveRequest);
     res.status(201).send(newLeaveRequest);
-    console.log("stage second sucesss.............." + newLeaveRequest);
   } catch (error) {
     res.status(500).send(`Error creating leave request: ${error.message}`);
   }
@@ -248,15 +241,12 @@ app.patch("/api/leave-requests/:id/status", async (req, res) => {
     if (!["approved", "rejected", "pending"].includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
-    console.log("ioiioi");
-
+   
     const leaveRequest = await LeaveRequest.findByIdAndUpdate(
       id,
       { status },
       { new: true }
     );
-
-    console.log("leave requesr ", leaveRequest);
 
     if (!leaveRequest) {
       return res.status(404).json({ error: "Leave request not found" });
@@ -267,13 +257,11 @@ app.patch("/api/leave-requests/:id/status", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-// DELETE API for deleting a leave request by ID
+
+
 app.delete("/api/leave-requests/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Log the received ID for debugging
-    console.log("Deleting leave request with ID:", id);
 
     // Validate if the provided ID is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -312,25 +300,16 @@ const User = mongoose.model("users", userSchema);
 
 app.get("/api/user/:id", async (req, res) => {
   const { id } = req.params;
-
-  console.log("tyuiouytyuiuytyuioiuyu.......////////" + id);
-
   // Validate the MongoDB ObjectId format
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "Invalid user ID format" });
   }
 
-  console.log("tyuiouytyuiuytyuioiuyu.......////////" + id);
-
   try {
     const user = await User.findById(id);
 
-    console.log("sdhfsfh" + user);
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
-
-      console.log("ffffffffffffffff////////" + id);
     }
 
     return res.status(200).json(user);
@@ -368,23 +347,6 @@ app.post("/api/save_entries", async (req, res) => {
   }
 });
 
-// User Routes
-// app.post("/api/users/add", async (req, res) => {
-//   console.log("response from the server : " + req.body);
-//   try {
-//     const user = new User(req.body);
-//     let result = await user.save();
-//     console.log("give me update");
-//     return res.status(200).send(result);
-//   } catch (error) {
-//     res.status(400).send(error);
-//   }
-// });
-
-// Add this to your existing routes// Update your existing department route
-// Adjust path as needed
-
-// Route to get managers by department
 app.get("/users/managers/:departmentName", async (req, res) => {
   try {
     const { departmentName } = req.params;
@@ -490,7 +452,6 @@ app.patch("/api/usersData/:userId", async (req, res) => {
   const { userId } = req.params;
   const { newPassword } = req.body;
 
-  console.log(newPassword, " ", userId);
   try {
     // Find the user by userId and update the password
     const updatedUser = await User.findByIdAndUpdate(
@@ -610,11 +571,7 @@ app.put("/api/tasks/:taskId", async (req, res) => {
 app.post("/api/tasks3", async (req, res) => {
   try {
     const task4 = new Task(req.body);
-    console.log("fetched succuesfully ", task4);
-
     await task4.save();
-    console.log("Received task data:", req.body);
-    console.log("task done", task4);
     res.status(201).json(task4);
   } catch (error) {
     res.status(400).json({ error: "Failed to create task" });
@@ -627,7 +584,6 @@ app.get("/api/tasks", async (req, res) => {
       .populate("assignee.userId", "name")
       .populate("createdBy", "name");
     res.json(tasks);
-    console.log("Received task data:", req.body);
   } catch (error) {
     console.error("Error fetching tasks:", error);
     res.status(500).json({ error: "Failed to fetch tasks" });
@@ -923,12 +879,10 @@ app.get("/api/timelog/:userId", async (req, res) => {
 // Login Route
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
-  console.log(email, password);
 
   try {
     // Find user by email
     const user = await User.findOne({ email });
-    console.log(user);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -1102,7 +1056,6 @@ app.post("/api/get-task-by-manager-name", async (req, res) => {
   try {
     const tasks = await ManagerTask.find({ managerName })
     .sort({'_id' : -1});
-    console.log("tasks")
     res.status(200).json(tasks);
 
   }catch(error) {

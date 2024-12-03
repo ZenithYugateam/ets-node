@@ -130,7 +130,6 @@ const ManagerDashboard = () => {
       {/* Task Sections */}
       <div className="space-y-6">
         <TaskManager />
-        <TaskManagement />
         <AddTaskManagements />
       </div>
     </div>
