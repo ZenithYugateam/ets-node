@@ -1,0 +1,16 @@
+const mongoose = require("mongoose");
+
+const ManagerTaskSchema = new mongoose.Schema({
+  projectName: { type: String, required: true },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true },
+  taskName: { type: String, required: true },
+  employeeName: { type: String, required: true },
+  priority: { type: String, enum: ["Low", "Medium", "High"], required: true },
+  deadline: { type: Date, required: true },
+  description: { type: String, required: true },
+  managerName: { type: String, required: true },
+  status : {type : String, required: true}
+});
+
+
+module.exports = mongoose.model("ManagerTask", ManagerTaskSchema);

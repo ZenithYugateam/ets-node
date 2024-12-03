@@ -32,9 +32,8 @@ interface Task {
 const TaskManager: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // Access the manager's ID from AuthContext
   const authContext = useContext<AuthContextType>(AuthContext);
-  const managerId = authContext.userId; // Ensure 'userId' exists on AuthContextType
+  const managerId = authContext.userId; 
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -82,7 +81,6 @@ const TaskManager: React.FC = () => {
           <table className="min-w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                {/* Table Headers */}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Project
                 </th>

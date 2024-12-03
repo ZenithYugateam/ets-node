@@ -43,10 +43,9 @@ const ProjectManagement = () => {
     }
   });
 
-  // Fetch departments directly from the endpoint
-  // Fetch departments directly from the endpoint
+  
   const {
-    data: departmentsData = [], // Provide default empty array
+    data: departmentsData = [], 
     isLoading: departmentsLoading,
     error: departmentsError,
   } = useQuery("departments", async () => {

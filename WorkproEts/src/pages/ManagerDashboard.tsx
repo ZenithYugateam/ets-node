@@ -5,6 +5,7 @@ import TaskManager from '../components/manager/TaskManager';
 import PerformanceOverview from '../components/manager/PerformanceOverview';
 import TaskManagement from '../components/admin/TaskManagement';
 import { useNavigate } from 'react-router-dom';
+import AddTaskManagements from '../components/manager/AddTaskManagements';
 
 const ManagerDashboard = () => {
   const [managerName, setManagerName] = useState<string | null>('Manager');
@@ -130,6 +131,7 @@ const ManagerDashboard = () => {
       <div className="space-y-6">
         <TaskManager />
         <TaskManagement />
+        <AddTaskManagements />
       </div>
     </div>
   );
