@@ -1,6 +1,10 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const bodyParser = require("body-parser");
+const ManagerTask = require("./Models/ManagerTask");
 
 const app = express();
 app.use(cors());
@@ -64,7 +68,7 @@ const departmentSchema = new mongoose.Schema({
   },
 });
 
-// Define the Department model
+
 const Department = mongoose.model("Department", departmentSchema);
 
 const userSchema = new mongoose.Schema({
@@ -81,6 +85,7 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
+
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   assignee: {
@@ -240,12 +245,6 @@ app.patch("/api/leave-requests/:id/status", async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    console.log(
-      ".......................................................",
-      id + " ",
-      status
-    );
-
     if (!["approved", "rejected", "pending"].includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
@@ -298,8 +297,6 @@ app.delete("/api/leave-requests/:id", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-const bodyParser = require("body-parser");
 
 app.use((req, res, next) => {
   if (["POST", "PUT", "PATCH"].includes(req.method)) {
@@ -689,8 +686,6 @@ app.get("/api/tasks/assignee/:userId", async (req, res) => {
   }
 });
 
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
 
 // Time Log Schema
 const timeLogSchema = new mongoose.Schema({
@@ -1052,6 +1047,69 @@ app.post("/api/timesheets/save_entries", async (req, res) => {
       .json({ message: "Error saving timesheets", error: error.message });
   }
 });
+
+app.post("/api/getAllProjectNamesForEmployee", async (req, res) => {
+  const { userId } = req.body;
+  try {
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid or missing userId" });
+    }
+
+    const tasks = await Task.find({ "assignee.userId": userId })
+    .select("title")
+    .populate("assignee.userId", "name");
+
+
+    if (!tasks || tasks.length === 0) {
+      return res.status(404).json({ message: "No projects found for the given userId" });
+    }
+
+    res.status(200).json(tasks);
+  } catch (err) {
+    console.error("Error getting project names:", err.message);
+    res.status(500).json({ message: "Error getting project names", error: err.message });
+  }
+});
+
+app.post('/api/employees-by-manager', async (req, res) => {
+  const { managerName } = req.body; 
+  try {
+    const employees = await User.find({
+      role: 'Employee',
+      manager: managerName,
+    }).select('name email department'); 
+    res.status(200).json(employees);
+  } catch (err) {
+    console.error('Error fetching employees:', err.message);
+    res.status(500).json({ message: 'Error fetching employees', error: err.message });
+  }
+});
+
+app.post("/api/store-form-data", async (req, res) => {
+  try {
+    const newTask = new ManagerTask(req.body);
+    const savedTask = await newTask.save();
+
+    res.status(201).json({ message: "Task saved successfully", data: savedTask });
+  } catch (error) {
+    console.error("Error saving task:", error.message);
+    res.status(500).json({ message: "Error saving task", error: error.message });
+  }
+});
+
+app.post("/api/get-task-by-manager-name", async (req, res) => {
+  const { managerName } = req.body;
+  try {
+    const tasks = await ManagerTask.find({ managerName })
+    .sort({'_id' : -1});
+    console.log("tasks")
+    res.status(200).json(tasks);
+
+  }catch(error) {
+    console.error("Error getting task by manager name:", error.message);
+    res.status(500).json({ message: "Error getting task by manager name", error: error.message });
+  }
+})
 
 const PORT = 5000;
 app.listen(PORT, () =>
