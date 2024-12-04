@@ -892,7 +892,6 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Generate JWT
     const token = jwt.sign(
       { id: user._id, role: user.role },
       "your_secret_key", // Replace with an environment variable in production
@@ -1107,6 +1106,61 @@ app.get('/api/remarks/:id', async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+app.post("/api/tasks/employee", async (req, res) => {
+  const { employeeName } = req.body;
+  try {
+    const tasks = await ManagerTask.find({ employeeName });
+    if (!tasks || tasks.length === 0) {
+      return res.status(404).json({ message: "No tasks found for this employee." });
+    }
+    res.status(200).json(tasks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
+});
+
+app.put("/api/Employee/notes", async (req, res) => {
+  try {
+    const {id,  note } = req.body;
+
+    if (!note || typeof note !== 'string') {
+      return res.status(400).json({ message: "Note cannot be empty and must be a valid string" });
+    }
+
+    const updatedTask = await ManagerTask.findByIdAndUpdate(
+      id,
+      { $push: { notes: note } }, 
+      { new: true } 
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.post('/api/employeeNotes',async(req, res) =>{ 
+  const {id } = req.body;
+  try{
+    const notes = await ManagerTask.findById(id, { notes: 1 });
+
+    if (!notes) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.status(200).json({ notes: notes.notes });
+  }catch(error){
+    console.error("Error fetching max listeners:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+})
+
 
 
 const PORT = 5000;
