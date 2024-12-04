@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const ManagerTaskSchema = new mongoose.Schema({
   projectName: { type: String, required: true },
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true },
@@ -9,7 +8,8 @@ const ManagerTaskSchema = new mongoose.Schema({
   deadline: { type: Date, required: true },
   description: { type: String, required: true },
   managerName: { type: String, required: true },
-  status : {type : String, required: true}
+  status : {type : String, required: true},
+  remarks: { type: [String], required: false, default: []},
 });
 
 

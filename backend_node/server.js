@@ -1064,6 +1064,51 @@ app.post("/api/get-task-by-manager-name", async (req, res) => {
   }
 })
 
+app.put("/api/update-remarks/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { remarks } = req.body;
+
+    if (!remarks) {
+      return res.status(400).json({ message: "Remarks cannot be empty" });
+    }
+
+    const updatedTask = await ManagerTask.findByIdAndUpdate(
+      id,
+      { $push: { remarks: remarks } }, 
+      { new: true }
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get('/api/remarks/:id', async (req, res) => {
+  try {
+    const { id } = req.params; 
+
+    const task = await ManagerTask.findById(id, { remarks: 1 });
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.status(200).json({ remarks: task.remarks });
+
+  } catch (error) {
+    console.error("Error fetching remarks:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 const PORT = 5000;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
