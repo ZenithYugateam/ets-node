@@ -1,24 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { getUserData } from '../api/admin'; // Ensure this function exists and is implemented correctly
-import TimeCard from '../components/TimeCard'; // Ensure these imports are correct
-import TaskManagement from '../components/admin/TaskManagement';
-import TaskEmployee from '../components/employee/taskemployee'; // Updated and corrected path
+import { useEffect, useState } from 'react';
+import { getUserData } from '../api/admin'; 
+import TimeCard from '../components/TimeCard'; 
+import TaskViewEmployee from '../components/employee/TaskViewEmployee';
 
 const EmployeeDashboard = () => {
-  const [username, setUserName] = useState<string>(''); // `string` type annotation is optional in TypeScript if type inference works.
+  const [username, setUserName] = useState<string>(''); 
 
-  // Fetch user data
   const getData = async () => {
     try {
-      const userId = sessionStorage.getItem('userId'); // Fetch `userId` from sessionStorage
+      const userId = sessionStorage.getItem('userId'); 
       if (!userId) {
         throw new Error('User ID not found in session storage');
       }
 
-      const response = await getUserData(userId); // Ensure `getUserData` is implemented correctly and returns the expected structure
+      const response = await getUserData(userId); 
 
       if (response && response.name) {
-        setUserName(response.name); // Set the username
+        setUserName(response.name); 
       } else {
         throw new Error('Invalid user data received');
       }
@@ -27,14 +25,12 @@ const EmployeeDashboard = () => {
     }
   };
 
-  // Fetch user data when the component mounts
   useEffect(() => {
     getData();
-  }, []); // Empty dependency array ensures it only runs once
+  }, []); 
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">
           Welcome, {username || 'User'}!
@@ -46,8 +42,9 @@ const EmployeeDashboard = () => {
         <TimeCard userId={sessionStorage.getItem('userId')} />
       </div>
 
-      {/* Task Management Section */}
-      <TaskEmployee /> {/* Correct usage of the component */}
+      <div className="overflow-x-auto">
+        <TaskViewEmployee /> 
+      </div>
     </div>
   );
 };

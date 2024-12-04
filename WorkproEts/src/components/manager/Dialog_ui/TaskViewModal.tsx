@@ -20,6 +20,7 @@ interface Task {
   status: Status;
   description: string;
   remarks: string[];
+  notes: string[]; 
 }
 
 interface TaskViewModalProps {
@@ -57,7 +58,6 @@ const priorityStyles = {
   Medium: "bg-amber-100 text-amber-700 hover:bg-amber-100",
   Low: "bg-green-100 text-green-700 hover:bg-green-100",
 } as const;
-
 
 export function TaskDetailItem({ label, value, valueColor, className }: TaskDetailItemProps) {
   return (
@@ -101,16 +101,29 @@ export function TaskPriorityBadge({ priority, className }: TaskPriorityBadgeProp
 export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProps) {
   const [message, setMessage] = useState<string>("");
   const [remarks, setRemarks] = useState<string[]>([]);
+  const [notes, setNotes] = useState<string[]>([]);  // Add state for notes
 
   useEffect(() => {
     if (open && taskId) {
+      // Fetch remarks
       axios
         .get(`http://localhost:5000/api/remarks/${taskId}`)
         .then((response) => {
-          setRemarks(response.data.remarks); 
+          setRemarks(response.data.remarks);
         })
         .catch((error) => {
           console.error("Error fetching remarks:", error);
+        });
+
+      axios
+        .post(`http://localhost:5000/api/employeeNotes`,{
+          id : taskId
+        })  
+        .then((response) => {
+          setNotes(response.data.notes);  
+        })
+        .catch((error) => {
+          console.error("Error fetching notes:", error);
         });
     }
   }, [open, taskId]);
@@ -195,6 +208,21 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
                     remarks.map((remark, index) => (
                       <div key={index} className="p-2 bg-gray-100 rounded-md">
                         <p>{remark}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-muted-foreground">Notes</span>
+                <div className="space-y-2">
+                  {notes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No notes yet</p>
+                  ) : (
+                    notes.map((note, index) => (
+                      <div key={index} className="p-2 bg-gray-100 rounded-md">
+                        <p>{note}</p>
                       </div>
                     ))
                   )}
