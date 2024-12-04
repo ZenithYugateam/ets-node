@@ -1,27 +1,35 @@
 import {
-    Box,
-    Button,
-    FormControl,
-    MenuItem,
-    Modal,
-    Select,
-    SelectChangeEvent,
-    TextField,
-    Typography
+  Box,
+  Button,
+  FormControl,
+  MenuItem,
+  Modal,
+  Select,
+  SelectChangeEvent,
+  TextField,
+  Typography
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import axios from "axios";
-import { Clock, Plus } from "lucide-react";
+import { Clock, Eye, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-  
+import { TaskViewModal } from "./Dialog_ui/TaskViewModal";
   const AddTaskManagements: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [projects, setProjects] = useState<any[]>([]);
     const [employees, setEmployees] = useState<any[]>([]);
     const [taskManagerData, setManagerTaskData] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
+    const [selectedTask, setSelectedTask] = useState<any | null>(null);
+    const [isViewModalOpen, setIsViewModalOpen] = useState<boolean>(false);
+    const [taskId , setTaskId] = useState<string>("");
+
+    const handleViewTask = (task: any) => {
+      setSelectedTask(task);
+      setIsViewModalOpen(true);  
+    };
   
     const initialFormData = {
       projectName: "",
@@ -87,6 +95,25 @@ import "react-toastify/dist/ReactToastify.css";
           >
             {params.value}
           </span>
+        ),
+      },
+      {
+        field: "action",
+        headerName: "Action",
+        width: 120,
+        renderCell: (params) => ( 
+          <Button
+            variant="contained"
+            startIcon={<Eye />}
+            onClick={() => {
+              handleViewTask(params.row)
+              setIsViewModalOpen(true)
+              setTaskId(params.row.id)
+            }
+            }
+          >
+            View
+          </Button>
         ),
       },
     ];
@@ -202,7 +229,7 @@ import "react-toastify/dist/ReactToastify.css";
         toast.error("Failed to add task");
       }
     };
-  
+
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <ToastContainer />
@@ -363,6 +390,13 @@ import "react-toastify/dist/ReactToastify.css";
             </form>
           </Box>
         </Modal>
+
+      <TaskViewModal
+          task={selectedTask}
+          open={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
+          taskId = {taskId}
+        />
       </div>
     );
   };
