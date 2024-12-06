@@ -53,9 +53,24 @@ function App() {
                   <PrivateRoute requiredRoles={["Admin"]}>
                     <Layout>
                       <AdminDashboard />
-                      <div className="max-w-7xl mx-auto">
+                      {/* <div className="max-w-7xl mx-auto">
                         <h1 className="text-2xl font-bold text-gray-900 mb-6">
                           Leave Management Dashboard
+                        </h1> */}
+                        {/* <LeaveApprovals adminId={adminId} /> */}
+                      {/* </div> */}
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/leave-approvals"
+                element={
+                  <PrivateRoute requiredRoles={["Admin"]}>
+                    <Layout>
+                      <div className="max-w-7xl mx-auto">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+                          Leave Approvals Dashboard
                         </h1>
                         <LeaveApprovals adminId={adminId} />
                       </div>
@@ -94,9 +109,7 @@ function App() {
               <Route
                 path="/leave-requests"
                 element={
-                  <PrivateRoute
-                    requiredRoles={["Admin", "Manager", "Employee"]}
-                  >
+                  <PrivateRoute requiredRoles={["Manager", "Employee"]}>
                     <Layout>
                       <LeaveRequests />
                     </Layout>

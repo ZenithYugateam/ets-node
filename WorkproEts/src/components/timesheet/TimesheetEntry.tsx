@@ -21,6 +21,7 @@ const TimesheetEntry: React.FC = () => {
       const response = await fetch('http://localhost:5000/api/timesheets');
       if (!response.ok) {
         throw new Error('Failed to fetch timesheets');
+
       }
       const data = await response.json();
       setTimesheets(data);
