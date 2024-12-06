@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 const ManagerTask = require("./Models/ManagerTask");
+const Worksheet = require("./Models/Worksheet")
 
 const app = express();
 app.use(cors());
@@ -114,6 +115,7 @@ const taskSchema = new mongoose.Schema({
 app.post("/api/usersData_total", async (req, res) => {
   try {
     let userId = req.body;
+    console.log("......",userId);
 
     const user = await User.findById(mongoose.Types.ObjectId(userId));
 
@@ -1161,6 +1163,87 @@ app.post('/api/employeeNotes',async(req, res) =>{
   }
 })
 
+app.post('/api/worksheets', async (req, res) => {
+  try {
+
+    const { assign_name, role, assign_to, date, worksheetTitle, worksheetDescription } = req.body;
+    
+    if (!assign_name || !role || !date || !worksheetTitle || !worksheetDescription) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const newWorksheet = new Worksheet({
+      assign_name,
+      role,
+      assign_to,
+      date : new Date(),
+      worksheetTitle,
+      worksheetDescription,
+    });
+
+    const savedWorksheet = await newWorksheet.save();
+    res.status(201).json({ message: 'Worksheet saved successfully', data: savedWorksheet });
+  } catch (error) {
+    console.error('Error saving worksheet:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+app.get('/api/user/:id', async (req, res) => {
+  try {
+    
+    const userId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.post('/api/worksheetsData', async (req, res) => {
+  const { assign_name } = req.body;
+  try {
+    const worksheets = await Worksheet.find({ assign_name: assign_name });
+   
+    if (worksheets.length === 0) {
+      return res.status(400).json({ message: 'No worksheets found for this assign_name' });
+    }
+
+    res.status(200).json(worksheets);
+  } catch (err) {
+    console.error('Error fetching worksheets:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.post('/api/worksheets/manager', async (req, res) => {
+  const { assign_to } = req.body;  // Destructure the assign_to from the body
+  console.log(assign_to);  // Check the value of assign_to
+
+  try {
+    // Fetch worksheets where assign_to matches the value
+    const worksheets = await Worksheet.find({
+      assign_to: assign_to  // Use the assign_to value directly
+    });
+
+    if (worksheets.length === 0) {
+      return res.status(404).json({ message: 'No worksheets found for the given criteria.' });
+    }
+
+    return res.status(200).json(worksheets);
+  } catch (err) {
+    console.error('Error fetching worksheets:', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
 
 
 const PORT = 5000;

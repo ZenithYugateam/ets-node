@@ -14,6 +14,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./AuthContext";
 import LeaveApprovals from "./components/shared/LeaveApprovals";
 import EmployeeLeaveManagement from "./components/employee/EmployeeLeaveManagement";
+import WorksheetManagement from "./components/employee/WorksheetManagement";
 
 const CURRENT_USER_ROLE = "employee";
 const adminId = "647f1f77bcf86cd799439011";
@@ -42,11 +43,8 @@ function App() {
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Routes>
-              {/* Public Route: Login */}
               <Route path="/" element={<LoginForm />} />
               <Route path="/profile" element={<Profile />} />{" "}
-              {/* Add Profile Route */}
-              {/* Private Route: Admin */}
               <Route
                 path="/admin"
                 element={
@@ -78,7 +76,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              {/* Private Route: Manager */}
               <Route
                 path="/manager"
                 element={
@@ -95,7 +92,6 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              {/* Private Route: Employee */}
               <Route
                 path="/employee"
                 element={
@@ -116,7 +112,18 @@ function App() {
                   </PrivateRoute>
                 }
               />
-              {/* Shared Route: Timesheets */}
+              <Route
+                path="/work-sheets"
+                element={
+                  <PrivateRoute
+                    requiredRoles={["Admin", "Manager", "Employee"]}
+                  >
+                    <Layout>
+                      <WorksheetManagement />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
               <Route
                 path="/timesheets"
                 element={
