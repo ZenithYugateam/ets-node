@@ -158,11 +158,11 @@ const AdminDashboard = () => {
       {/* Admin components */}
       <UserManagement adminId={localStorage.getItem('userId')} />
       {/* <LeaveApprovals/> */}
-      <LeaveApprovals adminId={localStorage.getItem('userId')} />
+      {/* <LeaveApprovals adminId={localStorage.getItem('userId')} /> */}
       
        {/* <LeaveApprovals /> */}
       <ProjectManagement />
-      <ActivityLogs />
+    
     </div>
   );
 };
