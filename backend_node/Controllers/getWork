@@ -1,0 +1,17 @@
+const Worksheet = require('../models/Worksheet'); 
+exports.getManagerEmptyAssigned = async (req, res) => {
+
+  const name = req.body;
+  try { 
+    const worksheets = await Worksheet.find({
+      assign_to: name  
+    });
+    if (worksheets.length === 0) {
+      return res.status(404).json({ message: 'No worksheets found for the given criteria.' });
+    }
+    return res.status(200).json(worksheets);
+  } catch (err) {
+    console.error('Error fetching worksheets:', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};

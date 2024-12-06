@@ -1,18 +1,20 @@
+import { Button as MuiButton } from '@mui/material';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import axios from 'axios';
+import { format } from 'date-fns';
 import React, { useEffect, useState } from 'react';
-import { cn } from "../../lib/utils";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { Separator } from "../../../src/ui/Separator";
+import { cn } from "../../lib/utils";
 import { Badge } from "../../ui/badge";
 import { Button } from "../../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog";
 import { ScrollArea } from "../../ui/scroll-area";
-import { format } from 'date-fns';
-import { Button as MuiButton } from '@mui/material';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import UpdateStatusModal from './UpdateStatusModal';
+import EditIcon from '@mui/icons-material/Edit';
 
 type Priority = 'Low' | 'Medium' | 'High';
 type Status = 'Completed' | 'In Progress' | 'Pending';
@@ -102,18 +104,23 @@ const TaskViewEmployee: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [userName, setUserName] = useState<string | null>(sessionStorage.getItem('userName'));
-  const [selectedRows, setSelectedRows] = useState<string[]>([]); // Track selected row IDs
+  const [selectedRows, setSelectedRows] = useState<string[]>([]); 
   const [openDialog, setOpenDialog] = useState<boolean>(false); 
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null); // Store selected task for modal
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null); 
   const [remarks, setRemarks] = useState<string[]>([]); 
   const [newRemark, setNewRemark] = useState<string>(''); 
-  const [message, setMessage] = useState<string>("");
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [selectedTaskForStatus, setSelectedTaskForStatus] = useState<Task | null>(null);
+
+  const handleStatusChange = (task: Task) => {
+    setSelectedTaskForStatus(task);
+    setStatusModalOpen(true);
+  };
 
   const fetchTasks = async (employeeName: string) => {
     setLoading(true);
     try {
       const response = await axios.post('http://localhost:5000/api/tasks/employee', { employeeName });
-      console.log('Fetched tasks: ', response.data);
       setTasks(response.data);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -146,6 +153,7 @@ const TaskViewEmployee: React.FC = () => {
     fetchRemarks(task._id);
     setOpenDialog(true);   
   };
+
 
   const handleCloseDialog = () => {
     setOpenDialog(false);  
@@ -189,13 +197,13 @@ const TaskViewEmployee: React.FC = () => {
   };
 
   const columns: GridColDef[] = [
-    { field: 'projectName', headerName: 'Project Name', width: 200 },
-    { field: 'taskName', headerName: 'Task Name', width: 200 },
-    { field: 'priority', headerName: 'Priority', width: 120 },
+    { field: 'projectName', headerName: 'Project Name', flex: 2 },
+    { field: 'taskName', headerName: 'Task Name', flex: 2 },
+    { field: 'priority', headerName: 'Priority', flex: 1 },
     {
       field: 'status',
       headerName: 'Status',
-      width: 150,
+      flex: 1.5,
       renderCell: (params) => {
         const status = params.value;
         const statusStyles = {
@@ -217,13 +225,13 @@ const TaskViewEmployee: React.FC = () => {
     {
       field: 'remarks',
       headerName: 'Remarks',
-      width: 300,
+      flex: 2.7,
       renderCell: (params) => (params.value && params.value.length > 0 ? params.value.join(', ') : 'No Remarks'),
     },
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 150,
+      flex: 1.5,
       renderCell: (params) => (
         <MuiButton
           variant="outlined"
@@ -242,12 +250,28 @@ const TaskViewEmployee: React.FC = () => {
           Add Note →
         </MuiButton>
       ),
+    },
+    {
+      field: 'updateStatus',
+      headerName: 'Update Status',
+      flex: 1.5,
+      renderCell: (params) => (
+        <MuiButton
+          variant="outlined"
+          color="secondary"
+          onClick={() => handleStatusChange(params.row)}
+        >
+          <EditIcon />
+        </MuiButton>
+      ),
     }
+    
         
   ];
 
   return (
-    <div style={{ height: 400, width: '100%' }}>
+    <div className="overflow-hidden rounded-lg shadow-md">
+      <div className="relative h-96 overflow-x-auto">
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
           <CircularProgress />
@@ -262,16 +286,20 @@ const TaskViewEmployee: React.FC = () => {
           onSelectionModelChange={(newSelection) => handleRowSelection(newSelection)}
           selectionModel={selectedRows}
           sx={{
-            "& .MuiDataGrid-columnHeaders": {
-              backgroundColor: "#f0f4f8", 
-              color: "#333", 
+            '& .MuiDataGrid-root': {
+              overflowX: 'auto', // Ensure horizontal scroll
             },
-            "& .MuiDataGrid-columnHeaderTitle": {
-              fontWeight: "bold", 
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: '#f0f4f8',
+              color: '#333',
+            },
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 'bold',
             },
           }}
         />
       )}
+      </div>
 
       {/* Task Details Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
@@ -414,6 +442,18 @@ const TaskViewEmployee: React.FC = () => {
         draggable
         pauseOnHover
       />
+      <UpdateStatusModal
+      open={statusModalOpen}
+      onClose={() => setStatusModalOpen(false)}
+      taskId={selectedTaskForStatus?._id || ""}
+      currentStatus={selectedTaskForStatus?.status || "Pending"}
+      fetchTasks={() => {
+        if (userName) {
+          fetchTasks(userName); // Re-fetch tasks after updating the status
+        }
+      }}
+/>
+
     </div>
   );
 };

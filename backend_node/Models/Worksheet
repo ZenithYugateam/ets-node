@@ -1,0 +1,11 @@
+const mongoose = require('mongoose');
+const WorksheetSchema = new mongoose.Schema({
+  assign_name: { type: String, required: true },
+  role: { type: String, required: true },
+  assign_to: { type: String, required: false , default : "admin" },
+  date: { type: Date, required: true },
+  worksheetTitle: { type: String, required: true },
+  worksheetDescription: { type: String, required: true },
+});
+
+module.exports = mongoose.model('Worksheet', WorksheetSchema);
