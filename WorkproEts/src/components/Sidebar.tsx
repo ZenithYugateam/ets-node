@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { Calendar, ClipboardList, LayoutDashboard } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ClipboardList, Calendar } from 'lucide-react';
 
 const Sidebar = () => {
   const location = useLocation();
   const [role, setRole] = useState(() => {
     const storedRole = sessionStorage.getItem('role');
-    return storedRole ? JSON.parse(storedRole) : null; // Parse role to ensure it's valid
+    return storedRole ? JSON.parse(storedRole) : null; 
   });
 
   useEffect(() => {
     const handleStorageChange = () => {
       const updatedRole = sessionStorage.getItem('role');
-      setRole(updatedRole ? JSON.parse(updatedRole) : null); // Update role dynamically
+      setRole(updatedRole ? JSON.parse(updatedRole) : null); 
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -21,7 +21,7 @@ const Sidebar = () => {
     };
   }, []);
 
-  const dashboardRoute = `/${role || 'default'}`; // Default to '/default' if role is null
+  const dashboardRoute = `/${role || 'default'}`; 
 
   const links = [
     { to: dashboardRoute, icon: LayoutDashboard, label: 'Dashboard' },
@@ -29,6 +29,7 @@ const Sidebar = () => {
     ...(role === 'Admin'
       ? [{ to: '/leave-approvals', icon: Calendar, label: 'Leave Approvals' }]
       : [{ to: '/leave-requests', icon: Calendar, label: 'Leave Requests' }]),
+    { to : '/work-sheets' , icon: ClipboardList, label : 'Worksheet' },
   ];
 
   return (
