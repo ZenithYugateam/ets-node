@@ -1225,13 +1225,12 @@ app.post('/api/worksheetsData', async (req, res) => {
 });
 
 app.post('/api/worksheets/manager', async (req, res) => {
-  const { assign_to } = req.body;  // Destructure the assign_to from the body
-  console.log(assign_to);  // Check the value of assign_to
+  const { assign_to } = req.body;  
+  console.log(assign_to);  
 
   try {
-    // Fetch worksheets where assign_to matches the value
     const worksheets = await Worksheet.find({
-      assign_to: assign_to  // Use the assign_to value directly
+      assign_to: assign_to 
     });
 
     if (worksheets.length === 0) {
@@ -1242,6 +1241,32 @@ app.post('/api/worksheets/manager', async (req, res) => {
   } catch (err) {
     console.error('Error fetching worksheets:', err);
     return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.put("/api/manager-tasks/update-status", async (req, res) => {
+  const { status, id } = req.body; 
+
+  if (!status) {
+    return res.status(400).json({ message: "Status is required" });
+  }
+
+  try {
+    // Update only the status field
+    const updatedTask = await ManagerTask.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true } 
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.status(200).json({ message: "Status updated successfully", updatedTask });
+  } catch (error) {
+    console.error("Error updating status:", error);
+    res.status(500).json({ message: "Internal Server Error", error });
   }
 });
 
