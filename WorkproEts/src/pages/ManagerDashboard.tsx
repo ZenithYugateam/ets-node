@@ -6,6 +6,7 @@ import PerformanceOverview from '../components/manager/PerformanceOverview';
 import TaskManagement from '../components/admin/TaskManagement';
 import { useNavigate } from 'react-router-dom';
 import AddTaskManagements from '../components/manager/AddTaskManagements';
+import TimeCard from '../components/TimeCard';
 
 const ManagerDashboard = () => {
   const [managerName, setManagerName] = useState<string | null>('Manager');
@@ -92,23 +93,23 @@ const ManagerDashboard = () => {
         </div>
         <div className="flex space-x-4">
           {/* Search */}
-          <div className="relative">
+          {/* <div className="relative">
             <input
               type="text"
               placeholder="Search tasks..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
+          </div> */}
 
           {/* New Task Button */}
-          <button
+          {/* <button
             onClick={() => console.log('New Task')}
             className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
             <Plus className="h-5 w-5 mr-2" />
             New Task
-          </button>
+          </button> */}
 
           {/* Logout Button */}
           <button
@@ -122,15 +123,19 @@ const ManagerDashboard = () => {
       </div>
 
       {/* Content Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TeamOverview />
         <PerformanceOverview />
-      </div>
+      </div> */}
 
       {/* Task Sections */}
       <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TimeCard userId={sessionStorage.getItem('userId')} />
+      </div>
         <TaskManager />
         <AddTaskManagements />
+        
       </div>
     </div>
   );

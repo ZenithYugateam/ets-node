@@ -72,8 +72,8 @@ import { TaskViewModal } from "./Dialog_ui/TaskViewModal";
         headerName: "Deadline",
         flex: 1,
         renderCell: (params) => (
-          <div className="flex items-center text-sm text-gray-500">
-            <Clock className="h-4 w-4 mr-1" />
+          <div className="flex items-center text-sm text-gray-500  mt-4">
+            <Clock className="h-4 w-4 mr-1 " />
             {new Date(params.value).toLocaleDateString()}
           </div>
         ),

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getUserData } from '../api/admin'; 
 import TimeCard from '../components/TimeCard'; 
 import TaskViewEmployee from '../components/employee/TaskViewEmployee';
+import { LogOut } from 'lucide-react';
 
 const EmployeeDashboard = () => {
   const [username, setUserName] = useState<string>(''); 
@@ -35,6 +36,16 @@ const EmployeeDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-900">
           Welcome, {username || 'User'}!
         </h1>
+        <button
+          className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          onClick={() => {
+            localStorage.clear(); // Clear session
+            window.location.href = '/'; // Redirect to login
+          }}
+        >
+          <LogOut className="h-5 w-5 mr-2" />
+          Logout
+        </button>
       </div>
 
       {/* Main Content */}

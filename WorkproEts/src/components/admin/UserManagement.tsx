@@ -328,7 +328,7 @@ const UserManagement = () => {
 
       // Check if selectedUser exists and has a valid _id
       const url = selectedUser?._id
-        ? `http://localhost:5000/api/users/${selectedUser._id}`
+        ? `http://localhost:5000/api/users/edit/${selectedUser._id}`
         : "http://localhost:5000/api/users/add";
 
       const method = selectedUser?._id ? "PUT" : "POST";

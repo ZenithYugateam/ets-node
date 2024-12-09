@@ -1,13 +1,12 @@
-import React, { useEffect, useState, useContext } from "react";
-import { Clock, MoreVertical } from "lucide-react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
+import { Clock, MoreVertical, Trash2 } from "lucide-react";
 import axios from "axios";
-import { AuthContext } from "../../AuthContext"; // Adjust the path based on your project structure
+import { AuthContext } from "../../AuthContext";
 
 interface AuthContextType {
   userId: string;
   role: string;
   userName: string;
-  // Add any other properties as needed
 }
 
 interface Task {
@@ -16,7 +15,6 @@ interface Task {
   priority: string;
   deadline: string;
   status: string;
-  progress: number;
   department: string;
   description: string;
   assignee: {
@@ -31,36 +29,72 @@ interface Task {
 
 const TaskManager: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-
+  const [filter, setFilter] = useState("All Tasks");
+  const [isLoading, setIsLoading] = useState(false);
   const authContext = useContext<AuthContextType>(AuthContext);
-  const managerId = authContext.userId; 
+  const managerId = authContext.userId;
 
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        // Fetch tasks using axios
-        const response = await axios.get<Task[]>(
-          "http://localhost:5000/api/tasks"
-        );
+        const response = await axios.get<Task[]>("http://localhost:5000/api/tasks");
         const allTasks = response.data;
 
-        // Filter tasks assigned to the manager
-        const managerTasks = allTasks.filter((task) => {
-          return (
-            task.assignee &&
-            task.assignee.userId &&
-            task.assignee.userId._id === managerId
-          );
-        });
+        // Filter tasks for the current manager
+        const managerTasks = allTasks.filter((task) =>
+          task.assignee?.userId?._id === managerId
+        );
 
         setTasks(managerTasks);
       } catch (error) {
         console.error("Error fetching tasks:", error);
+        alert("Failed to fetch tasks. Please try again later.");
       }
     };
 
     fetchTasks();
   }, [managerId]);
+
+  const handleDelete = useCallback(async (_id: string): Promise<void> => {
+    setIsLoading(true);
+    try {
+      const response = await axios.delete(`http://localhost:5000/api/tasks/${_id}`);
+      console.log("Task deleted:", response);
+      setTasks((prevTasks) => prevTasks.filter((task) => task._id !== _id));
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      alert("Failed to delete task. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleStatusUpdate = useCallback(async (_id: string, newStatus: string): Promise<void> => {
+    // Optimistic update
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task._id === _id ? { ...task, status: newStatus } : task
+      )
+    );
+
+    try {
+      const response = await axios.put(`http://localhost:5000/api/tasks/${_id}`, { status: newStatus });
+      console.log("Status updated response:", response.data);
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("Failed to update task status. Reverting changes.");
+      // If the request fails, revert the status change
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task._id === _id ? { ...task, status: task.status } : task
+        )
+      );
+    }
+  }, []);
+
+  const filteredTasks = tasks.filter((task) =>
+    filter === "All Tasks" || task.status === filter
+  );
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -68,7 +102,11 @@ const TaskManager: React.FC = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-medium text-gray-900">Task Overview</h2>
           <div className="flex items-center space-x-2">
-            <select className="border-gray-300 rounded-lg text-sm">
+            <select
+              className="border-gray-300 rounded-lg text-sm"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
               <option>All Tasks</option>
               <option>In Progress</option>
               <option>Completed</option>
@@ -96,33 +134,31 @@ const TaskManager: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Deadline
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Progress
-                </th>
+                
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  Description
                 </th>
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {tasks.map((task) => (
+              {filteredTasks.map((task) => (
                 <tr key={task._id}>
-                  {/* Project */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {task.department}
                     </div>
                   </td>
-                  {/* Task */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {task.title}
                     </div>
                   </td>
-                  {/* Assignee */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <img
@@ -137,7 +173,6 @@ const TaskManager: React.FC = () => {
                       </div>
                     </div>
                   </td>
-                  {/* Priority */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -151,52 +186,38 @@ const TaskManager: React.FC = () => {
                       {task.priority}
                     </span>
                   </td>
-                  {/* Deadline */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="h-4 w-4 mr-1" />
                       {new Date(task.deadline).toLocaleDateString()}
                     </div>
                   </td>
-                  {/* Progress */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-indigo-600 h-2 rounded-full"
-                        style={{ width: `${task.progress}%` }}
-                      ></div>
+                    <select
+                      className="text-sm border-gray-300 rounded-lg"
+                      value={task.status}
+                      onChange={(e) => handleStatusUpdate(task._id, e.target.value)}
+                    >
+                      <option>In Progress</option>
+                      <option>Completed</option>
+                      <option>Pending</option>
+                    </select>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                      {task.description}
                     </div>
                   </td>
-                  {/* Status */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        task.status === "In Progress"
-                          ? "bg-blue-100 text-blue-800"
-                          : task.status === "Completed"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {task.status}
-                    </span>
-                  </td>
-                  {/* Actions */}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-gray-400 hover:text-gray-500">
-                      <MoreVertical className="h-5 w-5" />
-                    </button>
-                  </td>
+
                 </tr>
               ))}
-              {/* No Tasks Message */}
-              {tasks.length === 0 && (
+              {filteredTasks.length === 0 && (
                 <tr>
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                    colSpan={8}
+                    colSpan={7}
                   >
-                    No tasks assigned to you.
+                    No tasks available.
                   </td>
                 </tr>
               )}
@@ -204,6 +225,8 @@ const TaskManager: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {isLoading && <div className="spinner">Loading...</div>}
     </div>
   );
 };

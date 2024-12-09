@@ -111,6 +111,29 @@ const taskSchema = new mongoose.Schema({
   description: { type: String },
 });
 
+app.put("/api/users/edit/:id", async (req, res) => {
+  const { id } = req.params; // Extract the user ID from the URL parameters
+  const updateData = req.body; // Extract the update data from the request body
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      id, 
+      updateData, 
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "User updated successfully", user: updatedUser });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
 //get api for name Userschema
 app.post("/api/usersData_total", async (req, res) => {
   try {
@@ -348,7 +371,33 @@ app.post("/api/save_entries", async (req, res) => {
     return res.status(500).send("Error saving the entries");
   }
 });
+app.put("/api/tasks/:taskId", async (req, res) => {
+  const { taskId } = req.params; // Task ID from the request parameters
+  const updatedData = req.body; // Updated data from the request body
 
+  try {
+    // Find the task by ID and update with the provided data
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      { $set: updatedData }, // Update only specified fields
+      { new: true, runValidators: true } // Return updated document and run validation
+    )
+      .populate("assignee.userId", "name") // Populate assignee.userId with name field
+      .populate("createdBy", "name"); // Populate createdBy with name field
+
+    if (!updatedTask) {
+      return res.status(404).json({ error: "Task not found" }); // Task not found
+    }
+
+    res.status(200).json({
+      message: "Task updated successfully",
+      task: updatedTask,
+    });
+  } catch (error) {
+    console.error("Error updating task:", error);
+    res.status(500).json({ error: "Failed to update task" }); // General error response
+  }
+});
 app.get("/users/managers/:departmentName", async (req, res) => {
   try {
     const { departmentName } = req.params;
@@ -847,6 +896,16 @@ app.post("/api/timelog/checkout", async (req, res) => {
       .json({ message: "Error checking out", error: error.message });
   }
 });
+// test 
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find(); // Assuming User is your Mongoose model
+    res.status(200).json(users); // Send back the users
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
 app.get("/api/users/:userId", async (req, res) => {
   const { userId } = req.params;
 
