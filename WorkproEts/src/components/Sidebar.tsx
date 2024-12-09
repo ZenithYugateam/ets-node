@@ -25,7 +25,7 @@ const Sidebar = () => {
 
   const links = [
     { to: dashboardRoute, icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/timesheets', icon: ClipboardList, label: 'Timesheets' },
+    // { to: '/timesheets', icon: ClipboardList, label: 'Timesheets' },
     ...(role === 'Admin'
       ? [{ to: '/leave-approvals', icon: Calendar, label: 'Leave Approvals' }]
       : [{ to: '/leave-requests', icon: Calendar, label: 'Leave Requests' }]),
