@@ -39,8 +39,8 @@ const EmployeeDashboard = () => {
         <button
           className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
           onClick={() => {
-            localStorage.clear(); // Clear session
-            window.location.href = '/'; // Redirect to login
+            localStorage.clear(); 
+            window.location.href = '/'; 
           }}
         >
           <LogOut className="h-5 w-5 mr-2" />
