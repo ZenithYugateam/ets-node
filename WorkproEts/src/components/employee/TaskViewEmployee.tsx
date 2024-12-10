@@ -192,6 +192,7 @@ const TaskViewEmployee: React.FC = () => {
         });
       } finally{
         handleCloseDialog();
+        fetchTasks(userName);
       }
     }
   };
@@ -405,7 +406,7 @@ const TaskViewEmployee: React.FC = () => {
 
               <div className="flex justify-end space-x-4">
                 <Button
-                  onClick={handleAddNotes} // Assuming handleAddNotes will handle adding notes
+                  onClick={handleAddNotes} 
                   className="relative px-6 py-2 text-sm font-semibold text-white bg-blue-500 rounded-lg shadow-md hover:bg-blue-600 hover:scale-105 transition-all duration-200"
                 >
                   <span className="inline-flex items-center space-x-2">
