@@ -1,10 +1,15 @@
-import { Edit } from '@mui/icons-material';
-import { Box, Button, CircularProgress, IconButton, TextField, Typography } from '@mui/material';
+// import { Edit } from '@mui/icons-material';
+import { Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import axios from 'axios';
+import { Eye } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../ui/dialog';
+import { ScrollArea } from '../../ui/scroll-area';
+import { CalendarIcon, UserCircle, Briefcase } from "lucide-react";
+import { Card } from "../../ui/card";
 
 const WorksheetManagement = () => {
   const [assign_name, setAssignName] = useState<any>('');
@@ -19,12 +24,15 @@ const WorksheetManagement = () => {
   const [worksheets, setWorksheets] = useState([]);
   const [worksheetOverview, setWorksheetOverview] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
+  const [storedRole, setStoredRole] = useState<string>("");
+  const [open, setOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
 
   const fetchUserDetails = async () => {
     try {
       const response = await axios.get(`http://localhost:5000/api/user/${sessionStorage.getItem('userId')}`);
       setAssignName(sessionStorage.getItem('userName'));
-      setRole(response.data.role);  // Set the fetched role
+      setRole(response.data.role);
       setAssignTo(response.data.manager);
       setUserLoading(false);
     } catch (err) {
@@ -37,7 +45,6 @@ const WorksheetManagement = () => {
     fetchUserDetails();
   }, []);
 
-  // Fetch worksheets data for the user
   const fetchWorksheets = async () => {
     try {
       const response = await axios.post('http://localhost:5000/api/worksheetsData', { assign_name: sessionStorage.getItem('userName') });
@@ -48,10 +55,12 @@ const WorksheetManagement = () => {
     }
   };
 
-  // Fetch worksheet overview data, only for manager or admin roles
   const fetchWorksheetOverview = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/worksheets/manager');
+      const response = await axios.post('http://localhost:5000/api/worksheets/manager', {
+        assign_to: sessionStorage.getItem('userName'),
+        role: sessionStorage.getItem('role')?.slice(1, -1) === "Manager" ? "Employee" : "Manager"
+      });
       setWorksheetOverview(response.data);
     } catch (err) {
       console.error('Error fetching worksheet overview:', err);
@@ -60,15 +69,19 @@ const WorksheetManagement = () => {
   };
 
   useEffect(() => {
-    // Fetch worksheets regardless of the role
     fetchWorksheets();
-    
-    // Check sessionStorage role directly and fetch worksheet overview only if the role is manager or admin
-    const storedRole = sessionStorage.getItem('role');
-    if (storedRole === 'Manager' || storedRole === 'Admin') {
+
+    let storedRoles: string | null = sessionStorage.getItem('role');
+
+    if (storedRoles) {
+      storedRoles = storedRoles.substring(1, storedRoles.length - 1);
+      setStoredRole(storedRoles);
+    }
+
+    if (storedRoles === 'Manager' || storedRoles === 'Admin') {
       fetchWorksheetOverview();
     }
-  }, []);  // Run only once when the component is mounted
+  }, []);
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
@@ -117,16 +130,22 @@ const WorksheetManagement = () => {
     setSelectedRows(newSelection.selectionModel);
   };
 
-  const handleEdit = (id: any) => {
-    console.log(`Edit worksheet with ID: ${id}`);
+  const handleView = async (params: any) => {
+    setSelectedRow(params.row);
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedRow(null);
   };
 
   const rows = worksheets.map((worksheet, index) => {
     const dateObject = new Date(worksheet.date);
     const formattedDate = dateObject.toLocaleDateString('en-US', {
-      weekday: 'short',  // Mon, Tue, etc.
+      weekday: 'short',
       day: 'numeric',
-      month: 'short',    // Dec, Jan, etc.
+      month: 'short',
       year: 'numeric',
     });
 
@@ -134,7 +153,7 @@ const WorksheetManagement = () => {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: true,      // Use 12-hour format with AM/PM
+      hour12: true,
     });
 
     return {
@@ -193,19 +212,7 @@ const WorksheetManagement = () => {
       field: 'worksheetDescription',
       headerName: 'Description',
       flex: 2,
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      flex: 0.5,
-      renderCell: (params: any) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <IconButton color="primary" onClick={() => handleEdit(params.row.id)}>
-            <Edit />
-          </IconButton>
-        </Box>
-      ),
-    },
+    }
   ];
 
   const overviewColumns = [
@@ -239,79 +246,97 @@ const WorksheetManagement = () => {
       headerName: 'Role',
       flex: 1,
     },
+    {
+      field: "action",
+      headerName: "Action",
+      width: 120,
+      renderCell: (params : any) => {
+        return (
+          <Button
+          variant="contained"
+          startIcon={<Eye />}
+          onClick={() => handleView(params)}
+        >
+          View
+        </Button>
+        )
+      },
+    },
   ];
 
   return (
     <>
       <Box sx={{ maxWidth: 1200, margin: 'auto', padding: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Typography variant="h5">Submit Worksheet</Typography>
-          {userLoading ? (
-            <CircularProgress size={40} color="primary" />
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <TextField
-                label="Date"
-                variant="outlined"
-                name="date"
-                type="date"
-                value={date}
-                onChange={handleChange}
-                fullWidth
-                required
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="Worksheet Title"
-                variant="outlined"
-                name="worksheetTitle"
-                value={worksheetTitle}
-                onChange={handleChange}
-                fullWidth
-                required
-              />
-              <TextField
-                label="Worksheet Description"
-                variant="outlined"
-                name="worksheetDescription"
-                value={worksheetDescription}
-                onChange={handleChange}
-                fullWidth
-                required
-                multiline
-                rows={4}
-              />
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                disabled={loading}
-                startIcon={loading && <CircularProgress size={20} />}
-              >
-                {loading ? 'Submitting...' : 'Submit Worksheet'}
-              </Button>
-            </form>
-          )}
-        </Box>
+        {storedRole !== 'Admin' && (
+          <>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="h5">Submit Worksheet</Typography>
+              {userLoading ? (
+                <CircularProgress size={40} color="primary" />
+              ) : (
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <TextField
+                    label="Date"
+                    variant="outlined"
+                    name="date"
+                    type="date"
+                    value={date}
+                    onChange={handleChange}
+                    fullWidth
+                    required
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <TextField
+                    label="Worksheet Title"
+                    variant="outlined"
+                    name="worksheetTitle"
+                    value={worksheetTitle}
+                    onChange={handleChange}
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label="Worksheet Description"
+                    variant="outlined"
+                    name="worksheetDescription"
+                    value={worksheetDescription}
+                    onChange={handleChange}
+                    fullWidth
+                    required
+                    multiline
+                    rows={4}
+                  />
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    disabled={loading}
+                    startIcon={loading && <CircularProgress size={20} />}
+                  >
+                    {loading ? 'Submitting...' : 'Submit Worksheet'}
+                  </Button>
+                </form>
+              )}
+            </Box>
 
-        {/* Data Table Section */}
-        <Box>
-          <Typography variant="h6">Worksheets Data</Typography>
-          <div style={{ height: 400, width: '100%' }}>
-            <DataGrid
-              rows={rows}
-              columns={columns}
-              pageSize={5}
-              rowsPerPageOptions={[5]}
-              checkboxSelection
-              onSelectionModelChange={handleSelectionChange}
-              selectionModel={selectedRows}
-            />
-          </div>
-        </Box>
+            <Box>
+              <Typography variant="h6">Worksheets Data</Typography>
+              <div style={{ height: 400, width: '100%' }}>
+                <DataGrid
+                  rows={rows}
+                  columns={columns}
+                  pageSize={5}
+                  rowsPerPageOptions={[5]}
+                  checkboxSelection
+                  onSelectionModelChange={handleSelectionChange}
+                  selectionModel={selectedRows}
+                />
+              </div>
+            </Box>
+          </>
+        )}
 
-        {/* Conditional Worksheet Overview Section */}
-        {(sessionStorage.getItem('role') === "Manager" || sessionStorage.getItem('role') === "Admin") && (
+        {storedRole && (storedRole === 'Manager' || storedRole === 'Admin') && (
           <Box sx={{ marginTop: 3 }}>
             <Typography variant="h6">Worksheet Overview</Typography>
             <div style={{ height: 400, width: '100%' }}>
@@ -326,6 +351,84 @@ const WorksheetManagement = () => {
         )}
       </Box>
 
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white">
+          <DialogHeader className="px-6 pt-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <DialogTitle className="text-2xl font-semibold tracking-tight">
+                  Worksheet Details
+                </DialogTitle>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                onClick={handleClose}
+              >
+              </Button>
+            </div>
+          </DialogHeader>
+          <Card className="p-6">
+          <ScrollArea className="h-[calc(80vh-8rem)]">
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-semibold tracking-tight">{selectedRow?.worksheetTitle}</h2>
+              </div>
+
+             
+
+              {/* Description Section */}
+              <div className="space-y-2">
+                <h3 className="text-md font-large leading-none">Description</h3>
+                <p className="text-sm text-muted-foreground">
+                  {selectedRow?.worksheetDescription}
+                </p>
+              </div>
+
+              {/* <Separator /> */}
+
+              {/* Details Grid */}
+              <div className="grid gap-6">
+                {/* Assignment Info */}
+                <div className="flex items-center space-x-4">
+                  <UserCircle className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-medium leading-none">Assigned To</p>
+                    {/* Chip for name */}
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
+                      {selectedRow?.assign_name}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Role Info */}
+                <div className="flex items-center space-x-4">
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-center space-x-2">
+                    <p className="text-sm font-medium leading-none">Role</p>
+                    {/* Chip for role */}
+                    <span className="inline-flex items-center px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">
+                      {selectedRow?.role}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium leading-none">Date</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {selectedRow?.date}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+    </Card>
+        </DialogContent>
+      </Dialog>
       <ToastContainer />
     </>
   );
