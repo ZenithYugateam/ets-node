@@ -1284,12 +1284,15 @@ app.post('/api/worksheetsData', async (req, res) => {
 });
 
 app.post('/api/worksheets/manager', async (req, res) => {
-  const { assign_to } = req.body;  
-  console.log(assign_to);  
+  let { assign_to, role } = req.body; 
+
+  if (assign_to === "DEV") assign_to = "";
 
   try {
+    const roleCriteria = role === "Manager" ? ["Employee", "Admin", "Manager"] : [role];
     const worksheets = await Worksheet.find({
-      assign_to: assign_to 
+      assign_to: assign_to,
+      role: { $in: roleCriteria }, 
     });
 
     if (worksheets.length === 0) {
@@ -1305,13 +1308,11 @@ app.post('/api/worksheets/manager', async (req, res) => {
 
 app.put("/api/manager-tasks/update-status", async (req, res) => {
   const { status, id } = req.body; 
-
   if (!status) {
     return res.status(400).json({ message: "Status is required" });
   }
 
   try {
-    // Update only the status field
     const updatedTask = await ManagerTask.findByIdAndUpdate(
       id,
       { status },
