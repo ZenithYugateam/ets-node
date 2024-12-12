@@ -1,10 +1,13 @@
-import { Edit } from '@mui/icons-material';
+import { Edit, Visibility } from '@mui/icons-material';
 import { Box, Button, CircularProgress, IconButton, TextField, Typography } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Import the modal you adapted from TaskViewModal to WorksheetDetailModal
+import { WorksheetDetailModal } from '../manager/Dialog_ui/WorksheetDetailModal'; // Adjust this import path
 
 const WorksheetManagement = () => {
   const [assign_name, setAssignName] = useState<any>('');
@@ -20,13 +23,29 @@ const WorksheetManagement = () => {
   const [worksheetOverview, setWorksheetOverview] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
 
+  // State for modal
+  const [selectedWorksheet, setSelectedWorksheet] = useState<any>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    console.log("sessionStorage userName:", sessionStorage.getItem('userName'));
+    console.log("sessionStorage role:", sessionStorage.getItem('role'));
+    console.log("sessionStorage userId:", sessionStorage.getItem('userId'));
+  }, []);
+
   const fetchUserDetails = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/user/${sessionStorage.getItem('userId')}`);
-      setAssignName(sessionStorage.getItem('userName'));
-      setRole(response.data.role);  // Set the fetched role
-      setAssignTo(response.data.manager);
+      const userId = sessionStorage.getItem('userId');
+      const response = await axios.get(`http://localhost:5000/api/user/${userId}`);
+      const { role: fetchedRole, manager } = response.data;
+      const userName = sessionStorage.getItem('userName');
+
+      setAssignName(userName);
+      setRole(fetchedRole);
+      setAssignTo(manager);
       setUserLoading(false);
+
+      console.log("User Details:", { userName, fetchedRole, manager });
     } catch (err) {
       console.error('Error fetching user data:', err);
       setUserLoading(false);
@@ -37,22 +56,53 @@ const WorksheetManagement = () => {
     fetchUserDetails();
   }, []);
 
-  // Fetch worksheets data for the user
   const fetchWorksheets = async () => {
+    const userName = sessionStorage.getItem('userName');
+    console.log("Fetching worksheets for assign_name:", userName);
+
     try {
-      const response = await axios.post('http://localhost:5000/api/worksheetsData', { assign_name: sessionStorage.getItem('userName') });
-      setWorksheets(response.data);
+      const response = await axios.post('http://localhost:5000/api/worksheetsData', {
+        assign_name: userName
+      });
+      console.log("Worksheets response data:", response.data);
+
+      if (Array.isArray(response.data) && response.data.length === 0) {
+        toast.info('No worksheets found for this user.');
+        setWorksheets([]);
+      } else {
+        setWorksheets(response.data);
+      }
     } catch (err) {
       console.error('Error fetching worksheet data:', err);
       toast.error('Failed to fetch worksheet data.');
     }
   };
 
-  // Fetch worksheet overview data, only for manager or admin roles
   const fetchWorksheetOverview = async () => {
+    console.log("Fetching worksheet overview for role:", role);
+
     try {
-      const response = await axios.get('http://localhost:5000/api/worksheets/manager');
-      setWorksheetOverview(response.data);
+      let response;
+      if (role === 'Admin') {
+        // Admin: Fetch all worksheets
+        response = await axios.get('http://localhost:5000/api/worksheets/all');
+      } else if (role === 'Manager') {
+        // Manager: Fetch worksheets for manager and their employees
+        response = await axios.post('http://localhost:5000/api/worksheets/manager-overview', { 
+          managerName: sessionStorage.getItem('userName') 
+        });
+      } else {
+        return;
+      }
+
+      console.log("Worksheet overview response data:", response.data);
+
+      if (Array.isArray(response.data) && response.data.length === 0) {
+        toast.info('No worksheets found for the given criteria.');
+        setWorksheetOverview([]);
+      } else {
+        setWorksheetOverview(response.data);
+      }
     } catch (err) {
       console.error('Error fetching worksheet overview:', err);
       toast.error('Failed to fetch worksheet overview.');
@@ -60,15 +110,13 @@ const WorksheetManagement = () => {
   };
 
   useEffect(() => {
-    // Fetch worksheets regardless of the role
-    fetchWorksheets();
-    
-    // Check sessionStorage role directly and fetch worksheet overview only if the role is manager or admin
-    const storedRole = sessionStorage.getItem('role');
-    if (storedRole === 'Manager' || storedRole === 'Admin') {
-      fetchWorksheetOverview();
+    if (!userLoading) {
+      fetchWorksheets();
+      if (role === 'Manager' || role === 'Admin') {
+        fetchWorksheetOverview();
+      }
     }
-  }, []);  // Run only once when the component is mounted
+  }, [userLoading, role]);
 
   const handleChange = (e: any) => {
     const { name, value } = e.target;
@@ -90,6 +138,7 @@ const WorksheetManagement = () => {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setLoading(true);
+    console.log("Submitting worksheet:", { assign_name, role, assign_to, date, worksheetTitle, worksheetDescription });
 
     try {
       await axios.post('http://localhost:5000/api/worksheets', {
@@ -105,11 +154,16 @@ const WorksheetManagement = () => {
       setDate('');
       setWorksheetTitle('');
       setWorksheetDescription('');
+
+      await fetchWorksheets();
+      
+      if (role === 'Manager' || role === 'Admin') {
+        await fetchWorksheetOverview();
+      }
     } catch (err) {
       setLoading(false);
+      console.error('Error submitting worksheet:', err);
       toast.error('Failed to submit the worksheet. Please try again.');
-    } finally {
-      fetchWorksheets();
     }
   };
 
@@ -117,36 +171,24 @@ const WorksheetManagement = () => {
     setSelectedRows(newSelection.selectionModel);
   };
 
-  const handleEdit = (id: any) => {
+  const handleEdit = (id: string) => {
     console.log(`Edit worksheet with ID: ${id}`);
+    // Implement edit functionality as needed
   };
 
-  const rows = worksheets.map((worksheet, index) => {
-    const dateObject = new Date(worksheet.date);
-    const formattedDate = dateObject.toLocaleDateString('en-US', {
-      weekday: 'short',  // Mon, Tue, etc.
-      day: 'numeric',
-      month: 'short',    // Dec, Jan, etc.
-      year: 'numeric',
-    });
+  const handleView = (id: string) => {
+    // Find the selected worksheet by _id
+    const worksheet = worksheetOverview.find(w => w._id === id) || worksheets.find(w => w._id === id);
+    if (worksheet) {
+      setSelectedWorksheet(worksheet);
+      setModalOpen(true);
+    } else {
+      console.error(`Worksheet with ID ${id} not found.`);
+      toast.error('Worksheet not found.');
+    }
+  };
 
-    const formattedTime = dateObject.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,      // Use 12-hour format with AM/PM
-    });
-
-    return {
-      id: index + 1,
-      date: formattedDate,
-      time: formattedTime,
-      worksheetTitle: worksheet.worksheetTitle,
-      worksheetDescription: worksheet.worksheetDescription,
-    };
-  });
-
-  const overviewRows = worksheetOverview.map((worksheet, index) => {
+  const rows = worksheets.map((worksheet) => {
     const dateObject = new Date(worksheet.date);
     const formattedDate = dateObject.toLocaleDateString('en-US', {
       weekday: 'short',
@@ -163,13 +205,40 @@ const WorksheetManagement = () => {
     });
 
     return {
-      id: index + 1,
+      id: worksheet._id, // Use the actual _id
+      date: formattedDate,
+      time: formattedTime,
+      worksheetTitle: worksheet.worksheetTitle,
+      worksheetDescription: worksheet.worksheetDescription,
+      _original: worksheet,
+    };
+  });
+  
+  const overviewRows = worksheetOverview.map((worksheet) => {
+    const dateObject = new Date(worksheet.date);
+    const formattedDate = dateObject.toLocaleDateString('en-US', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    const formattedTime = dateObject.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+
+    return {
+      id: worksheet._id, // Use the actual _id
       date: formattedDate,
       time: formattedTime,
       worksheetTitle: worksheet.worksheetTitle,
       worksheetDescription: worksheet.worksheetDescription,
       assign_name: worksheet.assign_name,
       role: worksheet.role,
+      _original: worksheet,
     };
   });
 
@@ -197,11 +266,18 @@ const WorksheetManagement = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      flex: 0.5,
+      flex: 1,
       renderCell: (params: any) => (
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <IconButton color="primary" onClick={() => handleEdit(params.row.id)}>
-            <Edit />
+          {/* Edit Icon - Only for Admin and Manager */}
+          {(role === 'Admin' || role === 'Manager') && (
+            <IconButton color="primary" onClick={() => handleEdit(params.row.id)}>
+              <Edit />
+            </IconButton>
+          )}
+          {/* Visibility Icon - Available to all roles */}
+          <IconButton color="secondary" onClick={() => handleView(params.row.id)}>
+            <Visibility />
           </IconButton>
         </Box>
       ),
@@ -238,6 +314,18 @@ const WorksheetManagement = () => {
       field: 'role',
       headerName: 'Role',
       flex: 1,
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 0.5,
+      renderCell: (params: any) => (
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <IconButton color="primary" onClick={() => handleView(params.row.id)}>
+            <Visibility />
+          </IconButton>
+        </Box>
+      ),
     },
   ];
 
@@ -311,7 +399,7 @@ const WorksheetManagement = () => {
         </Box>
 
         {/* Conditional Worksheet Overview Section */}
-        {(sessionStorage.getItem('role') === "Manager" || sessionStorage.getItem('role') === "Admin") && (
+        {(role === "Manager" || role === "Admin") && (
           <Box sx={{ marginTop: 3 }}>
             <Typography variant="h6">Worksheet Overview</Typography>
             <div style={{ height: 400, width: '100%' }}>
@@ -327,6 +415,16 @@ const WorksheetManagement = () => {
       </Box>
 
       <ToastContainer />
+
+      {/* Modal for Viewing Worksheet Details */}
+      {selectedWorksheet && (
+        <WorksheetDetailModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          worksheet={selectedWorksheet}
+          userRole={role}
+        />
+      )}
     </>
   );
 };

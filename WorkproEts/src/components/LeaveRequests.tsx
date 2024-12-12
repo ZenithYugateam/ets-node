@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createLeaveRequest, getLeaveRequests, getUserData } from '../api/admin';
 import { Chip } from '@mui/material';
+import { Calendar, Clock, FileText, User } from 'lucide-react';
 
 interface LeaveRequest {
   _id: string;
@@ -34,7 +35,6 @@ const LeaveRequests: React.FC = () => {
   const [userRole, setUserRole] = useState<string | null>('');
   const [username, setUserName] = useState<string>('');
 
-  // Fetch User Data
   useEffect(() => {
     const fetchUserData = async () => {
       const userId = sessionStorage.getItem('userId');
@@ -59,7 +59,6 @@ const LeaveRequests: React.FC = () => {
     fetchUserData();
   }, []);
 
-  // Fetch Leave Requests
   useEffect(() => {
     const fetchLeaveRequests = async () => {
       if (leaveForm.userid) {
@@ -75,7 +74,6 @@ const LeaveRequests: React.FC = () => {
     fetchLeaveRequests();
   }, [leaveForm.userid]);
 
-  // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leaveForm.userid || !leaveForm.type || !leaveForm.startDate || !leaveForm.endDate || !leaveForm.reason) {
@@ -100,126 +98,145 @@ const LeaveRequests: React.FC = () => {
     }
   };
 
-  // Handle Input Change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setLeaveForm({ ...leaveForm, [e.target.name]: e.target.value });
   };
 
-  // Get Chip Status
   const getStatusChip = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return { label: 'Pending', color: 'warning' };
-      case 'approved':
-        return { label: 'Approved', color: 'success' };
-      case 'rejected':
-        return { label: 'Rejected', color: 'error' };
-      default:
-        return { label: 'Unknown', color: 'default' };
-    }
+    const styles = {
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      approved: 'bg-green-100 text-green-800 border-green-200',
+      rejected: 'bg-red-100 text-red-800 border-red-200',
+    };
+
+    return (
+      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${styles[status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Leave Dashboard</h2>
-      <p>Welcome, {username} ({userRole || 'User'})</p>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <User className="w-6 h-6 text-blue-600" />
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Leave Dashboard</h1>
+            <p className="text-gray-600">Welcome, {username} ({userRole || 'User'})</p>
+          </div>
+        </div>
 
-      {/* Leave Request Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Type</label>
-          <select
-            name="type"
-            value={leaveForm.type}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-          >
-            <option value="">Select Type</option>
-            <option value="vacation">Vacation</option>
-            <option value="sick">Sick</option>
-            <option value="personal">Personal</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Start Date</label>
-          <input
-            type="date"
-            name="startDate"
-            value={leaveForm.startDate}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">End Date</label>
-          <input
-            type="date"
-            name="endDate"
-            value={leaveForm.endDate}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Reason</label>
-          <textarea
-            name="reason"
-            value={leaveForm.reason}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-          />
-        </div>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          Submit
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Leave Type</label>
+            <select
+              name="type"
+              value={leaveForm.type}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">Select Type</option>
+              <option value="vacation">Vacation Leave</option>
+              <option value="sick">Sick Leave</option>
+              <option value="personal">Personal Leave</option>
+            </select>
+          </div>
 
-      {/* Leave Requests List */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Your Leave Requests</h2>
-        {leaveRequests.length > 0 ? (
-          leaveRequests.map((request) => {
-            const { label, color } = getStatusChip(request.status);
-            return (
-              <div key={request._id} className="p-4 border border-gray-300 rounded-md">
-                <p>
-                  <strong>Type:</strong> {request.type}
-                </p>
-                <p>
-                  <strong>Start Date:</strong> {new Date(request.startDate).toLocaleDateString()}
-                </p>
-                <p>
-                  <strong>End Date:</strong> {new Date(request.endDate).toLocaleDateString()}
-                </p>
-                <p>
-                  <strong>Reason:</strong> {request.reason}
-                </p>
-                <p>
-                  <strong>Status:</strong>
-                  <Chip
-                    size="small"
-                    label={label}
-                    color={color}
-                    sx={{
-                      fontSize: '0.79rem',
-                      padding: '4px 1px',
-                      marginLeft: '10px',
-                    }}
-                  />
-                </p>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Start Date</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              <input
+                type="date"
+                name="startDate"
+                value={leaveForm.startDate}
+                onChange={handleChange}
+                required
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">End Date</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+              <input
+                type="date"
+                name="endDate"
+                value={leaveForm.endDate}
+                onChange={handleChange}
+                required
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Reason</label>
+            <div className="relative">
+              <FileText className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <textarea
+                name="reason"
+                value={leaveForm.reason}
+                onChange={handleChange}
+                required
+                rows={4}
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                placeholder="Please provide a detailed reason for your leave request..."
+              />
+            </div>
+          </div>
+
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/50 transition-colors font-medium"
+            >
+              Submit Request
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Clock className="w-6 h-6 text-blue-600" />
+          <h2 className="text-xl font-semibold text-gray-900">Your Leave Requests</h2>
+        </div>
+
+        <div className="space-y-4">
+          {leaveRequests.length > 0 ? (
+            leaveRequests.map((request) => (
+              <div key={request._id} className="p-5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-medium text-gray-900 capitalize">{request.type} Leave</span>
+                      {getStatusChip(request.status)}
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Duration:</span>{' '}
+                        {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Reason:</span> {request.reason}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            );
-          })
-        ) : (
-          <p>No leave requests found.</p>
-        )}
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+              <p>No leave requests found</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

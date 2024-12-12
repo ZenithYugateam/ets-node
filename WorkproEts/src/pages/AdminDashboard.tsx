@@ -153,8 +153,7 @@ const AdminDashboard = () => {
         })}
       </div>
 
-      {/* Admin components */}
-      <UserManagement adminId={localStorage.getItem('userId')} />
+      <UserManagement adminId={localStorage.getItem('userId')} fetchAllUsers= {fetchAllUsers} />
       <ProjectManagement />
     </div>
   );

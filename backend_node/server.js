@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 const ManagerTask = require("./Models/ManagerTask");
-const Worksheet = require("./Models/Worksheet")
+const Worksheet = require("./Models/Worksheet");
 
 const app = express();
 app.use(cors());
@@ -69,7 +69,6 @@ const departmentSchema = new mongoose.Schema({
   },
 });
 
-
 const Department = mongoose.model("Department", departmentSchema);
 
 const userSchema = new mongoose.Schema({
@@ -90,11 +89,11 @@ const userSchema = new mongoose.Schema({
 const taskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   assignee: {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" }, // Updated type
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
     name: { type: String, required: true },
     avatar: { type: String, default: "" },
   },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "users" }, // Added field
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
   priority: {
     type: String,
     enum: ["Low", "Medium", "High"],
@@ -111,34 +110,38 @@ const taskSchema = new mongoose.Schema({
   description: { type: String },
 });
 
+
+
+
+
+
 app.put("/api/users/edit/:id", async (req, res) => {
-  const { id } = req.params; // Extract the user ID from the URL parameters
-  const updateData = req.body; // Extract the update data from the request body
+  const { id } = req.params;
+  const updateData = req.body;
 
   try {
-    const updatedUser = await User.findByIdAndUpdate(
-      id, 
-      updateData, 
-      { new: true } // Return the updated document
-    );
+    const updatedUser = await User.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ message: "User updated successfully", user: updatedUser });
+    res
+      .status(200)
+      .json({ message: "User updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Error updating user:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
 
-
 //get api for name Userschema
 app.post("/api/usersData_total", async (req, res) => {
   try {
     let userId = req.body;
-    console.log("......",userId);
+    console.log("......", userId);
 
     const user = await User.findById(mongoose.Types.ObjectId(userId));
 
@@ -163,7 +166,7 @@ const leaveRequestSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["approved", "rejected", "pending"], // Optional: restrict to specific values
+    enum: ["approved", "rejected", "pending"],
     default: "pending",
   },
   startDate: {
@@ -180,25 +183,24 @@ const leaveRequestSchema = new mongoose.Schema({
   },
   assigneeId: {
     type: mongoose.Schema.Types.ObjectId,
-    default: new mongoose.Types.ObjectId("647f1f77bcf86cd799439011"), // Default assignee ID
+    default: new mongoose.Types.ObjectId("647f1f77bcf86cd799439011"),
     required: true,
   },
   userid: {
     type: String,
     required: true,
-    required: [true, "Path `userid` is required"],
     default: "",
   },
   username: { type: String, default: "" },
   assigneeRole: {
     type: String,
-    enum: ["admin", "manager"], // Define roles for the assignee
+    enum: ["admin", "manager"],
     default: "admin",
     required: true,
   },
   createdAt: {
     type: Date,
-    default: Date.now, // Automatically set to the current date
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
@@ -215,9 +217,6 @@ leaveRequestSchema.pre("save", function (next) {
 const LeaveRequest = mongoose.model("LeaveRequest", leaveRequestSchema);
 
 // Leave Request Routes
-
-// POST API for creating leave requests
-// In your Express route handler
 app.post("/api/leave-requests", async (req, res) => {
   try {
     const { type, startDate, endDate, reason, userid, username } = req.body;
@@ -225,7 +224,7 @@ app.post("/api/leave-requests", async (req, res) => {
     if (new Date(startDate) > new Date(endDate)) {
       return res.status(400).send("End date cannot be earlier than start date");
     }
-   
+
     const newLeaveRequest = new LeaveRequest({
       type,
       startDate,
@@ -266,7 +265,7 @@ app.patch("/api/leave-requests/:id/status", async (req, res) => {
     if (!["approved", "rejected", "pending"].includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
-   
+
     const leaveRequest = await LeaveRequest.findByIdAndUpdate(
       id,
       { status },
@@ -283,30 +282,25 @@ app.patch("/api/leave-requests/:id/status", async (req, res) => {
   }
 });
 
-
 app.delete("/api/leave-requests/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate if the provided ID is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid ID format" });
     }
 
-    // Find and delete the leave request by ID
     const leaveRequest = await LeaveRequest.findByIdAndDelete(id);
 
     if (!leaveRequest) {
       return res.status(404).json({ error: "Leave request not found" });
     }
 
-    // Respond with success message and deleted document
     res.status(200).json({
       message: "Leave request deleted successfully",
       deletedLeaveRequest: leaveRequest,
     });
   } catch (error) {
-    // Handle unexpected errors
     res.status(500).json({ error: error.message });
   }
 });
@@ -325,7 +319,6 @@ const User = mongoose.model("users", userSchema);
 
 app.get("/api/user/:id", async (req, res) => {
   const { id } = req.params;
-  // Validate the MongoDB ObjectId format
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "Invalid user ID format" });
   }
@@ -339,9 +332,7 @@ app.get("/api/user/:id", async (req, res) => {
 
     return res.status(200).json(user);
   } catch (err) {
-    return res
-      .status(500)
-      .json({ message: "Server error", error: err.message });
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
@@ -371,22 +362,22 @@ app.post("/api/save_entries", async (req, res) => {
     return res.status(500).send("Error saving the entries");
   }
 });
+
 app.put("/api/tasks/:taskId", async (req, res) => {
-  const { taskId } = req.params; // Task ID from the request parameters
-  const updatedData = req.body; // Updated data from the request body
+  const { taskId } = req.params;
+  const updatedData = req.body;
 
   try {
-    // Find the task by ID and update with the provided data
     const updatedTask = await Task.findByIdAndUpdate(
       taskId,
-      { $set: updatedData }, // Update only specified fields
-      { new: true, runValidators: true } // Return updated document and run validation
+      { $set: updatedData },
+      { new: true, runValidators: true }
     )
-      .populate("assignee.userId", "name") // Populate assignee.userId with name field
-      .populate("createdBy", "name"); // Populate createdBy with name field
+      .populate("assignee.userId", "name")
+      .populate("createdBy", "name");
 
     if (!updatedTask) {
-      return res.status(404).json({ error: "Task not found" }); // Task not found
+      return res.status(404).json({ error: "Task not found" });
     }
 
     res.status(200).json({
@@ -395,21 +386,21 @@ app.put("/api/tasks/:taskId", async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating task:", error);
-    res.status(500).json({ error: "Failed to update task" }); // General error response
+    res.status(500).json({ error: "Failed to update task" });
   }
 });
+
 app.get("/users/managers/:departmentName", async (req, res) => {
   try {
     const { departmentName } = req.params;
 
-    // Find all users who are managers in the specified department
     const managers = await User.find({
       department: departmentName,
       role: "Manager",
-    }).select("_id name email"); // Only select necessary fields
+    }).select("_id name email");
 
     if (!managers || managers.length === 0) {
-      return res.status(200).json([]); // Return empty array if no managers found
+      return res.status(200).json([]);
     }
 
     res.status(200).json(managers);
@@ -421,7 +412,7 @@ app.get("/users/managers/:departmentName", async (req, res) => {
     });
   }
 });
-// Route to get all departments
+
 app.get("/api/departments", async (req, res) => {
   try {
     const departments = await Department.find();
@@ -434,23 +425,22 @@ app.get("/api/departments", async (req, res) => {
     });
   }
 });
+
 app.post("/api/departments/add", async (req, res) => {
   try {
     const { name, description, subDepartments } = req.body;
 
-    // Check if department already exists
     const existingDepartment = await Department.findOne({ name });
     if (existingDepartment) {
       return res.status(400).json({ message: "Department already exists" });
     }
 
-    // Create new department with the schema structure
     const newDepartment = new Department({
       name,
       subDepartments: subDepartments.map((sub) => ({
         name: sub.name,
         description: sub.description,
-        employees: [], // Initialize with empty employees array
+        employees: [],
       })),
       createdAt: new Date(),
     });
@@ -488,7 +478,6 @@ app.post("/api/users/add", async (req, res) => {
   }
 });
 
-
 app.post("/api/usersData", async (req, res) => {
   const { adminId } = req.body;
   try {
@@ -504,11 +493,10 @@ app.patch("/api/usersData/:userId", async (req, res) => {
   const { newPassword } = req.body;
 
   try {
-    // Find the user by userId and update the password
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { password: newPassword }, // Assuming you want to directly set the new password
-      { new: true } // This option ensures that the updated document is returned
+      { password: newPassword },
+      { new: true }
     );
 
     if (!updatedUser) {
@@ -525,7 +513,6 @@ app.post("/api/fetchTaskData", async (req, res) => {
   const { userId } = req.body;
 
   try {
-    // Find tasks where the assignee's userId matches the given userId
     const tasks = await Task.find({ "assignee.userId": userId });
     res.json(tasks);
   } catch (error) {
@@ -559,7 +546,6 @@ app.post("/api/fetchTaskData", async (req, res) => {
   const { userId } = req.body;
 
   try {
-    // Find tasks where the assignee's userId matches the given userId
     const tasks = await Task.find({ "assignee.userId": userId });
     res.json(tasks);
   } catch (error) {
@@ -595,43 +581,6 @@ app.get("/api/tasks", async (req, res) => {
   try {
     const tasks = await Task.find()
       .sort({ _id: -1 })
-      .populate("assignee.userId", "name")
-      .populate("createdBy", "name");
-    res.json(tasks);
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    res.status(500).json({ error: "Failed to fetch tasks" });
-  }
-});
-
-app.put("/api/tasks/:taskId", async (req, res) => {
-  try {
-    const task = await Task.findByIdAndUpdate(
-      req.params.taskId,
-      { ...req.body, updatedAt: Date.now() },
-      { new: true }
-    );
-    if (!task) {
-      return res.status(404).json({ error: "Task not found" });
-    }
-  } catch (error) {
-    console.log(error);
-  }
-});
-
-app.post("/api/tasks3", async (req, res) => {
-  try {
-    const task4 = new Task(req.body);
-    await task4.save();
-    res.status(201).json(task4);
-  } catch (error) {
-    res.status(400).json({ error: "Failed to create task" });
-  }
-});
-
-app.get("/api/tasks", async (req, res) => {
-  try {
-    const tasks = await Task.find()
       .populate("assignee.userId", "name")
       .populate("createdBy", "name");
     res.json(tasks);
@@ -693,13 +642,12 @@ app.get("/api/tasks/assignee/:userId", async (req, res) => {
   }
 });
 
-
 // Time Log Schema
 const timeLogSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
   checkIn: { type: Date },
   checkOut: { type: Date },
-  duration: { type: Number }, // Total work time in milliseconds
+  duration: { type: Number },
   breaks: [
     {
       start: { type: Date },
@@ -715,18 +663,15 @@ app.post("/api/timelog/checkin", async (req, res) => {
   const { userId } = req.body;
 
   try {
-    // Validate if userId is provided and is a valid ObjectId
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid or missing User ID" });
     }
 
-    // Ensure the user exists in the User collection
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Create a new TimeLog for the user
     const timeLog = new TimeLog({
       userId,
       checkIn: new Date(),
@@ -736,11 +681,10 @@ app.post("/api/timelog/checkin", async (req, res) => {
     res.status(201).json({ message: "Checked in successfully", timeLog });
   } catch (error) {
     console.error("Error during check-in:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error checking in", error: error.message });
+    res.status(500).json({ message: "Error checking in", error: error.message });
   }
 });
+
 app.post("/api/timelog/start-break", async (req, res) => {
   const { userId, reason } = req.body;
 
@@ -779,13 +723,11 @@ app.post("/api/timelog/end-break", async (req, res) => {
       return res.status(404).json({ message: "No active check-in found" });
     }
 
-    // Find the last break entry without an end time
     const lastBreak = timeLog.breaks[timeLog.breaks.length - 1];
     if (!lastBreak || lastBreak.end) {
       return res.status(400).json({ message: "No active break found" });
     }
 
-    // Set break end time
     lastBreak.end = new Date();
     await timeLog.save();
 
@@ -799,21 +741,18 @@ app.post("/api/timelog/end-break", async (req, res) => {
 });
 
 app.post("/api/timelog/checkout", async (req, res) => {
-  const { userId, reason } = req.body; // Include 'reason' if it's part of the request
+  const { userId, reason } = req.body;
 
   try {
-    // Validate if userId is provided and is a valid ObjectId
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid or missing User ID" });
     }
 
-    // Find the most recent TimeLog entry for the user where checkOut is null
     const timeLog = await TimeLog.findOne({ userId, checkOut: null });
     if (!timeLog) {
       return res.status(404).json({ message: "No active check-in found" });
     }
 
-    // If a reason is provided, it indicates the user is starting a break
     if (reason) {
       timeLog.breaks.push({ start: new Date(), reason });
       await timeLog.save();
@@ -822,7 +761,6 @@ app.post("/api/timelog/checkout", async (req, res) => {
         .json({ message: "Break started successfully", timeLog });
     }
 
-    // Otherwise, proceed with check-out
     timeLog.checkOut = new Date();
     timeLog.duration = timeLog.checkOut - timeLog.checkIn;
     await timeLog.save();
@@ -849,13 +787,11 @@ app.post("/api/timelog/end-break", async (req, res) => {
       return res.status(404).json({ message: "No active check-in found" });
     }
 
-    // Find the last break entry without an end time
     const lastBreak = timeLog.breaks[timeLog.breaks.length - 1];
     if (!lastBreak || lastBreak.end) {
       return res.status(400).json({ message: "No active break found" });
     }
 
-    // Set break end time
     lastBreak.end = new Date();
     await timeLog.save();
 
@@ -872,18 +808,15 @@ app.post("/api/timelog/checkout", async (req, res) => {
   const { userId } = req.body;
 
   try {
-    // Validate if userId is provided and is a valid ObjectId
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid or missing User ID" });
     }
 
-    // Find the most recent TimeLog entry for the user where checkOut is null
     const timeLog = await TimeLog.findOne({ userId, checkOut: null });
     if (!timeLog) {
       return res.status(404).json({ message: "No active check-in found" });
     }
 
-    // Update the TimeLog with check-out time and duration
     timeLog.checkOut = new Date();
     timeLog.duration = timeLog.checkOut - timeLog.checkIn;
     await timeLog.save();
@@ -891,18 +824,17 @@ app.post("/api/timelog/checkout", async (req, res) => {
     res.status(200).json({ message: "Checked out successfully", timeLog });
   } catch (error) {
     console.error("Error during check-out:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error checking out", error: error.message });
+    res.status(500).json({ message: "Error checking out", error: error.message });
   }
 });
-// test 
-app.get('/api/users', async (req, res) => {
+
+// test
+app.get("/api/users", async (req, res) => {
   try {
-    const users = await User.find(); // Assuming User is your Mongoose model
-    res.status(200).json(users); // Send back the users
+    const users = await User.find(); 
+    res.status(200).json(users); 
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch users' });
+    res.status(500).json({ error: "Failed to fetch users" });
   }
 });
 
@@ -910,7 +842,7 @@ app.get("/api/users/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const user = await User.findById(userId); // Assuming `User` is your MongoDB model
+    const user = await User.findById(userId); 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -923,7 +855,6 @@ app.get("/api/users/:userId", async (req, res) => {
   }
 });
 
-// Retrieve Logs Route
 app.get("/api/timelog/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -955,11 +886,10 @@ app.post("/api/auth/login", async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
-      "your_secret_key", // Replace with an environment variable in production
+      "your_secret_key",
       { expiresIn: "1h" }
     );
 
-    // Respond with user info and token
     res.status(200).json({
       message: "Login successful",
       token,
@@ -1002,7 +932,6 @@ app.post("/api/timesheets/save_entries", async (req, res) => {
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid or missing userId" });
     }
-
     if (!entries || !Array.isArray(entries) || entries.length === 0) {
       return res.status(400).json({ message: "No entries provided" });
     }
@@ -1027,41 +956,6 @@ app.post("/api/timesheets/save_entries", async (req, res) => {
   }
 });
 
-module.exports = Timesheet;
-app.post("/api/timesheets/save_entries", async (req, res) => {
-  const { userId, entries } = req.body;
-
-  try {
-    // Validate `userId` and `entries`
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid or missing userId" });
-    }
-    if (!entries || !Array.isArray(entries) || entries.length === 0) {
-      return res.status(400).json({ message: "No entries provided" });
-    }
-
-    // Prepare entries for saving
-    const timesheetsToSave = entries.map((entry) => ({
-      ...entry,
-      userId,
-      date: entry.date || new Date(), // Use provided date or default to now
-      status: "Pending",
-    }));
-
-    // Save timesheets to MongoDB
-    const savedTimesheets = await Timesheet.insertMany(timesheetsToSave);
-
-    res
-      .status(200)
-      .json({ message: "Entries saved successfully", savedTimesheets });
-  } catch (error) {
-    console.error("Error saving timesheets:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error saving timesheets", error: error.message });
-  }
-});
-
 app.post("/api/getAllProjectNamesForEmployee", async (req, res) => {
   const { userId } = req.body;
   try {
@@ -1070,32 +964,37 @@ app.post("/api/getAllProjectNamesForEmployee", async (req, res) => {
     }
 
     const tasks = await Task.find({ "assignee.userId": userId })
-    .select("title")
-    .populate("assignee.userId", "name");
-
+      .select("title")
+      .populate("assignee.userId", "name");
 
     if (!tasks || tasks.length === 0) {
-      return res.status(404).json({ message: "No projects found for the given userId" });
+      return res
+        .status(404)
+        .json({ message: "No projects found for the given userId" });
     }
 
     res.status(200).json(tasks);
   } catch (err) {
     console.error("Error getting project names:", err.message);
-    res.status(500).json({ message: "Error getting project names", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Error getting project names", error: err.message });
   }
 });
 
-app.post('/api/employees-by-manager', async (req, res) => {
-  const { managerName } = req.body; 
+app.post("/api/employees-by-manager", async (req, res) => {
+  const { managerName } = req.body;
   try {
     const employees = await User.find({
-      role: 'Employee',
+      role: "Employee",
       manager: managerName,
-    }).select('name email department'); 
+    }).select("name email department");
     res.status(200).json(employees);
   } catch (err) {
-    console.error('Error fetching employees:', err.message);
-    res.status(500).json({ message: 'Error fetching employees', error: err.message });
+    console.error("Error fetching employees:", err.message);
+    res
+      .status(500)
+      .json({ message: "Error fetching employees", error: err.message });
   }
 });
 
@@ -1104,7 +1003,9 @@ app.post("/api/store-form-data", async (req, res) => {
     const newTask = new ManagerTask(req.body);
     const savedTask = await newTask.save();
 
-    res.status(201).json({ message: "Task saved successfully", data: savedTask });
+    res
+      .status(201)
+      .json({ message: "Task saved successfully", data: savedTask });
   } catch (error) {
     console.error("Error saving task:", error.message);
     res.status(500).json({ message: "Error saving task", error: error.message });
@@ -1114,15 +1015,15 @@ app.post("/api/store-form-data", async (req, res) => {
 app.post("/api/get-task-by-manager-name", async (req, res) => {
   const { managerName } = req.body;
   try {
-    const tasks = await ManagerTask.find({ managerName })
-    .sort({'_id' : -1});
+    const tasks = await ManagerTask.find({ managerName }).sort({ _id: -1 });
     res.status(200).json(tasks);
-
-  }catch(error) {
+  } catch (error) {
     console.error("Error getting task by manager name:", error.message);
-    res.status(500).json({ message: "Error getting task by manager name", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error getting task by manager name", error: error.message });
   }
-})
+});
 
 app.put("/api/update-remarks/:id", async (req, res) => {
   try {
@@ -1135,7 +1036,7 @@ app.put("/api/update-remarks/:id", async (req, res) => {
 
     const updatedTask = await ManagerTask.findByIdAndUpdate(
       id,
-      { $push: { remarks: remarks } }, 
+      { $push: { remarks: remarks } },
       { new: true }
     );
 
@@ -1150,9 +1051,9 @@ app.put("/api/update-remarks/:id", async (req, res) => {
   }
 });
 
-app.get('/api/remarks/:id', async (req, res) => {
+app.get("/api/remarks/:id", async (req, res) => {
   try {
-    const { id } = req.params; 
+    const { id } = req.params;
 
     const task = await ManagerTask.findById(id, { remarks: 1 });
 
@@ -1161,7 +1062,6 @@ app.get('/api/remarks/:id', async (req, res) => {
     }
 
     res.status(200).json({ remarks: task.remarks });
-
   } catch (error) {
     console.error("Error fetching remarks:", error);
     res.status(500).json({ message: "Server error" });
@@ -1173,7 +1073,9 @@ app.post("/api/tasks/employee", async (req, res) => {
   try {
     const tasks = await ManagerTask.find({ employeeName });
     if (!tasks || tasks.length === 0) {
-      return res.status(404).json({ message: "No tasks found for this employee." });
+      return res
+        .status(404)
+        .json({ message: "No tasks found for this employee." });
     }
     res.status(200).json(tasks);
   } catch (error) {
@@ -1184,16 +1086,18 @@ app.post("/api/tasks/employee", async (req, res) => {
 
 app.put("/api/Employee/notes", async (req, res) => {
   try {
-    const {id,  note } = req.body;
+    const { id, note } = req.body;
 
-    if (!note || typeof note !== 'string') {
-      return res.status(400).json({ message: "Note cannot be empty and must be a valid string" });
+    if (!note || typeof note !== "string") {
+      return res
+        .status(400)
+        .json({ message: "Note cannot be empty and must be a valid string" });
     }
 
     const updatedTask = await ManagerTask.findByIdAndUpdate(
       id,
-      { $push: { notes: note } }, 
-      { new: true } 
+      { $push: { notes: note } },
+      { new: true }
     );
 
     if (!updatedTask) {
@@ -1206,9 +1110,9 @@ app.put("/api/Employee/notes", async (req, res) => {
   }
 });
 
-app.post('/api/employeeNotes',async(req, res) =>{ 
-  const {id } = req.body;
-  try{
+app.post("/api/employeeNotes", async (req, res) => {
+  const { id } = req.body;
+  try {
     const notes = await ManagerTask.findById(id, { notes: 1 });
 
     if (!notes) {
@@ -1216,118 +1120,244 @@ app.post('/api/employeeNotes',async(req, res) =>{
     }
 
     res.status(200).json({ notes: notes.notes });
-  }catch(error){
-    console.error("Error fetching max listeners:", error);
+  } catch (error) {
+    console.error("Error fetching notes:", error);
     res.status(500).json({ message: "Server error" });
   }
-})
+});
 
-app.post('/api/worksheets', async (req, res) => {
+app.post("/api/worksheets", async (req, res) => {
   try {
+    const { assign_name, role, assign_to, date, worksheetTitle, worksheetDescription } =
+      req.body;
 
-    const { assign_name, role, assign_to, date, worksheetTitle, worksheetDescription } = req.body;
-    
     if (!assign_name || !role || !date || !worksheetTitle || !worksheetDescription) {
-      return res.status(400).json({ message: 'All fields are required' });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     const newWorksheet = new Worksheet({
       assign_name,
       role,
       assign_to,
-      date : new Date(),
+      date: new Date(),
       worksheetTitle,
       worksheetDescription,
     });
 
     const savedWorksheet = await newWorksheet.save();
-    res.status(201).json({ message: 'Worksheet saved successfully', data: savedWorksheet });
+    res.status(201).json({ message: "Worksheet saved successfully", data: savedWorksheet });
   } catch (error) {
-    console.error('Error saving worksheet:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error saving worksheet:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-
-app.get('/api/user/:id', async (req, res) => {
+app.get("/api/user/:id", async (req, res) => {
   try {
-    
     const userId = req.params.id;
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'Invalid user ID' });
+      return res.status(400).json({ message: "Invalid user ID" });
     }
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
     res.status(200).json(user);
   } catch (error) {
-    console.error('Error fetching user data:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching user data:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-app.post('/api/worksheetsData', async (req, res) => {
+app.post("/api/worksheetsData", async (req, res) => {
   const { assign_name } = req.body;
   try {
     const worksheets = await Worksheet.find({ assign_name: assign_name });
-   
+
     if (worksheets.length === 0) {
-      return res.status(400).json({ message: 'No worksheets found for this assign_name' });
+      return res.status(200).json([]);
     }
 
     res.status(200).json(worksheets);
   } catch (err) {
-    console.error('Error fetching worksheets:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching worksheets:", err);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-app.post('/api/worksheets/manager', async (req, res) => {
-  const { assign_to } = req.body;  
-  console.log(assign_to);  
+// For Manager route - If empty, return empty array for consistency
+app.post("/api/worksheets/manager", async (req, res) => {
+  const { assign_to } = req.body;
+  console.log(assign_to);
 
   try {
-    const worksheets = await Worksheet.find({
-      assign_to: assign_to 
-    });
-
+    const worksheets = await Worksheet.find({ assign_to: assign_to });
     if (worksheets.length === 0) {
-      return res.status(404).json({ message: 'No worksheets found for the given criteria.' });
+      return res.status(200).json([]); // return empty array instead of error
     }
-
     return res.status(200).json(worksheets);
   } catch (err) {
-    console.error('Error fetching worksheets:', err);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching worksheets:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
+// New Routes for Admin and Manager Overview
+// Admin: Get all worksheets
+app.get("/api/worksheets/all", async (req, res) => {
+  try {
+    const worksheets = await Worksheet.find();
+    res.status(200).json(worksheets);
+  } catch (error) {
+    console.error("Error fetching all worksheets:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Manager Overview: Worksheets where assign_name = managerName OR assign_to = managerName
+app.post("/api/worksheets/manager-overview", async (req, res) => {
+  const { managerName } = req.body;
+  try {
+    // Only fetch worksheets that are assigned to this manager and created by an employee
+    const worksheets = await Worksheet.find({
+      assign_to: managerName,
+      role: "Employee"
+    });
+
+    res.status(200).json(worksheets);
+  } catch (error) {
+    console.error("Error fetching manager overview:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 app.put("/api/manager-tasks/update-status", async (req, res) => {
-  const { status, id } = req.body; 
+  const { status, id } = req.body;
 
   if (!status) {
     return res.status(400).json({ message: "Status is required" });
   }
 
   try {
-    // Update only the status field
     const updatedTask = await ManagerTask.findByIdAndUpdate(
       id,
       { status },
-      { new: true, runValidators: true } 
+      { new: true, runValidators: true }
     );
 
     if (!updatedTask) {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    res.status(200).json({ message: "Status updated successfully", updatedTask });
+    res
+      .status(200)
+      .json({ message: "Status updated successfully", updatedTask });
   } catch (error) {
     console.error("Error updating status:", error);
     res.status(500).json({ message: "Internal Server Error", error });
   }
 });
+  // POST /api/worksheets/:id/remarks
+  app.post("/api/worksheets/:id/remarks", async (req, res) => {
+    const { id } = req.params;
+    const { text, addedBy, role } = req.body;
+
+    // Validate input
+    if (!text || !addedBy || !role) {
+      return res.status(400).json({ message: "Text, addedBy, and role are required." });
+    }
+
+    // Validate role
+    const validRoles = ["Admin", "Manager", "Employee"];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid role provided." });
+    }
+
+    try {
+      // Validate worksheet ID
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid worksheet ID." });
+      }
+
+      // Find the worksheet
+      const worksheet = await Worksheet.findById(id);
+      if (!worksheet) {
+        return res.status(404).json({ message: "Worksheet not found." });
+      }
+
+      // Create a new remark
+      const newRemark = {
+        text,
+        addedBy,
+        role,
+        addedAt: new Date(),
+      };
+
+      // Add the remark to the worksheet
+      worksheet.remarks.push(newRemark);
+      await worksheet.save();
+
+      res.status(201).json({ message: "Remark added successfully.", remarks: worksheet.remarks });
+    } catch (error) {
+      console.error("Error adding remark:", error);
+      res.status(500).json({ message: "Server error." });
+    }
+  });
+
+
+// GET /api/worksheets/:id/remarks
+app.get("/api/worksheets/:id/remarks", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Validate worksheet ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid worksheet ID." });
+    }
+
+    // Find the worksheet
+    const worksheet = await Worksheet.findById(id);
+    if (!worksheet) {
+      return res.status(404).json({ message: "Worksheet not found." });
+    }
+
+    res.status(200).json({ remarks: worksheet.remarks });
+  } catch (error) {
+    console.error("Error fetching remarks:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
+// Admin: Get All Worksheets
+app.get("/api/worksheets/all", async (req, res) => {
+  try {
+    const worksheets = await Worksheet.find();
+    res.status(200).json(worksheets);
+  } catch (error) {
+    console.error("Error fetching all worksheets:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+// Manager Overview: Get Worksheets Assigned to Manager and Created by Employees
+app.post("/api/worksheets/manager-overview", async (req, res) => {
+  const { managerName } = req.body;
+  
+  try {
+    // Fetch worksheets assigned to the manager and created by employees
+    const worksheets = await Worksheet.find({
+      assign_to: managerName,
+      role: "Employee",
+    });
+
+    res.status(200).json(worksheets);
+  } catch (error) {
+    console.error("Error fetching manager overview:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
+
 
 
 const PORT = 5000;

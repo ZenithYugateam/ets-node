@@ -724,3 +724,7 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
+function fetchAllUsers() {
+  throw new Error("Function not implemented.");
+}
+

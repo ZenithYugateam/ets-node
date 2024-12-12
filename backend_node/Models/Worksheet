@@ -1,11 +1,27 @@
 const mongoose = require('mongoose');
+
+// Define Remark Schema
+const remarkSchema = new mongoose.Schema({
+  text: { type: String, required: true },
+  addedBy: { type: String, required: true }, // Name of the user adding the remark
+  role: { type: String, enum: ["Admin", "Manager", "Employee"], required: true },
+  addedAt: { type: Date, default: Date.now },
+});
+
+// Define Worksheet Schema
 const WorksheetSchema = new mongoose.Schema({
   assign_name: { type: String, required: true },
   role: { type: String, required: true },
-  assign_to: { type: String, required: false , default : "admin" },
+  assign_to: { type: String, required: false, default: "admin" },
   date: { type: Date, required: true },
   worksheetTitle: { type: String, required: true },
   worksheetDescription: { type: String, required: true },
+  remarks: { type: [remarkSchema], default: [] }, 
+}, {
+  timestamps: true, 
 });
 
-module.exports = mongoose.model('Worksheet', WorksheetSchema);
+// Create Worksheet Model
+const Worksheet = mongoose.model('Worksheet', WorksheetSchema);
+
+module.exports = Worksheet;
