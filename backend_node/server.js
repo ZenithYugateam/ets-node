@@ -1,15 +1,18 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const nodemailer = require('nodemailer');
+const multer = require('multer');
 const bodyParser = require("body-parser");
 const ManagerTask = require("./Models/ManagerTask");
 const Worksheet = require("./Models/Worksheet")
+const BugReport = require("./Models/BugReport")
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '100mb' })); 
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 mongoose
   .connect(
@@ -26,7 +29,27 @@ mongoose
     console.error("Error connecting to the ETS database:", error);
   });
 
-// Schemas
+
+  const upload = multer({ storage: multer.memoryStorage() });
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, 
+  auth: {
+    user: 'sharan.medamoni4243@gmail.com', 
+    pass: 'kdmsbrhqqxkbytei', 
+  },
+});
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('SMTP connection error:', error);
+  } else {
+    console.log('SMTP connection successful:', success);
+  }
+});
+
+
 const timesheetSchema = new mongoose.Schema({
   date: Date,
   entries: [
@@ -68,7 +91,6 @@ const departmentSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
-
 
 const Department = mongoose.model("Department", departmentSchema);
 
@@ -206,7 +228,7 @@ const leaveRequestSchema = new mongoose.Schema({
   },
 });
 
-// Middleware to update `updatedAt` before saving
+
 leaveRequestSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   next();
@@ -214,10 +236,6 @@ leaveRequestSchema.pre("save", function (next) {
 
 const LeaveRequest = mongoose.model("LeaveRequest", leaveRequestSchema);
 
-// Leave Request Routes
-
-// POST API for creating leave requests
-// In your Express route handler
 app.post("/api/leave-requests", async (req, res) => {
   try {
     const { type, startDate, endDate, reason, userid, username } = req.body;
@@ -288,7 +306,6 @@ app.delete("/api/leave-requests/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate if the provided ID is a valid MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "Invalid ID format" });
     }
@@ -319,13 +336,12 @@ app.use((req, res, next) => {
   }
 });
 
-// Models
+
 const Timesheet = mongoose.model("timesheet", timesheetSchema);
 const User = mongoose.model("users", userSchema);
 
 app.get("/api/user/:id", async (req, res) => {
   const { id } = req.params;
-  // Validate the MongoDB ObjectId format
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "Invalid user ID format" });
   }
@@ -359,7 +375,6 @@ app.post("/api/getProfileData", async (req, res) => {
   }
 });
 
-// Timesheet Routes
 app.post("/api/save_entries", async (req, res) => {
   const { date, entries } = req.body;
   try {
@@ -372,21 +387,20 @@ app.post("/api/save_entries", async (req, res) => {
   }
 });
 app.put("/api/tasks/:taskId", async (req, res) => {
-  const { taskId } = req.params; // Task ID from the request parameters
-  const updatedData = req.body; // Updated data from the request body
+  const { taskId } = req.params; 
+  const updatedData = req.body;
 
   try {
-    // Find the task by ID and update with the provided data
     const updatedTask = await Task.findByIdAndUpdate(
       taskId,
-      { $set: updatedData }, // Update only specified fields
-      { new: true, runValidators: true } // Return updated document and run validation
+      { $set: updatedData }, 
+      { new: true, runValidators: true } 
     )
-      .populate("assignee.userId", "name") // Populate assignee.userId with name field
-      .populate("createdBy", "name"); // Populate createdBy with name field
+      .populate("assignee.userId", "name") 
+      .populate("createdBy", "name"); 
 
     if (!updatedTask) {
-      return res.status(404).json({ error: "Task not found" }); // Task not found
+      return res.status(404).json({ error: "Task not found" }); 
     }
 
     res.status(200).json({
@@ -421,7 +435,7 @@ app.get("/users/managers/:departmentName", async (req, res) => {
     });
   }
 });
-// Route to get all departments
+
 app.get("/api/departments", async (req, res) => {
   try {
     const departments = await Department.find();
@@ -437,8 +451,6 @@ app.get("/api/departments", async (req, res) => {
 app.post("/api/departments/add", async (req, res) => {
   try {
     const { name, description, subDepartments } = req.body;
-
-    // Check if department already exists
     const existingDepartment = await Department.findOne({ name });
     if (existingDepartment) {
       return res.status(400).json({ message: "Department already exists" });
@@ -1331,7 +1343,77 @@ app.put("/api/manager-tasks/update-status", async (req, res) => {
 });
 
 
-const PORT = 5000;
+app.post('/api/bug-report', async (req, res) => {
+  try {
+    console.log("Bug report request received");
+    const { username, role, img, description } = req.body;
+
+    console.log("username ", username, role, description);
+
+    if (!img || img.length === 0 || !description) {
+      return res.status(400).json({ message: 'Images and description are required.' });
+    }
+
+    const newBugReport = new BugReport({
+      username,
+      role,
+      img,
+      description,
+    });
+
+    await newBugReport.save();
+
+    // Decode base64 images and prepare attachments
+    const attachments = img.map((base64Image, index) => {
+      let mimeType = 'image/jpeg'; // Default MIME type
+      let base64Data = base64Image;
+
+      const matches = base64Image.match(/^data:(.+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        mimeType = matches[1];
+        base64Data = matches[2];
+      }
+
+      try {
+        const buffer = Buffer.from(base64Data, 'base64');
+        return {
+          filename: `image${index + 1}.${mimeType.split('/')[1]}`,
+          content: buffer,
+          contentType: mimeType,
+        };
+      } catch (err) {
+        throw new Error(`Invalid Base64 format for image ${index + 1}`);
+      }
+    });
+
+    const mailOptions = {
+      from: '"Bug Report" <sharan.medamoni4243@gmail.com>', // Sender address
+      to: 'temporary34576@gmail.com',
+      subject: 'Bug Report Submitted',
+      text: `A bug report was submitted by ${username}.
+
+      Role: ${role}
+      
+      Description:
+        ${description}`,
+          html: `
+            <p><strong>Username:</strong> ${username}</p>
+            <p><strong>Role:</strong> ${role}</p>
+            <p><strong>Description:</strong> ${description}</p>
+          `,
+          attachments, 
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    res.status(201).json({ message: 'Bug report submitted successfully!', data: newBugReport });
+  } catch (error) {
+    console.error('Error saving bug report:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
+
+const PORT = 5001;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
