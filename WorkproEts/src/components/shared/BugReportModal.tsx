@@ -1,8 +1,9 @@
 import { Modal } from './Modal';
 import { BugReportForm } from './BugReportForm';
 import axios from 'axios';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast, ToastContainer} from 'react-toastify';
 import { useState } from 'react';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface BugReportModalProps {
   isOpen: boolean;
@@ -11,7 +12,7 @@ interface BugReportModalProps {
 
 export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
   const [loading, setLoading] = useState(false); // State to track loading
-  const userName = sessionStorage.getItem('userName') || 'Anonymous'; // Default value
+  const userName = sessionStorage.getItem('userName') || 'Anonymous';
   let role = sessionStorage.getItem('role') || 'Guest';
   role = role.slice(1, -1);
 
@@ -20,44 +21,41 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
       const response = await axios.post('http://localhost:5001/api/bug-report', formData);
 
       if (response.status === 201 || response.status === 200) {
-        toast.success('Bug report submitted successfully!', {
+        toast.success('Bug reported successfully, sended Maintenance Team!', {
           position: 'top-right',
-          autoClose: 3000,
+          autoClose: 2500,
           hideProgressBar: false,
           closeOnClick: true,
           pauseOnHover: true,
-          draggable: true,
         });
       } else {
         throw new Error('Failed to submit');
       }
     } catch (error) {
-      toast.error('Failed to submit bug report. Please try again.', {
+      toast.error('Failed Bug-report. Please try again.', {
         position: 'top-right',
-        autoClose: 3000,
+        autoClose: 2000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
-        draggable: true,
       });
     } finally {
-      setLoading(false); // Reset loading state
+      setLoading(false);
     }
   };
 
   const handleSubmit = async (formData: FormData) => {
-    setLoading(true); // Start loading
+    setLoading(true);
 
     const base64Images: string[] = [];
     for (let pair of formData.entries()) {
       if (pair[0].startsWith('screenshot_')) {
         const file = pair[1] as File;
         const base64 = await convertFileToBase64(file);
-        base64Images.push(base64); // Collect all Base64 strings in an array
+        base64Images.push(base64);
       }
     }
 
-    // Build the structured data object
     const formDataObject = {
       username: userName,
       role: role,
@@ -67,8 +65,8 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
 
     console.log('Structured JSON:', formDataObject);
 
-    await submitBugReport(formDataObject); // Wait for the report submission to complete
-    onClose(); // Close the modal
+    await submitBugReport(formDataObject);
+    onClose(); 
   };
 
   const convertFileToBase64 = (file: File): Promise<string> => {
@@ -76,7 +74,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
       const reader = new FileReader();
       reader.onload = () => {
         if (reader.result) {
-          resolve(reader.result.toString().split(',')[1]); // Extract Base64 string only
+          resolve(reader.result.toString().split(',')[1]);
         } else {
           reject('Failed to convert file to Base64');
         }
@@ -108,14 +106,9 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
             </div>
             <h2 className="text-2xl font-semibold text-gray-900">Report Issue</h2>
           </div>
-          <BugReportForm
-            onSubmit={handleSubmit}
-            onCancel={onClose}
-            isLoading={loading} // Pass loading state to the form
-          />
+          <BugReportForm onSubmit={handleSubmit} onCancel={onClose} isLoading={loading} />
         </div>
       </Modal>
-      <ToastContainer />
     </>
   );
 }

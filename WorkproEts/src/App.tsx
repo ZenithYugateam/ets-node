@@ -13,10 +13,10 @@ import Profile from "./pages/Profile"; // Import Profile component
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./AuthContext";
 import LeaveApprovals from "./components/shared/LeaveApprovals";
-import EmployeeLeaveManagement from "./components/employee/EmployeeLeaveManagement";
 import WorksheetManagement from "./components/employee/WorksheetManagement";
+import { ToastContainer } from "react-toastify";
 
-const CURRENT_USER_ROLE = "employee";
+
 const adminId = "647f1f77bcf86cd799439011";
 
 // Layout Component
@@ -28,6 +28,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <>
       <Navbar />
+      <ToastContainer 
+        position="top-right"
+        autoClose={2500}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       <div className="flex">
         <Sidebar />
         <main className="flex-1 p-8">{children}</main>
