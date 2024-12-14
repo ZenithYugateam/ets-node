@@ -101,11 +101,10 @@ export function TaskPriorityBadge({ priority, className }: TaskPriorityBadgeProp
 export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProps) {
   const [message, setMessage] = useState<string>("");
   const [remarks, setRemarks] = useState<string[]>([]);
-  const [notes, setNotes] = useState<string[]>([]);  // Add state for notes
+  const [notes, setNotes] = useState<string[]>([]);  
 
   useEffect(() => {
     if (open && taskId) {
-      // Fetch remarks
       axios
         .get(`http://localhost:5000/api/remarks/${taskId}`)
         .then((response) => {

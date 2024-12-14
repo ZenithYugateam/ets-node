@@ -10,7 +10,9 @@ const ManagerTaskSchema = new mongoose.Schema({
   managerName: { type: String, required: true },
   status : {type : String, required: true},
   remarks: { type: [String], required: false, default: []},
-  notes: { type: [String], required: false, default: [] }
+  notes: { type: [String], required: false, default: [] },
+  selectedEmployees : {type : [String] , require : false , default : []},
+  droneRequired : {type : String , required : true}
 });
 
 
