@@ -1,0 +1,13 @@
+// const mongoose = require('mongoose');
+// const travellingDetailsSchema = new mongoose.Schema({
+//   currentStep: Number,
+//   date: String,
+//   images: [String],
+//   readings: Number,
+//   selectedVehicles: [String],
+//   time: String,
+// });
+
+// const Modal = mongoose.model('Submission', travellingDetailsSchema);
+
+// module.export  = Modal;

@@ -8,6 +8,8 @@ const bodyParser = require("body-parser");
 const ManagerTask = require("./Models/ManagerTask");
 const Worksheet = require("./Models/Worksheet")
 const BugReport = require("./Models/BugReport")
+const Vehicle = require("./Models/Vehicle")
+const SubmissionSchema = require("./Models/SubmissionSchema");
 
 const app = express();
 app.use(cors());
@@ -1113,7 +1115,20 @@ app.post('/api/employees-by-manager', async (req, res) => {
 
 app.post("/api/store-form-data", async (req, res) => {
   try {
-    const newTask = new ManagerTask(req.body);
+    const newTask = new ManagerTask({
+      projectName: req.body.projectName,
+      projectId: req.body.projectId,
+      taskName: req.body.taskName,
+      employeeName: req.body.employeeName,
+      priority: req.body.priority,
+      deadline: req.body.deadline,
+      description: req.body.description,
+      managerName: req.body.managerName,
+      status: req.body.status,
+      droneRequired: req.body.droneRequired,
+      selectedEmployees: req.body.selectedEmployees,
+    });
+    
     const savedTask = await newTask.save();
 
     res.status(201).json({ message: "Task saved successfully", data: savedTask });
@@ -1412,8 +1427,221 @@ app.post('/api/bug-report', async (req, res) => {
   }
 });
 
+app.post('/api/vehicles', async (req, res) => {
+  try {
+    const { vehicleName, vehicleNumber } = req.body;
+    if (!vehicleName || !vehicleNumber) {
+      return res.status(400).json({ error: 'Vehicle name and number are required.' });
+    }
+    const newVehicle = new Vehicle({ vehicleName, vehicleNumber });
+    await newVehicle.save();
 
-const PORT = 5001;
+    res.status(201).json({ message: 'Vehicle saved successfully', vehicle: newVehicle });
+  } catch (error) {
+    if (error.code === 11000) {
+      res.status(409).json({ error: 'Vehicle number already exists.' });
+    } else {
+      res.status(500).json({ error: 'Error saving vehicle', details: error.message });
+    }
+  }
+});
+
+app.get('/api/getAllVechileData' , (req, res)=>{
+  try{
+    Vehicle.find().then(data => {
+      res.status(200).json(data);
+    }).catch(error => {
+      console.error("Error fetching data:", error);
+      res.status(500).json({ message: "Server error" });
+    });
+
+  }catch(error){
+    console.error("Error fetching data:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+})
+
+app.post('/api/latest-active-step', async (req, res) => {
+  try {
+    const { managerTaskId } = req.body;
+    console.log("managerTaskId" , managerTaskId);
+
+    const submission = await SubmissionSchema.findOne(
+      { managerTaskId: managerTaskId },
+      { currentStep: 1, _id: 0 } 
+    ).sort({ currentStep: -1 }); 
+
+    console.log(submission);
+
+    if (!submission) {
+      return res.status(404).json({ message: 'No submission found with the given managerTaskId' });
+    }
+
+    return res.status(200).json({ latestActiveStep: submission.currentStep });
+  } catch (error) {
+    console.error('Error fetching latest active step:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+app.post('/api/submissions/selected-vehicles', async (req, res) => {
+  try {
+    const { managerTaskId } = req.body;
+
+    const submission = await SubmissionSchema.findOne({
+      managerTaskId: managerTaskId,
+      currentStep: 1
+    });
+
+    if (!submission) {
+      return res.status(404).json({ 
+        message: 'Submission not found for the given managerTaskId and currentStep=2' 
+      });
+    }
+
+    res.json({ selectedVehicles: submission.selectedVehicles || [] });
+  } catch (error) {
+    console.error('Error fetching submission:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/api/droneDetailsList', async (req, res) => {
+  const { managerTaskId } = req.body;
+
+  if (!managerTaskId) {
+    return res.status(400).json({ error: 'managerTaskId is required' });
+  }
+
+  try {
+    const submissions = await SubmissionSchema.find({
+      managerTaskId,
+      currentStep: 0
+    });
+
+    if (submissions.length === 0) {
+      return res.status(404).json({ message: 'No submissions found for the given managerTaskId with currentStep = 0' });
+    }
+
+    return res.json(submissions);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/submission', async (req, res) => {
+  try {
+    const { type, onFieldDetails, ...data } = req.body;
+    
+    if (!type) {
+      return res.status(400).json({ error: 'Type field is required to differentiate the submission.' });
+    }
+
+    let formattedData = {};
+
+    if (type === "onFieldDetails") {
+      if (!onFieldDetails || !onFieldDetails.location) {
+        return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
+      }
+
+      const { location, isReporting } = onFieldDetails;
+
+      formattedData = {
+        type,
+        ...data,
+        location: {
+          latitude: location.latitude || null,
+          longitude: location.longitude || null,
+        },
+        isReporting: isReporting || false,
+      };
+    } else if (type === "beforeFlight") {
+      formattedData = {
+        type,
+        crew: data.crew,
+        method: data.method,
+        sightName: data.sightName,
+        date: data.date,
+        flights: data.flights,
+        images: data.images,
+        currentStep: data.currentStep,
+        managerTaskId: data.managerTaskId,
+      };
+    }
+    else if (type === "afterFlight") {
+      formattedData = {
+        type,
+        crew: data.crew,
+        method: data.method,
+        sightName: data.sightName,
+        date: data.date,
+        flights: data.flights,
+        images: data.images,
+        currentStep: data.currentStep,
+        managerTaskId: data.managerTaskId,
+      };
+    } 
+    else if (type === "gettingOffField") {
+      if (!onFieldDetails || !onFieldDetails.location) {
+        return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
+      }
+
+      const { location, departingTime, currentStep } = onFieldDetails;
+
+      formattedData = {
+        type,
+        ...data,
+        location: {
+          latitude: location.latitude || null,
+          longitude: location.longitude || null,
+        },
+        departingTime: departingTime || null,
+        currentStep: currentStep || null,
+      };
+    } 
+    else if (type === "returnToOffice") {
+      formattedData = {
+        type,
+        selectedVehicles: data.selectedVehicles,  
+        timeReached: data.timeReached,            
+        endReading: data.endReading,              
+        images: data.images,                     
+        currentStep: data.currentStep,            
+        managerTaskId: data.managerTaskId,        
+      };
+    }
+    else if (type === "DroneSubmitForm") {
+      if (!data.checkedItems) {
+        return res.status(400).json({ error: 'checkedItems are required for DroneSubmitForm.' });
+      }
+      formattedData = {
+        type,
+        checkedItems: data.checkedItems,
+        managerTaskId: data.managerTaskId,
+        currentStep: data.currentStep,
+      };
+    }
+     else {
+      formattedData = {
+        type,
+        ...data,
+      };
+    }
+
+    const submission = new SubmissionSchema(formattedData); 
+    const savedSubmission = await submission.save();
+
+    res.status(201).json({
+      message: 'Submission stored successfully!',
+      data: savedSubmission,
+    });
+  } catch (error) {
+    console.error('Error saving submission:', error);
+    res.status(500).json({ error: 'Failed to store submission.' });
+  }
+});
+
+const PORT = 5000;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );

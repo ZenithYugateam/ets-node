@@ -1,0 +1,13 @@
+const mongoose = require('mongoose');
+
+const vehicleSchema = new mongoose.Schema(
+  {
+    vehicleName: { type: String, required: true },
+    vehicleNumber: { type: String, required: true, unique: true },
+  },
+  { timestamps: true } // Enables createdAt and updatedAt fields
+);
+
+const Vehicle = mongoose.model('Vehicle', vehicleSchema);
+
+module.exports = Vehicle;

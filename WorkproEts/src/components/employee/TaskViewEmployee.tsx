@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialo
 import { ScrollArea } from "../../ui/scroll-area";
 import UpdateStatusModal from './UpdateStatusModal';
 import EditIcon from '@mui/icons-material/Edit';
+import { Eye } from 'lucide-react';
+import { TaskDrawer } from '../taskStepperFlow/TaskDrawer';
 
 type Priority = 'Low' | 'Medium' | 'High';
 type Status = 'Completed' | 'In Progress' | 'Pending';
@@ -30,6 +32,19 @@ interface Task {
   managerName: string;
   status: Status;
   remarks: string[];
+  droneRequired: string; 
+  selectedEmployees: string[];
+  currentStep  : string;
+}
+
+interface Task1 {
+  id: number;
+  projectName: string;
+  taskName: string;
+  deadline: string;
+  description: string;
+  hasDrone: boolean;
+  status: 'pending' | 'accepted' | 'completed';
 }
 
 interface TaskDetailItemProps {
@@ -100,6 +115,27 @@ export function TaskPriorityBadge({ priority, className }: TaskPriorityBadgeProp
   );
 }
 
+export const initialTasks2: Task1[] = [
+  {
+    id: 1,
+    projectName: 'Drone Survey',
+    taskName: 'Site Inspection',
+    deadline: '2024-03-20',
+    description: 'Conduct aerial survey of construction site',
+    hasDrone: true,
+    status: 'pending',
+  },
+  {
+    id: 2,
+    projectName: 'Infrastructure Mapping',
+    taskName: 'Power Line Inspection',
+    deadline: '2024-03-25',
+    description: 'Map power line infrastructure using drone',
+    hasDrone: true,
+    status: 'accepted',
+  },
+];
+
 const TaskViewEmployee: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -111,6 +147,8 @@ const TaskViewEmployee: React.FC = () => {
   const [newRemark, setNewRemark] = useState<string>(''); 
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedTaskForStatus, setSelectedTaskForStatus] = useState<Task | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+ 
 
   const handleStatusChange = (task: Task) => {
     setSelectedTaskForStatus(task);
@@ -232,7 +270,7 @@ const TaskViewEmployee: React.FC = () => {
     {
       field: 'actions',
       headerName: 'Actions',
-      flex: 1.5,
+      flex: 1.7,
       renderCell: (params) => (
         <MuiButton
           variant="outlined"
@@ -255,7 +293,7 @@ const TaskViewEmployee: React.FC = () => {
     {
       field: 'updateStatus',
       headerName: 'Update Status',
-      flex: 1.5,
+      flex: 1,
       renderCell: (params) => (
         <MuiButton
           variant="outlined"
@@ -265,10 +303,27 @@ const TaskViewEmployee: React.FC = () => {
           <EditIcon />
         </MuiButton>
       ),
-    }
-    
-        
+    },{
+      field: 'view',
+      headerName: 'View',
+      flex: 1,
+      renderCell: (params) => {
+        return (
+        <MuiButton
+          variant="outlined"
+          color="secondary"
+          onClick={() => {
+            setSelectedTask(params.row); 
+            setIsDrawerOpen(true);      
+          }}
+        >
+          <Eye /> view
+        </MuiButton>
+      )},
+    }      
   ];
+
+  
 
   return (
     <div className="overflow-hidden rounded-lg shadow-md">
@@ -453,8 +508,14 @@ const TaskViewEmployee: React.FC = () => {
           fetchTasks(userName); // Re-fetch tasks after updating the status
         }
       }}
-/>
-
+    />
+     {selectedTask && (
+            <TaskDrawer
+              isOpen={isDrawerOpen}
+              onClose={() => setIsDrawerOpen(false)}
+              task={selectedTask}
+            />
+          )}
     </div>
   );
 };

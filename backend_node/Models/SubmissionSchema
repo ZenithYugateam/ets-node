@@ -1,0 +1,43 @@
+const mongoose = require('mongoose');
+
+const ChecklistItemSchema = new mongoose.Schema({
+  item: { type: String, required: false },
+  quantity: { type: Number, required: false },
+});
+
+const LocationSchema = new mongoose.Schema({
+  latitude: { type: Number, required: false },
+  longitude: { type: Number, required: false },
+});
+
+const FlightSchema = new mongoose.Schema({
+  flightNo: { type: String, required: false },
+  takeoffTime: { type: String, required: false },
+});
+
+const SubmissionSchema = new mongoose.Schema({
+  type: { type: String, required: true }, 
+  droneName: { type: String, required: false },
+  checklistItems: { type: [ChecklistItemSchema], required: false },
+  images: { type: [String], required: false },
+  currentStep: { type: Number, required: true },
+  managerTaskId: { type: String, required: true },
+  date: { type: String, required: false },
+  readings: { type: Number, required: false },
+  selectedVehicles: { type: [String], required: false },
+  time: { type: String, required: false },
+  location: { type: LocationSchema, required: false },
+  isReporting: { type: Boolean, required: false },
+  crew: { type: [String], required: false },            
+  flights: { type: [FlightSchema], required: false },  
+  method: { type: String, required: false },
+  sightName: { type: String, required: false },
+  departingTime : {type : String , required : false},
+  timeReached: { type: String, required: false }, // time when returning to office
+  endReading: { type: Number, required: false },
+  checkedItems: { type: [String], required: false }, // Add this line
+});
+
+const Submission = mongoose.model('Submission', SubmissionSchema);
+
+module.exports = Submission;
