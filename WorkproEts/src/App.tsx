@@ -9,21 +9,16 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Timesheets from "./pages/Timesheets";
 import LoginForm from "./pages/Login";
 import ErrorBoundary from "./components/ErrorBoundary";
-import Profile from "./pages/Profile"; // Import Profile component
+import Profile from "./pages/Profile"; 
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./AuthContext";
 import LeaveApprovals from "./components/shared/LeaveApprovals";
 import WorksheetManagement from "./components/employee/WorksheetManagement";
 import { ToastContainer } from "react-toastify";
 
-
 const adminId = "647f1f77bcf86cd799439011";
 
-// Layout Component
-/**
- * Layout Component
- * This reusable component ensures consistent layout structure across private routes.
- */
+// Layout for private routes only, now includes Sidebar
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <>
@@ -39,9 +34,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         draggable
         pauseOnHover
       />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-8">{children}</main>
+      {/* Include Sidebar here so it's only shown when Layout is used, i.e., on private routes */}
+      <Sidebar />
+      <div className="ml-64 p-8">
+        {children}
       </div>
     </>
   );
@@ -54,20 +50,17 @@ function App() {
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Routes>
+              {/* Public route: no Sidebar displayed */}
               <Route path="/" element={<LoginForm />} />
-              <Route path="/profile" element={<Profile />} />{" "}
+              <Route path="/profile" element={<Profile />} />
+
+              {/* Admin routes - uses Layout, so Sidebar is shown */}
               <Route
                 path="/admin"
                 element={
                   <PrivateRoute requiredRoles={["Admin"]}>
                     <Layout>
                       <AdminDashboard />
-                      {/* <div className="max-w-7xl mx-auto">
-                        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                          Leave Management Dashboard
-                        </h1> */}
-                        {/* <LeaveApprovals adminId={adminId} /> */}
-                      {/* </div> */}
                     </Layout>
                   </PrivateRoute>
                 }
@@ -87,22 +80,20 @@ function App() {
                   </PrivateRoute>
                 }
               />
+
+              {/* Manager routes - uses Layout, Sidebar shown */}
               <Route
                 path="/manager"
                 element={
                   <PrivateRoute requiredRoles={["Manager"]}>
                     <Layout>
                       <ManagerDashboard />
-                      {/* <div className="max-w-7xl mx-auto">
-                        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                          Leave Management Dashboard
-                        </h1>
-                        <LeaveApprovals adminId={adminId} />
-                      </div> */}
                     </Layout>
                   </PrivateRoute>
                 }
               />
+
+              {/* Employee routes - uses Layout, Sidebar shown */}
               <Route
                 path="/employee"
                 element={
@@ -126,9 +117,7 @@ function App() {
               <Route
                 path="/work-sheets"
                 element={
-                  <PrivateRoute
-                    requiredRoles={["Admin", "Manager", "Employee"]}
-                  >
+                  <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
                     <Layout>
                       <WorksheetManagement />
                     </Layout>
@@ -138,9 +127,7 @@ function App() {
               <Route
                 path="/timesheets"
                 element={
-                  <PrivateRoute
-                    requiredRoles={["Admin", "Manager", "Employee"]}
-                  >
+                  <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
                     <Layout>
                       <Timesheets />
                     </Layout>
