@@ -60,14 +60,12 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
 
   // Toggle vehicle selection
   const toggleVehicleSelection = (vehicleNumber: string) => {
-    setFormData((prev) => {
-      const isSelected = prev.selectedVehicles.includes(vehicleNumber);
-      const newSelectedVehicles = isSelected
-        ? prev.selectedVehicles.filter((num) => num !== vehicleNumber)
-        : [...prev.selectedVehicles, vehicleNumber];
-
-      return { ...prev, selectedVehicles: newSelectedVehicles };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      selectedVehicles: prev.selectedVehicles.includes(vehicleNumber)
+        ? [] // Deselect if the same vehicle is clicked
+        : [vehicleNumber], // Select only this vehicle
+    }));
   };
 
   // Convert images to Base64
