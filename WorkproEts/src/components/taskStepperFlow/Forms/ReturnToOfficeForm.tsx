@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { FormField } from '../ui/FormField';
 import { ImageUpload } from '../ui/ImageUpload';
+import Camera from '../ui/Camera';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { Task } from '../types';
 
 interface ReturnToOfficeData {
@@ -23,6 +26,7 @@ export const ReturnToOfficeForm = ({ currentStep, task }: ReturnToOfficeFormProp
     currentStep: currentStep
   });
 
+  const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [selectedVehicles, setSelectedVehicles] = useState<string[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,10 +62,16 @@ export const ReturnToOfficeForm = ({ currentStep, task }: ReturnToOfficeFormProp
     fetchSelectedVehicles();
   }, [task._id]);
 
+  const handleImageCapture = (image: string) => {
+    setCapturedImages((prevImages) => [...prevImages, image]);
+  };
+
+  const handleDeleteCapturedImage = (index: number) => {
+    setCapturedImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Convert images to Base64
     const base64Images = await Promise.all(
       formData.images.map((image) => {
         return new Promise<string>((resolve, reject) => {
@@ -73,18 +83,15 @@ export const ReturnToOfficeForm = ({ currentStep, task }: ReturnToOfficeFormProp
       })
     );
 
-    // Prepare data to submit
     const submissionData = {
       type: "returnToOffice",
       selectedVehicles: selectedVehicles,
       timeReached: formData.timeReached,
       endReading: formData.endReading,
-      images: base64Images,
+      images: [...base64Images, ...capturedImages],
       currentStep: formData.currentStep,
-      managerTaskId: task._id, // Using the task._id as managerTaskId
+      managerTaskId: task._id,
     };
-
-    console.log('Submitting Data:', submissionData);
 
     try {
       const response = await fetch('http://localhost:5001/api/submission', {
@@ -98,20 +105,19 @@ export const ReturnToOfficeForm = ({ currentStep, task }: ReturnToOfficeFormProp
       const result = await response.json();
 
       if (!response.ok) {
-        console.error('Error submitting data:', result);
-        alert(`Error: ${result.error || 'Unknown error'}`);
+        toast.error(`Error: ${result.error || 'Unknown error'}`);
       } else {
-        console.log('Submission successful!', result);
-        alert('Submission successful!');
+        toast.success('Submission successful!');
       }
     } catch (error) {
       console.error('Network error:', error);
-      alert('Failed to submit due to network error.');
+      toast.error('Failed to submit due to network error.');
     }
   };
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
+      <ToastContainer />
       <FormField label="Selected Vehicles">
         {loadingVehicles && <p>Loading vehicles...</p>}
         {error && <p className="text-red-500">Error: {error}</p>}
@@ -154,6 +160,30 @@ export const ReturnToOfficeForm = ({ currentStep, task }: ReturnToOfficeFormProp
           images={formData.images}
           onChange={(images) => setFormData({ ...formData, images })}
         />
+      </FormField>
+
+      <FormField label="Capture Images">
+        <Camera onImageCapture={handleImageCapture} />
+        {capturedImages.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {capturedImages.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Captured ${index}`}
+                  className="w-full h-auto rounded-md shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCapturedImage(index)}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </FormField>
 
       <button

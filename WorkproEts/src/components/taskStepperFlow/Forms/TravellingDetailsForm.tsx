@@ -3,11 +3,13 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { FormField } from '../ui/FormField';
 import { ImageUpload } from '../ui/ImageUpload';
+import Camera from '../ui/Camera'; // Import the Camera component
 import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { Task } from '../types';
 
 // Types
-
 type TravellingDetails = {
   selectedVehicles: string[];
   date: Date;
@@ -22,12 +24,11 @@ type Vehicle = {
 };
 
 interface TravellingDetailsFormProps {
-  currentStep: number; 
+  currentStep: number;
   task: Task;
 }
 
-
-export const TravellingDetailsForm = ({currentStep, task} : TravellingDetailsFormProps) => {
+export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFormProps) => {
   const [formData, setFormData] = useState<TravellingDetails>({
     selectedVehicles: [],
     date: new Date(),
@@ -36,17 +37,17 @@ export const TravellingDetailsForm = ({currentStep, task} : TravellingDetailsFor
     images: [],
   });
 
+  const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [vehicleList, setVehicleList] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch vehicles from API
   useEffect(() => {
     const fetchVehicles = async () => {
       setLoading(true);
       try {
         const response = await axios.get('http://localhost:5001/api/getAllVechileData');
-        setVehicleList(response.data); 
+        setVehicleList(response.data);
       } catch (err) {
         setError(err.message || 'Error fetching vehicles');
       } finally {
@@ -83,11 +84,19 @@ export const TravellingDetailsForm = ({currentStep, task} : TravellingDetailsFor
     return Promise.all(base64Promises);
   };
 
+  const handleImageCapture = (image: string) => {
+    setCapturedImages((prevImages) => [...prevImages, image]);
+  };
+
+  const handleDeleteCapturedImage = (index: number) => {
+    setCapturedImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setLoading(true); 
-    setError(null); 
-  
+    setLoading(true);
+    setError(null);
+
     try {
       const base64Images = await convertImagesToBase64(formData.images);
       const submissionData = {
@@ -95,27 +104,28 @@ export const TravellingDetailsForm = ({currentStep, task} : TravellingDetailsFor
         date: formData.date.toISOString(),
         time: formData.time,
         readings: formData.readings,
-        images: base64Images,
+        images: [...base64Images, ...capturedImages],
         currentStep: currentStep,
-        type: "travellingDetails",
-        managerTaskId : task._id,
+        type: 'travellingDetails',
+        managerTaskId: task._id,
       };
 
       const response = await axios.post('http://localhost:5001/api/submission', submissionData);
-  
+
       console.log('Submission successful:', response.data);
-      alert('Travelling details submitted successfully!');
+      toast.success('Travelling details submitted successfully!');
     } catch (error) {
       console.error('Error submitting travelling details:', error);
       setError(error.response?.data?.error || 'Failed to submit travelling details.');
+      toast.error('Error submitting travelling details.');
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
-  
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
+      <ToastContainer />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {vehicleList.map((vehicle) => (
           <div
@@ -168,7 +178,31 @@ export const TravellingDetailsForm = ({currentStep, task} : TravellingDetailsFor
         />
       </FormField>
 
-      {loading && <p>Loading vehicles...</p>}
+      <FormField label="Capture Images">
+        <Camera onImageCapture={handleImageCapture} />
+        {capturedImages.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {capturedImages.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Captured ${index}`}
+                  className="w-full h-auto rounded-md shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCapturedImage(index)}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </FormField>
+
+      {loading && <p>Loading...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
       <button

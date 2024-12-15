@@ -10,6 +10,7 @@ import { DroneSubmissionForm } from './Forms/DroneSubmissionForm';
 import { DataSubmissionForm } from './Forms/DataSubmissionForm';
 import { TaskProgressForm } from './Forms/TaskProgressForm';
 import type { Task } from './types/index';
+import { ToastContainer } from 'react-toastify';
 
 const steps = [
   'Drone Details',
@@ -46,6 +47,7 @@ export const TaskStepper = ({ currentStep, setCurrentStep , task }: TaskStepperP
 
   return (
     <div>
+      <ToastContainer />
       <div className="mb-8">
         <div className="overflow-hidden rounded-full bg-gray-200">
           <div
