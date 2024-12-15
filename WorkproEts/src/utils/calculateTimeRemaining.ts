@@ -8,8 +8,7 @@ export interface TimeRemaining {
 }
 
 export const calculateTimeRemaining = (
-  targetTime: number,
-  type: "deadline" | "estimated"
+  targetTime: number
 ): TimeRemaining => {
   const now = Date.now();
   const diff = targetTime - now;
@@ -22,16 +21,13 @@ export const calculateTimeRemaining = (
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-  // Define urgency levels based on remaining time and type
   let urgencyLevel: UrgencyLevel = "low";
 
-  if (type === "deadline" || type === "estimated") {
-    if (diff <= 24 * 60 * 60 * 1000) { // ≤ 24 hours
-      urgencyLevel = "high";
-    }
-    if (diff <= 1 * 60 * 60 * 1000) { // ≤ 1 hour
-      urgencyLevel = "critical";
-    }
+  if (diff <= 24 * 60 * 60 * 1000) { // ≤ 24 hours
+    urgencyLevel = "high";
+  }
+  if (diff <= 1 * 60 * 60 * 1000) { // ≤ 1 hour
+    urgencyLevel = "critical";
   }
 
   const time = `${hours}h ${minutes}m ${seconds}s`;
