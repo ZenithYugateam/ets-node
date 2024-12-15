@@ -1,5 +1,6 @@
 import { ChangeEvent, useCallback } from 'react';
 import { Upload, X } from 'lucide-react';
+import Camera from './Camera';
 
 interface ImageUploadProps {
   images: File[];
@@ -30,6 +31,7 @@ export const ImageUpload = ({ images, onChange, multiple = true }: ImageUploadPr
 
   return (
     <div>
+        <Camera />
       <div
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
