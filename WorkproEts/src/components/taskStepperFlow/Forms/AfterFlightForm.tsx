@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FormField } from '../ui/FormField';
 import { ImageUpload } from '../ui/ImageUpload';
+import Camera from '../ui/Camera';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; // Import toast styles
 import type { FlightNotes, Task } from '../types';
 
 interface AfterFlightFormProps {
@@ -21,6 +24,7 @@ export const AfterFlightForm = ({ task, currentStep }: AfterFlightFormProps) => 
     currentStep: currentStep
   });
 
+  const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [flights, setFlights] = useState<{ flightNo: string; landingTime: string }[]>([]);
   const [newFlight, setNewFlight] = useState<{ flightNo: string; landingTime: string }>({ flightNo: '', landingTime: '' });
   const [showFlightInput, setShowFlightInput] = useState(false);
@@ -29,7 +33,8 @@ export const AfterFlightForm = ({ task, currentStep }: AfterFlightFormProps) => 
     setFormData((prevData) => ({ ...prevData, crew: task.selectedEmployees }));
   }, [task.selectedEmployees]);
 
-  const badgeStyles = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500 text-white";
+  const badgeStyles =
+    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500 text-white';
 
   const handleAddFlight = () => {
     setShowFlightInput(true);
@@ -40,19 +45,33 @@ export const AfterFlightForm = ({ task, currentStep }: AfterFlightFormProps) => 
       setFlights((prevFlights) => [...prevFlights, newFlight]);
       setNewFlight({ flightNo: '', landingTime: '' });
       setShowFlightInput(false);
-    }
+    } 
+  };
+
+  const handleImageCapture = (image: string) => {
+    setCapturedImages((prevImages) => [...prevImages, image]);
+  };
+
+  const handleDeleteImage = (index: number) => {
+    setCapturedImages((prevImages) => prevImages.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
     try {
-      // Convert images to base64
-      const base64Images = await Promise.all(formData.images.map((image) => {
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(image);
-        });
-      }));
+      const allImages = [...formData.images, ...capturedImages];
+      const base64Images = await Promise.all(
+        allImages.map((image) =>
+          new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            if (typeof image === 'string') {
+              resolve(image); 
+            } else {
+              reader.readAsDataURL(image); 
+            }
+          })
+        )
+      );
 
       const dataToSubmit = {
         type: 'afterFlight',
@@ -76,20 +95,20 @@ export const AfterFlightForm = ({ task, currentStep }: AfterFlightFormProps) => 
 
       if (!response.ok) {
         const errorData = await response.json();
-        alert(`Submission failed: ${errorData.error || 'Unknown error'}`);
+        toast.error(`Submission failed: ${errorData.error || 'Unknown error'}`);
       } else {
         const result = await response.json();
-        alert(`Submission successful! ${result.message}`);
-        // Optionally reset form or perform other UI updates
+        toast.success(`Submission successful! ${result.message}`);
       }
     } catch (error: any) {
       console.error('Error during submission:', error);
-      alert('An unexpected error occurred. Please try again later.');
+      toast.error('An unexpected error occurred. Please try again later.');
     }
   };
 
   return (
     <form className="space-y-6">
+      <ToastContainer />
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <FormField label="Crew">
           <div className="flex flex-wrap gap-2">
@@ -164,26 +183,35 @@ export const AfterFlightForm = ({ task, currentStep }: AfterFlightFormProps) => 
         </div>
       )}
 
-      {flights.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <h3 className="text-sm font-medium">Added Flights:</h3>
-          {flights.map((flight, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between px-4 py-2 bg-gray-100 rounded-md shadow-sm"
-            >
-              <p className="text-sm font-medium">Flight: {flight.flightNo}</p>
-              <p className="text-sm font-medium">Landing Time: {flight.landingTime}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
       <FormField label="Upload Post-Flight Images">
         <ImageUpload
           images={formData.images}
           onChange={(images) => setFormData({ ...formData, images })}
         />
+      </FormField>
+
+      <FormField label="Capture Images">
+        <Camera onImageCapture={handleImageCapture} />
+        {capturedImages.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {capturedImages.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Captured ${index}`}
+                  className="w-full h-auto rounded-md shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleDeleteImage(index)}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </FormField>
 
       <div>

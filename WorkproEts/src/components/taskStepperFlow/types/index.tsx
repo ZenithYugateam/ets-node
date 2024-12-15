@@ -22,7 +22,7 @@ export interface Task {
   export interface DroneDetails {
     droneName: string;
     checklistItems: string[];
-    images: File[];
+    images: (File[]);
   }
   
   export interface TravellingDetails {

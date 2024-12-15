@@ -4,6 +4,9 @@ import { FormField } from '../ui/FormField';
 import { ImageUpload } from '../ui/ImageUpload';
 import type { DroneDetails, Task } from '../types/index';
 import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Camera from '../ui/Camera';
 
 const predefinedDroneNames = [
   'MODEL V DRONE',
@@ -107,13 +110,15 @@ interface DroneDetailsFormProps {
 }
 
 
-export const DroneDetailsForm = ({currentStep, task} :DroneDetailsFormProps ) => {
+export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<DroneDetails>({
     droneName: '',
     checklistItems: [],
     images: [],
   });
+
+  const [capturedImages, setCapturedImages] = useState<string[]>([]);
 
   const toggleChecklistItem = (item: string) => {
     setFormData((prev) => {
@@ -150,65 +155,76 @@ export const DroneDetailsForm = ({currentStep, task} :DroneDetailsFormProps ) =>
     });
   };
 
-  const convertToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
+  const convertToBase64 = (file: File) => {
+    return new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
+      reader.onload = () => resolve(reader.result as string);
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
   };
-  
 
-const handleNext = async () => {
-  if (!formData.droneName) {
-    setError('Drone name is required.');
-    return;
-  }
-  if (formData.images.length === 0) {
-    setError('At least one image is required.');
-    return;
-  }
-  if (formData.checklistItems.length === 0) {
-    setError('At least one checklist item is required.');
-    return;
-  }
+  const handleImageCapture = (image: string) => {
+    setCapturedImages((prevImages) => [...prevImages, image]);
+  };
 
-  setError(null);
+  const handleDeleteCapturedImage = (index: number) => {
+    setCapturedImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  };
 
-  try {
-    const base64Images = await Promise.all(
-      formData.images.map((image) => convertToBase64(image))
-    );
+  const handleNext = async () => {
+    if (!formData.droneName) {
+      setError('Drone name is required.');
+      toast.error('Drone name is required.');
+      return;
+    }
+    if (formData.images.length === 0 && capturedImages.length === 0) {
+      setError('At least one image is required.');
+      toast.error('At least one image is required.');
+      return;
+    }
+    if (formData.checklistItems.length === 0) {
+      setError('At least one checklist item is required.');
+      toast.error('At least one checklist item is required.');
+      return;
+    }
 
-    const submissionData = {
-      ...formData,
-      images: base64Images,
-      currentStep,
-      managerTaskId : task._id,
-      type : "DroneDetails"
-    };
+    setError(null);
 
-    const response = await axios.post('http://localhost:5001/api/submission', submissionData);
+    try {
+      const base64Images = await Promise.all(
+        formData.images.map((image) => convertToBase64(image))
+      );
 
-    console.log('API Response:', response.data);
+      const submissionData = {
+        ...formData,
+        images: [...base64Images, ...capturedImages],
+        currentStep,
+        managerTaskId: task._id,
+        type: 'DroneDetails',
+      };
 
-    setFormData({
-      droneName: '',
-      checklistItems: [],
-      images: [],
-    });
-    alert('Submission successful!');
-  } catch (err) {
-    console.error('Error submitting form:', err);
-    setError('Failed to submit the form. Please try again.');
-  }
-};
+      const response = await axios.post('http://localhost:5001/api/submission', submissionData);
 
-  
+      setFormData({
+        droneName: '',
+        checklistItems: [],
+        images: [],
+      });
+      setCapturedImages([]);
+      toast.success('Submission successful!');
+    } catch (err) {
+      console.error('Error submitting form:', err);
+      setError('Failed to submit the form. Please try again.');
+      toast.error('Failed to submit the form. Please try again.');
+    }
+  };
+
   return (
     <form className="space-y-6">
+      <ToastContainer />
       {error && <div className="text-red-500 mb-4">{error}</div>}
+
       <FormField label="Drone Name">
         <select
           value={formData.droneName}
@@ -271,13 +287,39 @@ const handleNext = async () => {
         />
       </FormField>
 
+      <FormField label="Capture Images">
+        <Camera onImageCapture={handleImageCapture} />
+        {capturedImages.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {capturedImages.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Captured ${index}`}
+                  className="w-full h-auto rounded-md shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCapturedImage(index)}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </FormField>
+
       <button
         type="button"
         onClick={handleNext}
         className="mt-4 px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700"
       >
-        submit
+        Submit
       </button>
     </form>
   );
 };
+
+

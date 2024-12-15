@@ -9,7 +9,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Timesheets from "./pages/Timesheets";
 import LoginForm from "./pages/Login";
 import ErrorBoundary from "./components/ErrorBoundary";
-import Profile from "./pages/Profile"; // Import Profile component
+import Profile from "./pages/Profile"; 
 import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./AuthContext";
 import LeaveApprovals from "./components/shared/LeaveApprovals";

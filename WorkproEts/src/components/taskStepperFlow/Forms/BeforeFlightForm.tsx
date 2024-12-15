@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import { FormField } from '../ui/FormField';
 import { ImageUpload } from '../ui/ImageUpload';
+import Camera from '../ui/Camera';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import type { FlightNotes, Task } from '../types/index';
 import axios from 'axios';
 
@@ -23,6 +26,7 @@ export const BeforeFlightForm = ({ task, currentStep }: BeforeFlightForm) => {
     managerTaskId: task._id,
   });
 
+  const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [flights, setFlights] = useState<{ flightNo: string; takeoffTime: string }[]>([]);
   const [newFlight, setNewFlight] = useState<{ flightNo: string; takeoffTime: string }>({ flightNo: '', takeoffTime: '' });
   const [showFlightInput, setShowFlightInput] = useState(false);
@@ -31,7 +35,8 @@ export const BeforeFlightForm = ({ task, currentStep }: BeforeFlightForm) => {
     setFormData((prevData) => ({ ...prevData, crew: task.selectedEmployees }));
   }, [task.selectedEmployees]);
 
-  const badgeStyles = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500 text-white";
+  const badgeStyles =
+    "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500 text-white";
 
   const handleAddFlight = () => {
     setShowFlightInput(true);
@@ -45,38 +50,51 @@ export const BeforeFlightForm = ({ task, currentStep }: BeforeFlightForm) => {
     }
   };
 
+  const handleImageCapture = (image: string) => {
+    setCapturedImages((prevImages) => [...prevImages, image]);
+  };
+
+  const handleDeleteCapturedImage = (index: number) => {
+    setCapturedImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
     try {
-      const base64Images = formData.images.map((image) => {
-        return new Promise((resolve) => {
+      // Combine manually uploaded and captured images
+      const allImages = [...formData.images, ...capturedImages];
+
+      const base64Images = allImages.map((image) =>
+        new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(image);
-        });
-      });
+          if (typeof image === 'string') {
+            resolve(image); // If already base64, resolve directly
+          } else {
+            reader.readAsDataURL(image);
+          }
+        })
+      );
 
       const encodedImages = await Promise.all(base64Images);
 
       const dataToSubmit = {
-        type: 'beforeFlight', // Adjust this as needed
+        type: 'beforeFlight',
         crew: formData.crew,
         method: formData.method,
         sightName: formData.sightName,
         date: formData.date.toISOString(),
-        flights: flights,
+        flights,
         images: encodedImages,
         currentStep,
         managerTaskId: formData.managerTaskId,
       };
 
-      console.log('Form Submitted:', dataToSubmit);
-
       const response = await axios.post('http://localhost:5001/api/submission', dataToSubmit);
       console.log('Success:', response.data);
-      // Handle success (e.g., show a success message or redirect)
+      toast.success('Form submitted successfully!');
     } catch (error) {
       console.error('Error:', error);
-      // Handle error (e.g., show an error message)
+      toast.error('Error submitting form. Please try again.');
     }
   };
 
@@ -186,6 +204,30 @@ export const BeforeFlightForm = ({ task, currentStep }: BeforeFlightForm) => {
           images={formData.images}
           onChange={(images) => setFormData({ ...formData, images })}
         />
+      </FormField>
+
+      <FormField label="Capture Images">
+        <Camera onImageCapture={handleImageCapture} />
+        {capturedImages.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {capturedImages.map((image, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={image}
+                  alt={`Captured ${index}`}
+                  className="w-full h-auto rounded-md shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCapturedImage(index)}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </FormField>
 
       <div>
