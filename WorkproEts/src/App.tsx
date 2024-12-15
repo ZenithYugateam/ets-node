@@ -16,7 +16,6 @@ import LeaveApprovals from "./components/shared/LeaveApprovals";
 import WorksheetManagement from "./components/employee/WorksheetManagement";
 import { ToastContainer } from "react-toastify";
 
-
 const adminId = "647f1f77bcf86cd799439011";
 
 // Layout Component
@@ -39,10 +38,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         draggable
         pauseOnHover
       />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-8">{children}</main>
-      </div>
+      {/* Sidebar is included here, only within the Layout for private routes */}
+      <Sidebar />
+      {/* Main content with left margin to accommodate the fixed sidebar */}
+      <main className="ml-64 p-8">
+        {children}
+      </main>
     </>
   );
 };
@@ -54,20 +55,25 @@ function App() {
         <BrowserRouter>
           <div className="min-h-screen bg-gray-50">
             <Routes>
+              {/* Public Route: No Layout, hence no Navbar or Sidebar */}
               <Route path="/" element={<LoginForm />} />
-              <Route path="/profile" element={<Profile />} />{" "}
+
+              {/* Profile is assumed to be a private route */}
+              <Route path="/profile" element={
+                <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+                  <Layout>
+                    <Profile />
+                  </Layout>
+                </PrivateRoute>
+              } />
+
+              {/* Admin Routes */}
               <Route
                 path="/admin"
                 element={
                   <PrivateRoute requiredRoles={["Admin"]}>
                     <Layout>
                       <AdminDashboard />
-                      {/* <div className="max-w-7xl mx-auto">
-                        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                          Leave Management Dashboard
-                        </h1> */}
-                        {/* <LeaveApprovals adminId={adminId} /> */}
-                      {/* </div> */}
                     </Layout>
                   </PrivateRoute>
                 }
@@ -87,22 +93,20 @@ function App() {
                   </PrivateRoute>
                 }
               />
+
+              {/* Manager Routes */}
               <Route
                 path="/manager"
                 element={
                   <PrivateRoute requiredRoles={["Manager"]}>
                     <Layout>
                       <ManagerDashboard />
-                      {/* <div className="max-w-7xl mx-auto">
-                        <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                          Leave Management Dashboard
-                        </h1>
-                        <LeaveApprovals adminId={adminId} />
-                      </div> */}
                     </Layout>
                   </PrivateRoute>
                 }
               />
+
+              {/* Employee Routes */}
               <Route
                 path="/employee"
                 element={
@@ -126,9 +130,7 @@ function App() {
               <Route
                 path="/work-sheets"
                 element={
-                  <PrivateRoute
-                    requiredRoles={["Admin", "Manager", "Employee"]}
-                  >
+                  <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
                     <Layout>
                       <WorksheetManagement />
                     </Layout>
@@ -138,15 +140,15 @@ function App() {
               <Route
                 path="/timesheets"
                 element={
-                  <PrivateRoute
-                    requiredRoles={["Admin", "Manager", "Employee"]}
-                  >
+                  <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
                     <Layout>
                       <Timesheets />
                     </Layout>
                   </PrivateRoute>
                 }
               />
+
+              {/* You can add a 404 Not Found route here if desired */}
             </Routes>
           </div>
         </BrowserRouter>

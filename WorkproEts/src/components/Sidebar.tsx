@@ -1,3 +1,4 @@
+// src/components/Sidebar.tsx
 import { Calendar, ClipboardList, LayoutDashboard } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -25,15 +26,14 @@ const Sidebar = () => {
 
   const links = [
     { to: dashboardRoute, icon: LayoutDashboard, label: 'Dashboard' },
-    // { to: '/timesheets', icon: ClipboardList, label: 'Timesheets' },
     ...(role === 'Admin'
       ? [{ to: '/leave-approvals', icon: Calendar, label: 'Leave Approvals' }]
       : [{ to: '/leave-requests', icon: Calendar, label: 'Leave Requests' }]),
-    { to : '/work-sheets' , icon: ClipboardList, label : 'Worksheet' },
+    { to: '/work-sheets', icon: ClipboardList, label: 'Worksheet' },
   ];
 
   return (
-    <div className="w-64 bg-white h-[calc(100vh-4rem)] border-r border-gray-200">
+    <div className="fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 overflow-auto">
       <div className="p-4">
         <nav className="space-y-1">
           {links.map((link) => {
