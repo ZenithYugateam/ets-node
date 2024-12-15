@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const ManagerTaskSchema = new mongoose.Schema({
   projectName: { type: String, required: true },
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project", required: true },
@@ -8,12 +9,13 @@ const ManagerTaskSchema = new mongoose.Schema({
   deadline: { type: Date, required: true },
   description: { type: String, required: true },
   managerName: { type: String, required: true },
-  status : {type : String, required: true},
-  remarks: { type: [String], required: false, default: []},
+  status: { type: String, required: true },
+  remarks: { type: [String], required: false, default: [] },
   notes: { type: [String], required: false, default: [] },
-  selectedEmployees : {type : [String] , require : false , default : []},
-  droneRequired : {type : String , required : true}
+  selectedEmployees: { type: [String], required: false, default: [] },
+  droneRequired: { type: String, required: true },
+  estimatedHours: { type: Number, required: false }, // New field for estimated hours
 });
 
-
 module.exports = mongoose.model("ManagerTask", ManagerTaskSchema);
+

@@ -45,6 +45,7 @@ export const ImageUpload = ({ images, onChange, multiple = true }: ImageUploadPr
               className="hidden"
               accept="image/*"
               multiple={multiple}
+              capture="environment"
               onChange={handleChange}
             />
           </label>

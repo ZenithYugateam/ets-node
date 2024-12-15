@@ -1127,6 +1127,7 @@ app.post("/api/store-form-data", async (req, res) => {
       status: req.body.status,
       droneRequired: req.body.droneRequired,
       selectedEmployees: req.body.selectedEmployees,
+      estimatedHours: req.body.estimatedHours,
     });
     
     const savedTask = await newTask.save();
