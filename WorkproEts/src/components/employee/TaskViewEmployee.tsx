@@ -158,7 +158,7 @@ const TaskViewEmployee: React.FC = () => {
   const fetchTasks = async (employeeName: string) => {
     setLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/tasks/employee', { employeeName });
+      const response = await axios.post('http://localhost:5001/api/tasks/employee', { employeeName });
       setTasks(response.data);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -175,7 +175,7 @@ const TaskViewEmployee: React.FC = () => {
 
   const fetchRemarks = async (taskId: string) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/remarks/${taskId}`);
+      const response = await axios.get(`http://localhost:5001/api/remarks/${taskId}`);
       setRemarks(response.data.remarks); 
     } catch (error) {
       console.error("Error fetching remarks:", error);
@@ -199,8 +199,8 @@ const TaskViewEmployee: React.FC = () => {
   const handleAddNotes = async () => {
     if (newRemark.trim()) {
       try {
-        if (selectedTask) {
-          await axios.put(`http://localhost:5000/api/Employee/notes`, {
+        if (selectedTask) {  
+          await axios.put(`http://localhost:5001/api/Employee/notes`, {
             id: selectedTask._id,
             note: newRemark, 
           });
@@ -210,7 +210,7 @@ const TaskViewEmployee: React.FC = () => {
           
           toast.success('Note added successfully!', {
             position: 'top-right', 
-            autoClose: 5000,  
+            autoClose: 5001,  
             hideProgressBar: false,  
             closeOnClick: true,  
             pauseOnHover: true,  
@@ -220,7 +220,7 @@ const TaskViewEmployee: React.FC = () => {
         console.error("Error adding note:", error);
         toast.error('Failed to add note. Please try again.', {
           position: 'top-right',
-          autoClose: 5000,
+          autoClose: 5001,
           hideProgressBar: false,
           closeOnClick: true,
           pauseOnHover: true,

@@ -14,7 +14,7 @@ const ManagerDashboard = () => {
   const getData = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/users/${sessionStorage.getItem('userId') || ''}`
+        `http://localhost:5001/api/users/${sessionStorage.getItem('userId') || ''}`
       );
       if (!response.ok) {
         throw new Error('Failed to fetch user data');
@@ -51,7 +51,7 @@ const ManagerDashboard = () => {
       } else {
         try {
           console.log(`Fetching manager details for userId: ${storedUserId}`);
-          const response = await fetch(`http://localhost:5000/api/users/${storedUserId}`);
+          const response = await fetch(`http://localhost:5001/api/users/${storedUserId}`);
 
           if (!response.ok) {
             throw new Error('Failed to fetch manager details');

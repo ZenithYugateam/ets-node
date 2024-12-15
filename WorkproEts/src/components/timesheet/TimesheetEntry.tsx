@@ -18,7 +18,7 @@ const TimesheetEntry: React.FC = () => {
 
   const fetchTimesheets = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/timesheets');
+      const response = await fetch('http://localhost:5001/api/timesheets');
       if (!response.ok) {
         throw new Error('Failed to fetch timesheets');
 
@@ -52,7 +52,7 @@ const TimesheetEntry: React.FC = () => {
 
   const saveEntries = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/timesheets/save_entries', {
+      const response = await fetch('http://localhost:5001/api/timesheets/save_entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

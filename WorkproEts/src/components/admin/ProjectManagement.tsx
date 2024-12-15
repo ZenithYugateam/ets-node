@@ -50,7 +50,7 @@ const ProjectManagement = () => {
     error: departmentsError,
   } = useQuery("departments", async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/departments");
+      const response = await fetch("http://localhost:5001/api/departments");
       if (!response.ok) {
         throw new Error("Error fetching departments");
       }
@@ -74,7 +74,7 @@ const ProjectManagement = () => {
         if (!formData.department) return []; // Return empty array if no department selected
 
         const response = await fetch(
-          `http://localhost:5000/users/managers/${encodeURIComponent(
+          `http://localhost:5001/users/managers/${encodeURIComponent(
             formData.department
           )}`
         );
