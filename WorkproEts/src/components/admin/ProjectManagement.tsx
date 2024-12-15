@@ -1,12 +1,23 @@
-import React, { useState, useContext } from "react";
-import { Clock, Plus, X, Trash2, Edit2 } from "lucide-react";
+// src/components/ProjectManagement.tsx
+
+import React, { useState, useContext, useEffect } from "react";
+import { Plus, X, AlertTriangle, Clock } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { createTask, getTasks, updateTask, deleteTask } from "../../api/admin";
 import { toast } from "react-toastify";
 import { AuthContext } from "../../AuthContext";
-import { Task } from "../../types/Task";
+import { Task, Priority, Status, UrgencyLevel, TimeRemaining } from "../../types/task";
+import { calculateTimeRemaining } from "../../utils/calculateTimeRemaining";
+import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
+import { Button } from "../../ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog";
+import { Separator } from "../../ui/Separator";
+import { ScrollArea } from "../../ui/scroll-area";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { Box, CircularProgress } from "@mui/material";
 
-const ProjectManagement = () => {
+const ProjectManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const { userId } = useContext(AuthContext);
 
@@ -20,12 +31,13 @@ const ProjectManagement = () => {
       avatar:
         "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
     },
-    priority: "Medium" as Task["priority"],
+    priority: "Medium" as Priority,
     deadline: "",
-    status: "Pending" as Task["status"],
+    status: "Pending" as Status,
     progress: 0,
     department: "",
     description: "",
+    estimatedHours: 0,
   });
 
   // Fetch projects (tasks)
@@ -33,7 +45,7 @@ const ProjectManagement = () => {
     data: tasks,
     isLoading,
     error,
-  } = useQuery("tasks", async () => {
+  } = useQuery<Task[]>("tasks", async () => {
     try {
       const tasks = await getTasks();
       return tasks;
@@ -43,9 +55,9 @@ const ProjectManagement = () => {
     }
   });
 
-  
+  // Fetch departments
   const {
-    data: departmentsData = [], 
+    data: departmentsData = [],
     isLoading: departmentsLoading,
     error: departmentsError,
   } = useQuery("departments", async () => {
@@ -93,6 +105,7 @@ const ProjectManagement = () => {
     }
   );
 
+  // Mutation for creating a task
   const createMutation = useMutation(createTask, {
     onSuccess: () => {
       queryClient.invalidateQueries("tasks");
@@ -105,6 +118,7 @@ const ProjectManagement = () => {
     },
   });
 
+  // Mutation for updating a task
   const updateMutation = useMutation(
     ({ taskId, data }: { taskId: string; data: Partial<Task> }) =>
       updateTask(taskId, data),
@@ -122,6 +136,7 @@ const ProjectManagement = () => {
     }
   );
 
+  // Mutation for deleting a task
   const deleteMutation = useMutation(deleteTask, {
     onSuccess: () => {
       queryClient.invalidateQueries("tasks");
@@ -141,12 +156,13 @@ const ProjectManagement = () => {
         avatar:
           "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
       },
-      priority: "Medium" as Task["priority"],
+      priority: "Medium",
       deadline: "",
-      status: "Pending" as Task["status"],
+      status: "Pending",
       progress: 0,
       department: "",
       description: "",
+      estimatedHours: 0,
     });
   };
 
@@ -157,11 +173,17 @@ const ProjectManagement = () => {
       // Update existing project
       updateMutation.mutate({
         taskId: editingTask._id,
-        data: formData,
+        data: {
+          ...formData,
+          deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
+        },
       });
     } else {
       // Create new project
-      createMutation.mutate(formData);
+      createMutation.mutate({
+        ...formData,
+        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
+      });
     }
   };
 
@@ -176,6 +198,7 @@ const ProjectManagement = () => {
       progress: task.progress,
       department: task.department,
       description: task.description,
+      estimatedHours: task.estimatedHours,
     });
     setIsModalOpen(true);
   };
@@ -186,359 +209,549 @@ const ProjectManagement = () => {
     }
   };
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-medium text-gray-900">
-            Project Management
-          </h2>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => {
-                resetForm();
-                setEditingTask(null);
-                setIsModalOpen(true);
-              }}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Project
-            </button>
-          </div>
-        </div>
+  // Handle Time Remaining Calculation
+  const [tasksWithTime, setTasksWithTime] = useState<Task[]>([]);
 
-        {/* Projects Table */}
-        {isLoading ? (
-          <div>Loading...</div>
-        ) : error ? (
-          <div>Error loading projects</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Department
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Project Title
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Assignee
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Deadline
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {tasks?.map((task) => (
-                  <tr key={task._id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {task.department || "N/A"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {task.title}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <img
-                          className="h-8 w-8 rounded-full"
-                          src={task.assignee.avatar}
-                          alt={task.assignee.name}
-                        />
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">
-                            {task.assignee.name}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          task.priority === "High"
-                            ? "bg-red-100 text-red-800"
-                            : task.priority === "Medium"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {task.priority}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {new Date(task.deadline).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {task.description}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          task.status === "In Progress"
-                            ? "bg-blue-100 text-blue-800"
-                            : task.status === "Completed"
-                            ? "bg-green-100 text-green-800"
-                            : task.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : task.status === "Cancelled"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {task.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEdit(task)}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(task._id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+  useEffect(() => {
+    if (tasks) {
+      const processedTasks = tasks.map((task) => {
+        let updatedTask = { ...task };
+
+        // Calculate Time Remaining based on deadline or estimatedHours
+        if (task.deadline) {
+          const deadlineTimestamp = new Date(task.deadline).setHours(23, 59, 59, 999);
+          const deadlineCalculation: TimeRemaining = calculateTimeRemaining(
+            deadlineTimestamp,
+            "deadline"
+          );
+          updatedTask.timeRemaining = deadlineCalculation.time;
+          updatedTask.urgencyLevel = deadlineCalculation.urgencyLevel;
+        } else if (task.estimatedHours) {
+          const estimatedDeadline = Date.now() + task.estimatedHours * 60 * 60 * 1000;
+          const estimatedCalculation: TimeRemaining = calculateTimeRemaining(
+            estimatedDeadline,
+            "estimated"
+          );
+          updatedTask.timeRemaining = estimatedCalculation.time;
+          updatedTask.urgencyLevel = estimatedCalculation.urgencyLevel;
+        } else {
+          updatedTask.timeRemaining = "N/A";
+          updatedTask.urgencyLevel = "low";
+        }
+
+        // Determine display fields
+        updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
+        updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+
+        return updatedTask;
+      });
+
+      // Sort tasks by createdAt in descending order to have the latest tasks first
+      // Ensure that 'createdAt' exists in your Task data. If not, use another timestamp field.
+      // Replace 'createdAt' with the appropriate field if necessary.
+      processedTasks.sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      });
+
+      setTasksWithTime(processedTasks);
+      console.log("Fetched and set tasks with timeRemaining:", processedTasks);
+    }
+  }, [tasks]);
+
+  // Update Time Remaining every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTasksWithTime((prevTasks) =>
+        prevTasks.map((task) => {
+          let updatedTask = { ...task };
+
+          if (task.deadline) {
+            const deadlineTimestamp = new Date(task.deadline).setHours(23, 59, 59, 999);
+            const deadlineCalculation: TimeRemaining = calculateTimeRemaining(
+              deadlineTimestamp,
+              "deadline"
+            );
+            updatedTask.timeRemaining = deadlineCalculation.time;
+            updatedTask.urgencyLevel = deadlineCalculation.urgencyLevel;
+          } else if (task.estimatedHours) {
+            const estimatedDeadline = Date.now() + task.estimatedHours * 60 * 60 * 1000;
+            const estimatedCalculation: TimeRemaining = calculateTimeRemaining(
+              estimatedDeadline,
+              "estimated"
+            );
+            updatedTask.timeRemaining = estimatedCalculation.time;
+            updatedTask.urgencyLevel = estimatedCalculation.urgencyLevel;
+          } else {
+            updatedTask.timeRemaining = "N/A";
+            updatedTask.urgencyLevel = "low";
+          }
+
+          // Determine displayTimeRemaining and displayUrgencyLevel
+          if (task.estimatedHours) {
+            updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
+            updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+          } else if (task.deadline) {
+            updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
+            updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+          } else {
+            updatedTask.displayTimeRemaining = "N/A";
+            updatedTask.displayUrgencyLevel = "low";
+          }
+
+          return updatedTask;
+        })
+        .sort((a, b) => b._id.localeCompare(a._id)) // Maintain sort order
+      );
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
+
+  // Define columns for DataGrid
+  const columns: GridColDef[] = [
+    {
+      field: "department",
+      headerName: "Department",
+      flex: 1,
+      minWidth: 150,
+    },
+    {
+      field: "title",
+      headerName: "Project Title",
+      flex: 2,
+      minWidth: 200,
+    },
+    {
+      field: "assignee",
+      headerName: "Assignee",
+      flex: 2,
+      minWidth: 200,
+      renderCell: (params: GridRenderCellParams<Task["assignee"]>) => {
+        const assignee = params.value;
+        if (!assignee) return "Unassigned";
+
+        return (
+          <div className="flex items-center space-x-2">
+            <img
+              src={assignee.avatar}
+              alt={assignee.name}
+              className="h-8 w-8 rounded-full"
+            />
+            <span>{assignee.name}</span>
           </div>
-        )}
+        );
+      },
+    },
+    {
+      field: "priority",
+      headerName: "Priority",
+      flex: 1,
+      minWidth: 120,
+      renderCell: (params) => (
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            params.value === "High"
+              ? "bg-red-100 text-red-800"
+              : params.value === "Medium"
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-green-100 text-green-800"
+          }`}
+        >
+          {params.value}
+        </span>
+      ),
+    },
+    {
+      field: "deadline",
+      headerName: "Deadline",
+      flex: 1.5,
+      minWidth: 150,
+      renderCell: (params) => (
+        <div className="flex items-center text-sm text-gray-500 mt-4">
+          <Clock className="h-4 w-4 mr-1" />
+          {params.value ? new Date(params.value).toLocaleDateString() : "N/A"}
+        </div>
+      ),
+    },{
+      field: "timeRemaining",
+      headerName: "Time Remaining",
+      flex: 2,
+      minWidth: 200,
+      renderCell: (params) => {
+        const { displayTimeRemaining, displayUrgencyLevel } = params.row;
+        let colorClass = "text-green-500";
+
+        if (displayUrgencyLevel === "high") {
+          colorClass = "text-yellow-500";
+        } else if (displayUrgencyLevel === "critical") {
+          colorClass = "text-red-500 animate-pulse";
+        }
+
+        return (
+          <div className={`flex items-center text-sm font-medium ${colorClass} mt-4`}>
+            {displayTimeRemaining}
+            {displayUrgencyLevel === "critical" && (
+              <AlertTriangle className="inline h-4 w-4 ml-1 animate-bounce" />
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      field: "description",
+      headerName: "Description",
+      flex: 2,
+      minWidth: 250,
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            params.value === "In Progress"
+              ? "bg-blue-100 text-blue-800"
+              : params.value === "Completed"
+              ? "bg-green-100 text-green-800"
+              : params.value === "Pending"
+              ? "bg-yellow-100 text-yellow-800"
+              : params.value === "Cancelled"
+              ? "bg-red-100 text-red-800"
+              : "bg-gray-100 text-gray-800"
+          }`}
+        >
+          {params.value}
+        </span>
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1.5,
+      minWidth: 150,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => handleEdit(params.row)}
+            className="text-indigo-600 hover:text-indigo-900"
+          >
+            <EditIcon />
+          </button>
+          <button
+            onClick={() => handleDelete(params.row._id)}
+            className="text-red-600 hover:text-red-900"
+          >
+            <DeleteIcon />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-medium text-gray-900">Project Management</h2>
+        <Button
+          onClick={() => {
+            resetForm();
+            setEditingTask(null);
+            setIsModalOpen(true);
+          }}
+          variant="contained"
+          color="primary"
+          startIcon={<Plus />}
+        >
+          Add Project
+        </Button>
       </div>
+
+      {/* Projects DataGrid */}
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        </div>
+      ) : error ? (
+        <div className="text-red-500">Error loading projects</div>
+      ) : (
+        <div style={{ height: 600, width: "100%" }}>
+          <DataGrid
+            rows={tasksWithTime}
+            columns={columns}
+            pageSize={10}
+            rowsPerPageOptions={[5, 10, 20]}
+            getRowId={(row) => row._id}
+            disableSelectionOnClick
+            sx={{
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: "#f0f4f8",
+                color: "#333",
+              },
+              "& .MuiDataGrid-columnHeaderTitle": {
+                fontWeight: "bold",
+              },
+              "& .MuiDataGrid-cell": {
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: "none",
+              },
+            }}
+          />
+        </div>
+      )}
 
       {/* Project Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">
-                {editingTask ? "Edit Project" : "Create New Project"}
-              </h3>
-              <button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setEditingTask(null);
-                  resetForm();
-                }}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Project Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Project Title
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
-                  required
-                />
-              </div>
-              {/* Department */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Department
-                </label>
-                {departmentsLoading ? (
-                  <div>Loading departments...</div>
-                ) : departmentsError ? (
-                  <div>Error loading departments</div>
-                ) : (
-                  <select
-                    value={formData.department}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        department: e.target.value,
-                        assignee: {
-                          userId: "",
-                          name: "",
-                          avatar: formData.assignee.avatar,
-                        },
-                      })
-                    }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
-                    required
-                  >
-                    <option value="">Select Department</option>
-                    {(departmentsData || []).map((dept: any) => (
-                      <option key={dept._id} value={dept.name}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              {/* Assignee Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Assignee Name
-                </label>
-                {managersLoading ? (
-                  <div>Loading assignees...</div>
-                ) : managersError ? (
-                  <div>Error loading assignees</div>
-                ) : (
-                  <select
-                    value={formData.assignee.userId}
-                    onChange={(e) => {
-                      const assigneeId = e.target.value;
-                      const assignee = managersData.find(
-                        (a: any) => a._id === assigneeId
-                      );
-                      if (assignee) {
-                        setFormData({
-                          ...formData,
-                          assignee: {
-                            userId: assignee._id,
-                            name: assignee.name,
-                            avatar: formData.assignee.avatar,
-                          },
-                        });
-                      }
-                    }}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
-                    required
-                    disabled={!formData.department}
-                  >
-                    <option value="">Select Assignee</option>
-                    {managersData.map((assignee: any) => (
-                      <option key={assignee._id} value={assignee._id}>
-                        {assignee.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              {/* Priority */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Priority
-                </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      priority: e.target.value as Task["priority"],
-                    })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
-                >
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-              </div>
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Status
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      status: e.target.value as Task["status"],
-                    })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
-                  <option value="Accepted">Accepted</option>
-                </select>
-              </div>
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="mt-1 block w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
-                />
-              </div>
-              {/* Deadline */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Deadline
-                </label>
-                <input
-                  type="date"
-                  value={formData.deadline}
-                  onChange={(e) =>
-                    setFormData({ ...formData, deadline: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
-                  required
-                />
-              </div>
-              {/* Submit and Cancel Buttons */}
-              <div className="flex justify-end space-x-3 mt-6">
+        <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white">
+            <DialogHeader className="px-6 pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <DialogTitle className="text-2xl font-semibold tracking-tight">
+                    {editingTask ? "Edit Project" : "Create New Project"}
+                  </DialogTitle>
+                </div>
                 <button
-                  type="button"
                   onClick={() => {
                     setIsModalOpen(false);
                     setEditingTask(null);
                     resetForm();
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="text-gray-400 hover:text-gray-500"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-                >
-                  {editingTask ? "Update Project" : "Create Project"}
+                  <X className="h-5 w-5" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+            </DialogHeader>
+            <Separator className="my-4" />
+            <ScrollArea className="px-6 pb-6 max-h-[calc(80vh-8rem)]">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Project Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Project Title
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    required
+                  />
+                </div>
+                {/* Department */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Department
+                  </label>
+                  {departmentsLoading ? (
+                    <div>Loading departments...</div>
+                  ) : departmentsError ? (
+                    <div>Error loading departments</div>
+                  ) : (
+                    <select
+                      value={formData.department}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          department: e.target.value,
+                          assignee: {
+                            userId: "",
+                            name: "",
+                            avatar: formData.assignee.avatar,
+                          },
+                        })
+                      }
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                      required
+                    >
+                      <option value="">Select Department</option>
+                      {departmentsData.map((dept: any) => (
+                        <option key={dept._id} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                {/* Assignee Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Assignee Name
+                  </label>
+                  {managersLoading ? (
+                    <div>Loading assignees...</div>
+                  ) : managersError ? (
+                    <div>Error loading assignees</div>
+                  ) : (
+                    <select
+                      value={formData.assignee.userId}
+                      onChange={(e) => {
+                        const assigneeId = e.target.value;
+                        const assignee = managersData.find(
+                          (a: any) => a._id === assigneeId
+                        );
+                        if (assignee) {
+                          setFormData({
+                            ...formData,
+                            assignee: {
+                              userId: assignee._id,
+                              name: assignee.name,
+                              avatar: assignee.avatar || formData.assignee.avatar,
+                            },
+                          });
+                        }
+                      }}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                      required
+                      disabled={!formData.department}
+                    >
+                      <option value="">Select Assignee</option>
+                      {managersData.map((assignee: any) => (
+                        <option key={assignee._id} value={assignee._id}>
+                          {assignee.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                {/* Priority */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Priority
+                  </label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        priority: e.target.value as Priority,
+                      })
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        status: e.target.value as Status,
+                      })
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                    <option value="Accepted">Accepted</option>
+                  </select>
+                </div>
+                {/* Estimated Hours */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Estimated Hours
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.estimatedHours}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        estimatedHours: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    min="0"
+                    required
+                  />
+                </div>
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    className="mt-1 block w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                  />
+                </div>
+                {/* Deadline */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) =>
+                      setFormData({ ...formData, deadline: e.target.value })
+                    }
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    required
+                  />
+                </div>
+                {/* Submit and Cancel Buttons */}
+                <div className="flex justify-end space-x-3 mt-6">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setEditingTask(null);
+                      resetForm();
+                    }}
+                    variant="outlined"
+                    color="secondary"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    startIcon={<Plus />}
+                  >
+                    {editingTask ? "Update Project" : "Create Project"}
+                  </Button>
+                </div>
+              </form>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
