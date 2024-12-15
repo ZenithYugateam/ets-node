@@ -30,7 +30,7 @@ const WorksheetManagement = () => {
 
   const fetchUserDetails = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/user/${sessionStorage.getItem('userId')}`);
+      const response = await axios.get(`http://localhost:5001/api/user/${sessionStorage.getItem('userId')}`);
       setAssignName(sessionStorage.getItem('userName'));
       setRole(response.data.role);
       setAssignTo(response.data.manager);
@@ -47,7 +47,7 @@ const WorksheetManagement = () => {
 
   const fetchWorksheets = async () => {
     try {
-      const response = await axios.post('http://localhost:5000/api/worksheetsData', { assign_name: sessionStorage.getItem('userName') });
+      const response = await axios.post('http://localhost:5001/api/worksheetsData', { assign_name: sessionStorage.getItem('userName') });
       setWorksheets(response.data);
     } catch (err) {
       console.error('Error fetching worksheet data:', err);
@@ -57,7 +57,7 @@ const WorksheetManagement = () => {
 
   const fetchWorksheetOverview = async () => {
     try {
-      const response = await axios.post('http://localhost:5000/api/worksheets/manager', {
+      const response = await axios.post('http://localhost:5001/api/worksheets/manager', {
         assign_to: sessionStorage.getItem('userName'),
         role: sessionStorage.getItem('role')?.slice(1, -1) === "Manager" ? "Employee" : "Manager"
       });
@@ -69,9 +69,12 @@ const WorksheetManagement = () => {
   };
 
   useEffect(() => {
-    fetchWorksheets();
-
+    
     let storedRoles: string | null = sessionStorage.getItem('role');
+  
+    if(storedRoles?.slice(1,-1) !== 'Admin'){
+      fetchWorksheets();
+    }
 
     if (storedRoles) {
       storedRoles = storedRoles.substring(1, storedRoles.length - 1);
@@ -105,7 +108,7 @@ const WorksheetManagement = () => {
     setLoading(true);
 
     try {
-      await axios.post('http://localhost:5000/api/worksheets', {
+      await axios.post('http://localhost:5001/api/worksheets', {
         assign_name,
         role,
         assign_to,

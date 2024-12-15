@@ -45,7 +45,7 @@ export const TravellingDetailsForm = ({currentStep, task} : TravellingDetailsFor
     const fetchVehicles = async () => {
       setLoading(true);
       try {
-        const response = await axios.get('http://localhost:5000/api/getAllVechileData');
+        const response = await axios.get('http://localhost:5001/api/getAllVechileData');
         setVehicleList(response.data); 
       } catch (err) {
         setError(err.message || 'Error fetching vehicles');
@@ -101,7 +101,7 @@ export const TravellingDetailsForm = ({currentStep, task} : TravellingDetailsFor
         managerTaskId : task._id,
       };
 
-      const response = await axios.post('http://localhost:5000/api/submission', submissionData);
+      const response = await axios.post('http://localhost:5001/api/submission', submissionData);
   
       console.log('Submission successful:', response.data);
       alert('Travelling details submitted successfully!');

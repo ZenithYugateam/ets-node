@@ -1312,14 +1312,19 @@ app.post('/api/worksheetsData', async (req, res) => {
 
 app.post('/api/worksheets/manager', async (req, res) => {
   let { assign_to, role } = req.body; 
+  console.log("role : ",role.trim());
 
   if (assign_to === "DEV") assign_to = "";
 
   try {
     const roleCriteria = role === "Manager" ? ["Employee", "Admin", "Manager"] : [role];
-    const worksheets = await Worksheet.find({
+    const worksheets = role === "Manager"
+    ? await Worksheet.find({
+      role: { $in: roleCriteria },
+    })
+    : await Worksheet.find({
       assign_to: assign_to,
-      role: { $in: roleCriteria }, 
+      role: { $in: roleCriteria },
     });
 
     if (worksheets.length === 0) {
@@ -1641,7 +1646,7 @@ app.post('/api/submission', async (req, res) => {
   }
 });
 
-const PORT = 5000;
+const PORT = 5001;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
