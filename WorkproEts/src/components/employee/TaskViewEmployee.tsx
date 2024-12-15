@@ -1,3 +1,4 @@
+// src/components/TaskViewEmployee.tsx
 import { Button as MuiButton } from '@mui/material';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -148,7 +149,6 @@ const TaskViewEmployee: React.FC = () => {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedTaskForStatus, setSelectedTaskForStatus] = useState<Task | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
- 
 
   const handleStatusChange = (task: Task) => {
     setSelectedTaskForStatus(task);
@@ -192,7 +192,6 @@ const TaskViewEmployee: React.FC = () => {
     setOpenDialog(true);   
   };
 
-
   const handleCloseDialog = () => {
     setOpenDialog(false);  
   };
@@ -201,12 +200,10 @@ const TaskViewEmployee: React.FC = () => {
     if (newRemark.trim()) {
       try {
         if (selectedTask) {
-          
           await axios.put(`http://localhost:5000/api/Employee/notes`, {
             id: selectedTask._id,
             note: newRemark, 
           });
-          
           
           setRemarks((prevRemarks) => [...prevRemarks, newRemark]); 
           setNewRemark(''); 
@@ -303,58 +300,66 @@ const TaskViewEmployee: React.FC = () => {
           <EditIcon />
         </MuiButton>
       ),
-    },{
+    },
+    {
       field: 'view',
       headerName: 'View',
-      flex: 1,
+      flex: 1, // Increased flex value for better visibility
+      minWidth: 120, // Ensures minimum width
       renderCell: (params) => {
         return (
-        <MuiButton
-          variant="outlined"
-          color="secondary"
-          onClick={() => {
-            setSelectedTask(params.row); 
-            setIsDrawerOpen(true);      
-          }}
-        >
-          <Eye /> view
-        </MuiButton>
-      )},
+          <MuiButton
+            variant="outlined"
+            color="secondary"
+            onClick={() => {
+              setSelectedTask(params.row); 
+              setIsDrawerOpen(true);      
+            }}
+            sx={{
+              display: 'flex top-5',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px', // Adds space between icon and text
+            }}
+          >
+            <Eye className="h-5 w-5" /> {/* Adjust icon size if necessary */}
+            <span>View</span>
+          </MuiButton>
+        )
+      },
     }      
   ];
-
-  
 
   return (
     <div className="overflow-hidden rounded-lg shadow-md">
       <div className="relative h-96 overflow-x-auto">
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <DataGrid
-          rows={tasks}
-          columns={columns}
-          pageSize={5}
-          getRowId={(row) => row._id}
-          checkboxSelection
-          onSelectionModelChange={(newSelection) => handleRowSelection(newSelection)}
-          selectionModel={selectedRows}
-          sx={{
-            '& .MuiDataGrid-root': {
-              overflowX: 'auto', // Ensure horizontal scroll
-            },
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: '#f0f4f8',
-              color: '#333',
-            },
-            '& .MuiDataGrid-columnHeaderTitle': {
-              fontWeight: 'bold',
-            },
-          }}
-        />
-      )}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <DataGrid
+            rows={tasks}
+            columns={columns}
+            pageSize={5}
+            getRowId={(row) => row._id}
+            checkboxSelection
+            onSelectionModelChange={(newSelection) => handleRowSelection(newSelection)}
+            selectionModel={selectedRows}
+            sx={{
+              '& .MuiDataGrid-root': {
+                overflowX: 'auto', // Ensure horizontal scroll
+              },
+              '& .MuiDataGrid-columnHeaders': {
+                backgroundColor: '#f0f4f8',
+                color: '#333',
+              },
+              '& .MuiDataGrid-columnHeaderTitle': {
+                fontWeight: 'bold',
+              },
+            }}
+          />
+        )}
       </div>
 
       {/* Task Details Dialog */}
@@ -368,19 +373,19 @@ const TaskViewEmployee: React.FC = () => {
                 </DialogTitle>
               </div>
               <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full"
-          onClick={() => {
-            handleCloseDialog();
-            setNewRemark('');
-            setRemarks([]);
-          }}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </Button>
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                onClick={() => {
+                  handleCloseDialog();
+                  setNewRemark('');
+                  setRemarks([]);
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </Button>
             </div>
           </DialogHeader>
           <Separator className="my-4" />
@@ -433,22 +438,6 @@ const TaskViewEmployee: React.FC = () => {
 
               {/* New Section for Notes */}
               <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">Notes</span>
-                <div className="space-y-2">
-                  {selectedTask?.notes && selectedTask.notes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No notes yet</p>
-                  ) : (
-                    selectedTask?.notes?.map((note, index) => (
-                      <div key={index} className="p-2 bg-gray-100 rounded-md">
-                        <p>{note}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Add Notes Section */}
-              <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">Add Notes *</span>
                 <textarea
                   className="w-full p-2 border border-gray-300 rounded-md"
@@ -499,23 +488,23 @@ const TaskViewEmployee: React.FC = () => {
         pauseOnHover
       />
       <UpdateStatusModal
-      open={statusModalOpen}
-      onClose={() => setStatusModalOpen(false)}
-      taskId={selectedTaskForStatus?._id || ""}
-      currentStatus={selectedTaskForStatus?.status || "Pending"}
-      fetchTasks={() => {
-        if (userName) {
-          fetchTasks(userName); // Re-fetch tasks after updating the status
-        }
-      }}
-    />
-     {selectedTask && (
-            <TaskDrawer
-              isOpen={isDrawerOpen}
-              onClose={() => setIsDrawerOpen(false)}
-              task={selectedTask}
-            />
-          )}
+        open={statusModalOpen}
+        onClose={() => setStatusModalOpen(false)}
+        taskId={selectedTaskForStatus?._id || ""}
+        currentStatus={selectedTaskForStatus?.status || "Pending"}
+        fetchTasks={() => {
+          if (userName) {
+            fetchTasks(userName); // Re-fetch tasks after updating the status
+          }
+        }}
+      />
+      {selectedTask && (
+        <TaskDrawer
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          task={selectedTask}
+        />
+      )}
     </div>
   );
 };
