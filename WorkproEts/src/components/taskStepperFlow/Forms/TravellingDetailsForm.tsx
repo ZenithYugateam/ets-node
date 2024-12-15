@@ -63,8 +63,8 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
     setFormData((prev) => ({
       ...prev,
       selectedVehicles: prev.selectedVehicles.includes(vehicleNumber)
-        ? [] // Deselect if the same vehicle is clicked
-        : [vehicleNumber], // Select only this vehicle
+        ? [] 
+        : [vehicleNumber], 
     }));
   };
 
