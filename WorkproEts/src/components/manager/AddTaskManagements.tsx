@@ -47,6 +47,7 @@ const AddTaskManagements: React.FC = () => {
     description: "",
     managerName: sessionStorage.getItem("userName") || "",
     status: "Pending",
+    estimatedHours: 0,
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -82,6 +83,14 @@ const AddTaskManagements: React.FC = () => {
           <Clock className="h-4 w-4 mr-1" />
           {new Date(params.value).toLocaleDateString()}
         </div>
+      ),
+    },
+    {
+      field: "estimatedHours",
+      headerName: "Estimated Hours",
+      flex: 1,
+      renderCell: (params) => (
+        <div className="text-sm text-gray-500  mt-4">{params.value} hrs</div>
       ),
     },
     { field: "description", headerName: "Description", flex: 2 },
@@ -195,7 +204,9 @@ const AddTaskManagements: React.FC = () => {
     setSelectedEmployees([]);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
@@ -204,7 +215,9 @@ const AddTaskManagements: React.FC = () => {
   };
 
   const handleProjectChange = (e: any) => {
-    const selectedProject = projects.find((project) => project.id === e.target.value);
+    const selectedProject = projects.find(
+      (project) => project.id === e.target.value
+    );
     if (selectedProject) {
       setFormData((prevData) => ({
         ...prevData,
@@ -218,7 +231,9 @@ const AddTaskManagements: React.FC = () => {
     setDroneRequired(event.target.value);
   };
 
-  const handleEmployeeSelect = (event: React.ChangeEvent<{ value: unknown }>) => {
+  const handleEmployeeSelect = (
+    event: React.ChangeEvent<{ value: unknown }>
+  ) => {
     setSelectedEmployees(event.target.value as string[]);
   };
 
@@ -230,6 +245,7 @@ const AddTaskManagements: React.FC = () => {
       managerName: sessionStorage.getItem("userName"),
       droneRequired,
       selectedEmployees,
+      estimatedHours: formData.estimatedHours,
     };
 
     try {
@@ -347,21 +363,9 @@ const AddTaskManagements: React.FC = () => {
               </Select>
             </FormControl>
             <Typography>Drone Required</Typography>
-            <RadioGroup
-              row
-              value={droneRequired}
-              onChange={handleDroneChange}
-            >
-              <FormControlLabel
-                value="Yes"
-                control={<Radio />}
-                label="Yes"
-              />
-              <FormControlLabel
-                value="No"
-                control={<Radio />}
-                label="No"
-              />
+            <RadioGroup row value={droneRequired} onChange={handleDroneChange}>
+              <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
+              <FormControlLabel value="No" control={<Radio />} label="No" />
             </RadioGroup>
             {droneRequired === "Yes" && (
               <FormControl fullWidth sx={{ mb: 1 }}>
@@ -411,6 +415,17 @@ const AddTaskManagements: React.FC = () => {
               margin="normal"
               required
             />
+            <TextField
+              fullWidth
+              label="Estimated Hours"
+              name="estimatedHours"
+              type="number"
+              value={formData.estimatedHours}
+              onChange={handleInputChange}
+              margin="normal"
+              required
+            />
+
             <Typography>Status</Typography>
             <FormControl fullWidth sx={{ mb: 1 }}>
               <Select

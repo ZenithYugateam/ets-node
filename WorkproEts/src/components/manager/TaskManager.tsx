@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from "react";
-import { Clock, MoreVertical, Trash2 } from "lucide-react";
+import { Clock, AlertTriangle } from "lucide-react"; // Import icons
 import axios from "axios";
 import { AuthContext } from "../../AuthContext";
 
@@ -13,7 +13,7 @@ interface Task {
   _id: string;
   title: string;
   priority: string;
-  deadline: string;
+  deadline: string; // Deadline as a string
   status: string;
   department: string;
   description: string;
@@ -25,6 +25,8 @@ interface Task {
     name: string;
     avatar: string;
   };
+  timeRemaining?: string; // Optional field for remaining time
+  urgencyLevel?: string; // Optional field for urgency level (e.g., "high", "medium", "low")
 }
 
 const TaskManager: React.FC = () => {
@@ -34,6 +36,40 @@ const TaskManager: React.FC = () => {
   const authContext = useContext<AuthContextType>(AuthContext);
   const managerId = authContext.userId;
 
+  // Function to calculate time remaining
+  const calculateTimeRemaining = (deadline: string) => {
+    const deadlineDate = new Date(deadline).setHours(23, 59, 59); // Set deadline to end of the day
+    const now = new Date().getTime();
+    const diff = deadlineDate - now;
+
+    if (diff <= 0) {
+      return { time: "Expired", urgencyLevel: "critical" };
+    }
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    // Define urgency levels based on remaining time
+    const urgencyLevel = hours < 24 ? "high" : "low";
+
+    return { time: `${hours}h ${minutes}m ${seconds}s`, urgencyLevel };
+  };
+
+  // Update time remaining for tasks
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTasks((prevTasks) =>
+        prevTasks.map((task) => {
+          const { time, urgencyLevel } = calculateTimeRemaining(task.deadline);
+          return { ...task, timeRemaining: time, urgencyLevel };
+        })
+      );
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
+
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -41,11 +77,17 @@ const TaskManager: React.FC = () => {
         const allTasks = response.data;
 
         // Filter tasks for the current manager
-        const managerTasks = allTasks.filter((task) =>
-          task.assignee?.userId?._id === managerId
+        const managerTasks = allTasks.filter(
+          (task) => task.assignee?.userId?._id === managerId
         );
 
-        setTasks(managerTasks);
+        // Add initial time remaining and urgency for each task
+        const tasksWithTime = managerTasks.map((task) => {
+          const { time, urgencyLevel } = calculateTimeRemaining(task.deadline);
+          return { ...task, timeRemaining: time, urgencyLevel };
+        });
+
+        setTasks(tasksWithTime);
       } catch (error) {
         console.error("Error fetching tasks:", error);
         alert("Failed to fetch tasks. Please try again later.");
@@ -54,20 +96,6 @@ const TaskManager: React.FC = () => {
 
     fetchTasks();
   }, [managerId]);
-
-  const handleDelete = useCallback(async (_id: string): Promise<void> => {
-    setIsLoading(true);
-    try {
-      const response = await axios.delete(`http://localhost:5001/api/tasks/${_id}`);
-      console.log("Task deleted:", response);
-      setTasks((prevTasks) => prevTasks.filter((task) => task._id !== _id));
-    } catch (error) {
-      console.error("Error deleting task:", error);
-      alert("Failed to delete task. Please try again later.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   const handleStatusUpdate = useCallback(async (_id: string, newStatus: string): Promise<void> => {
     // Optimistic update
@@ -129,21 +157,20 @@ const TaskManager: React.FC = () => {
                   Assignee
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Deadline
                 </th>
-                
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Time Remaining
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Priority
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Description
                 </th>
-                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -174,6 +201,27 @@ const TaskManager: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      {new Date(task.deadline).toLocaleDateString()}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div
+                      className={`text-sm font-medium ${
+                        task.urgencyLevel === "high"
+                          ? "text-yellow-500"
+                          : task.urgencyLevel === "critical"
+                          ? "text-red-500 animate-pulse"
+                          : "text-green-500"
+                      }`}
+                    >
+                      {task.timeRemaining}
+                      {task.urgencyLevel === "critical" && (
+                        <AlertTriangle className="inline h-4 w-4 ml-1 animate-bounce" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         task.priority === "High"
@@ -187,12 +235,6 @@ const TaskManager: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {new Date(task.deadline).toLocaleDateString()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
                     <select
                       className="text-sm border-gray-300 rounded-lg"
                       value={task.status}
@@ -204,18 +246,15 @@ const TaskManager: React.FC = () => {
                     </select>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                      {task.description}
-                    </div>
+                    <div className="text-sm text-gray-700">{task.description}</div>
                   </td>
-
                 </tr>
               ))}
               {filteredTasks.length === 0 && (
                 <tr>
                   <td
                     className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                    colSpan={7}
+                    colSpan={8}
                   >
                     No tasks available.
                   </td>

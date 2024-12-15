@@ -1127,6 +1127,7 @@ app.post("/api/store-form-data", async (req, res) => {
       status: req.body.status,
       droneRequired: req.body.droneRequired,
       selectedEmployees: req.body.selectedEmployees,
+      estimatedHours: req.body.estimatedHours,
     });
     
     const savedTask = await newTask.save();
@@ -1312,19 +1313,14 @@ app.post('/api/worksheetsData', async (req, res) => {
 
 app.post('/api/worksheets/manager', async (req, res) => {
   let { assign_to, role } = req.body; 
-  console.log("role : ",role.trim());
 
   if (assign_to === "DEV") assign_to = "";
 
   try {
     const roleCriteria = role === "Manager" ? ["Employee", "Admin", "Manager"] : [role];
-    const worksheets = role === "Manager"
-    ? await Worksheet.find({
-      role: { $in: roleCriteria },
-    })
-    : await Worksheet.find({
+    const worksheets = await Worksheet.find({
       assign_to: assign_to,
-      role: { $in: roleCriteria },
+      role: { $in: roleCriteria }, 
     });
 
     if (worksheets.length === 0) {

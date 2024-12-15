@@ -5,7 +5,12 @@ import { cn } from "../../../lib/utils";
 import { Separator } from "../../../ui/Separator";
 import { Badge } from "../../../ui/badge";
 import { Button } from "../../../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../../ui/dialog";
 import { ScrollArea } from "../../../ui/scroll-area";
 
 type Priority = "High" | "Medium" | "Low";
@@ -20,7 +25,8 @@ interface Task {
   status: Status;
   description: string;
   remarks: string[];
-  notes: string[]; 
+  notes: string[];
+  estimatedHours: number;
 }
 
 interface TaskViewModalProps {
@@ -59,7 +65,12 @@ const priorityStyles = {
   Low: "bg-green-100 text-green-700 hover:bg-green-100",
 } as const;
 
-export function TaskDetailItem({ label, value, valueColor, className }: TaskDetailItemProps) {
+export function TaskDetailItem({
+  label,
+  value,
+  valueColor,
+  className,
+}: TaskDetailItemProps) {
   return (
     <div className={cn("flex flex-col space-y-1", className)}>
       <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
@@ -72,18 +83,17 @@ export function TaskStatusBadge({ status, className }: TaskStatusBadgeProps) {
   return (
     <Badge
       variant="secondary"
-      className={cn(
-        "px-3 py-1 font-medium",
-        statusStyles[status],
-        className
-      )}
+      className={cn("px-3 py-1 font-medium", statusStyles[status], className)}
     >
       {status}
     </Badge>
   );
 }
 
-export function TaskPriorityBadge({ priority, className }: TaskPriorityBadgeProps) {
+export function TaskPriorityBadge({
+  priority,
+  className,
+}: TaskPriorityBadgeProps) {
   return (
     <Badge
       variant="secondary"
@@ -98,10 +108,15 @@ export function TaskPriorityBadge({ priority, className }: TaskPriorityBadgeProp
   );
 }
 
-export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProps) {
+export function TaskViewModal({
+  task,
+  open,
+  onClose,
+  taskId,
+}: TaskViewModalProps) {
   const [message, setMessage] = useState<string>("");
   const [remarks, setRemarks] = useState<string[]>([]);
-  const [notes, setNotes] = useState<string[]>([]);  
+  const [notes, setNotes] = useState<string[]>([]);
 
   useEffect(() => {
     if (open && taskId) {
@@ -115,11 +130,11 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
         });
 
       axios
-        .post(`http://localhost:5001/api/employeeNotes`,{
-          id : taskId
-        })  
+        .post(`http://localhost:5001/api/employeeNotes`, {
+          id: taskId,
+        })
         .then((response) => {
-          setNotes(response.data.notes);  
+          setNotes(response.data.notes);
         })
         .catch((error) => {
           console.error("Error fetching notes:", error);
@@ -130,10 +145,13 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
   const handleSend = async () => {
     if (message.trim()) {
       try {
-        const response = await axios.put(`http://localhost:5001/api/update-remarks/${taskId}`, {
-          remarks: message,
-        });
-        setRemarks((prevRemarks) => [...prevRemarks, message]); 
+        const response = await axios.put(
+          `http://localhost:5001/api/update-remarks/${taskId}`,
+          {
+            remarks: message,
+          }
+        );
+        setRemarks((prevRemarks) => [...prevRemarks, message]);
       } catch (error) {
         console.error("Error updating remarks:", error);
       } finally {
@@ -161,8 +179,7 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
                 size="icon"
                 className="h-8 w-8 rounded-full"
                 onClick={onClose}
-              >
-              </Button>
+              ></Button>
             </div>
           </DialogHeader>
           <Separator className="my-4" />
@@ -174,19 +191,34 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <TaskDetailItem label="Employee Name" value={task.employeeName} />
-                <TaskDetailItem label="Deadline" value={format(new Date(task.deadline), "PPP")} />
+                <TaskDetailItem
+                  label="Employee Name"
+                  value={task.employeeName}
+                />
+                <TaskDetailItem
+                  label="Deadline"
+                  value={format(new Date(task.deadline), "PPP")}
+                />
               </div>
-
+              <div className="grid gap-4 md:grid-cols-2">
+                <TaskDetailItem
+                  label="Estimated Hours"
+                  value={`${task.estimatedHours} hrs`}
+                />
+              </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1">
-                  <span className="text-sm font-medium text-muted-foreground">Priority</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Priority
+                  </span>
                   <div className="pt-1">
                     <TaskPriorityBadge priority={task.priority} />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-sm font-medium text-muted-foreground">Status</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Status
+                  </span>
                   <div className="pt-1">
                     <TaskStatusBadge status={task.status} />
                   </div>
@@ -194,15 +226,23 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
               </div>
 
               <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">Description</span>
-                <p className="text-sm leading-relaxed text-foreground">{task.description}</p>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Description
+                </span>
+                <p className="text-sm leading-relaxed text-foreground">
+                  {task.description}
+                </p>
               </div>
 
               <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">Remarks</span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Remarks
+                </span>
                 <div className="space-y-2">
                   {remarks.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No remarks yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      No remarks yet
+                    </p>
                   ) : (
                     remarks.map((remark, index) => (
                       <div key={index} className="p-2 bg-gray-100 rounded-md">
@@ -214,10 +254,14 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
               </div>
 
               <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">Notes</span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Notes
+                </span>
                 <div className="space-y-2">
                   {notes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No notes yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      No notes yet
+                    </p>
                   ) : (
                     notes.map((note, index) => (
                       <div key={index} className="p-2 bg-gray-100 rounded-md">
@@ -229,7 +273,9 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
               </div>
 
               <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">Add Remark *</span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Add Remark *
+                </span>
                 <textarea
                   className="w-full p-2 border border-gray-300 rounded-md"
                   rows={4}
