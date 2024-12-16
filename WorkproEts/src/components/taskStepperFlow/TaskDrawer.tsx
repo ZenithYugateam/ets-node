@@ -85,7 +85,7 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
                           </div>
                         </dl>
                       </div>
-                      <TaskStepper currentStep={currentStep} setCurrentStep={setCurrentStep} task={task} />
+                      <TaskStepper currentStep={currentStep} setCurrentStep={setCurrentStep} task={task}  onClose={onClose}/>
                     </div>
                   </div>
                 </div>
