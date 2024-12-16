@@ -53,7 +53,26 @@ const AddTaskManagements: React.FC = () => {
   const [formData, setFormData] = useState(initialFormData);
 
   const columns: GridColDef[] = [
-    { field: "projectName", headerName: "Project Name", flex: 1 },
+    {
+      field: "projectName",
+      headerName: "Project Name",
+      flex: 1,
+      renderCell: (params) => (
+        <div
+          onClick={() => {
+            handleViewTask(params.row); 
+            setIsViewModalOpen(true); 
+            setTaskId(params.row.id); 
+          }}
+          style={{
+            cursor: "pointer",
+            color: "#1e90ff",
+          }}
+        >
+          {params.value}
+        </div>
+      ),
+    },
     { field: "taskName", headerName: "Task Name", flex: 1 },
     { field: "employeeName", headerName: "Employee Name", flex: 1 },
     {

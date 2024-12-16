@@ -498,7 +498,23 @@ const TaskViewEmployee: React.FC = () => {
 
   // Define columns for DataGrid
   const columns: GridColDef[] = [
-    { field: "projectName", headerName: "Project Name", flex: 2, minWidth: 150 },
+    {
+      field: "projectName",
+      headerName: "Project Name",
+      flex: 2,
+      minWidth: 150,
+      renderCell: (params) => (
+        <div
+          onClick={() => handleOpenDialog(params.row)}
+          style={{
+            cursor: "pointer",
+            color: "#1e90ff",
+          }}
+        >
+          {params.value}
+        </div>
+      ),
+    },
     { field: "taskName", headerName: "Task Name", flex: 2, minWidth: 150 },
     {
       field: "priority",
@@ -577,24 +593,27 @@ const TaskViewEmployee: React.FC = () => {
       headerName: "Actions",
       flex: 1.5,
       minWidth: 150,
-      renderCell: (params) => (
-        <MuiButton
-          variant="outlined"
-          color="primary"
-          onClick={() => handleOpenDialog(params.row)}
-          sx={{
-            borderColor: "skyblue",
-            "&:hover": {
+      renderCell: (params) => {
+        return (
+          <MuiButton
+            variant="outlined"
+            color="primary"
+            onClick={() => handleOpenDialog(params.row)}
+            sx={{
               borderColor: "skyblue",
-            },
-            "&.MuiButton-outlined": {
-              borderColor: "skyblue",
-            },
-          }}
-        >
-          Add Note →
-        </MuiButton>
-      ),
+              "&:hover": {
+                borderColor: "skyblue",
+              },
+              "&.MuiButton-outlined": {
+                borderColor: "skyblue",
+              },
+            }}
+          >
+            Add Note →
+          </MuiButton>
+        );
+      },
+      
     },
     {
       field: "updateStatus",
@@ -816,6 +835,21 @@ const TaskViewEmployee: React.FC = () => {
                 <p className="text-sm leading-relaxed text-foreground">
                   {selectedTask?.description || "No description available"}
                 </p>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-muted-foreground">Notes</span>
+                <div className="space-y-2">
+                  {selectedTask?.notes && selectedTask.notes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No notes yet</p>
+                  ) : (
+                    selectedTask?.notes?.map((note, index) => (
+                      <div key={index} className="p-2 bg-gray-100 rounded-md">
+                        <p>{note}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div className="space-y-1">
