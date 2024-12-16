@@ -1,7 +1,11 @@
-import React, { useEffect, useState, useContext, useCallback } from "react";
-import { Clock, AlertTriangle } from "lucide-react"; // Import icons
+// src/components/TaskManager.tsx
+
+import React, { useEffect, useState, useContext } from "react";
+import { AlertTriangle } from "lucide-react"; // Import icons
 import axios from "axios";
 import { AuthContext } from "../../AuthContext";
+import { NotificationContext } from "../context/NotificationContext"; // Import NotificationContext
+import { format } from "date-fns";
 
 interface AuthContextType {
   userId: string;
@@ -27,6 +31,9 @@ interface Task {
   };
   timeRemaining?: string; // Optional field for remaining time
   urgencyLevel?: string; // Optional field for urgency level (e.g., "high", "medium", "low")
+  notified12?: boolean; // Flag for 12-hour reminder
+  notified6?: boolean;  // Flag for 6-hour reminder
+  notified3?: boolean;  // Flag for 3-hour reminder
 }
 
 const TaskManager: React.FC = () => {
@@ -35,10 +42,11 @@ const TaskManager: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const authContext = useContext<AuthContextType>(AuthContext);
   const managerId = authContext.userId;
+  const { addNotification } = useContext(NotificationContext); // Access addNotification
 
   // Function to calculate time remaining
   const calculateTimeRemaining = (deadline: string) => {
-    const deadlineDate = new Date(deadline).setHours(23, 59, 59); // Set deadline to end of the day
+    const deadlineDate = new Date(deadline).setHours(23, 59, 59, 999); // Set deadline to end of the day
     const now = new Date().getTime();
     const diff = deadlineDate - now;
 
@@ -51,7 +59,13 @@ const TaskManager: React.FC = () => {
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
     // Define urgency levels based on remaining time
-    const urgencyLevel = hours < 24 ? "high" : "low";
+    let urgencyLevel = "low";
+    if (diff <= 24 * 60 * 60 * 1000) { // ≤ 24 hours
+      urgencyLevel = "high";
+    }
+    if (diff <= 1 * 60 * 60 * 1000) { // ≤ 1 hour
+      urgencyLevel = "critical";
+    }
 
     return { time: `${hours}h ${minutes}m ${seconds}s`, urgencyLevel };
   };
@@ -70,8 +84,10 @@ const TaskManager: React.FC = () => {
     return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
+  // Fetch tasks assigned to the manager
   useEffect(() => {
     const fetchTasks = async () => {
+      setIsLoading(true);
       try {
         const response = await axios.get<Task[]>("http://localhost:5001/api/tasks");
         const allTasks = response.data;
@@ -90,14 +106,17 @@ const TaskManager: React.FC = () => {
         setTasks(tasksWithTime);
       } catch (error) {
         console.error("Error fetching tasks:", error);
-        alert("Failed to fetch tasks. Please try again later.");
+        addNotification("Failed to fetch tasks. Please try again later.", "error");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchTasks();
-  }, [managerId]);
+  }, [managerId, addNotification]);
 
-  const handleStatusUpdate = useCallback(async (_id: string, newStatus: string): Promise<void> => {
+  // Function to handle status updates
+  const handleStatusUpdate = async (_id: string, newStatus: string): Promise<void> => {
     // Optimistic update
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
@@ -108,9 +127,10 @@ const TaskManager: React.FC = () => {
     try {
       const response = await axios.put(`http://localhost:5001/api/tasks/${_id}`, { status: newStatus });
       console.log("Status updated response:", response.data);
+      addNotification(`Task "${response.data.title}" status updated to "${newStatus}".`, "success");
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Failed to update task status. Reverting changes.");
+      addNotification("Failed to update task status. Reverting changes.", "error");
       // If the request fails, revert the status change
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
@@ -118,11 +138,52 @@ const TaskManager: React.FC = () => {
         )
       );
     }
-  }, []);
+  };
 
+  // Filter tasks based on selected filter
   const filteredTasks = tasks.filter((task) =>
     filter === "All Tasks" || task.status === filter
   );
+
+  // **Notification Logic in Fetch Tasks**
+  useEffect(() => {
+    // This effect runs whenever tasks are fetched or updated
+    tasks.forEach((task) => {
+      if (task.timeRemaining && task.timeRemaining !== "Expired" && task.timeRemaining !== "N/A") {
+        const [hoursStr, minutesStr, secondsStr] = task.timeRemaining.split(" ");
+        const hours = parseInt(hoursStr.replace("h", ""));
+        const minutes = parseInt(minutesStr.replace("m", ""));
+        const seconds = parseInt(secondsStr.replace("s", ""));
+        const totalHours = hours + minutes / 60 + seconds / 3600;
+
+        const notifiedKey = `notified_${task._id}`;
+        const notifiedData = JSON.parse(localStorage.getItem(notifiedKey) || "{}");
+
+        // **12 Hours Reminder**
+        if (totalHours <= 12 && !notifiedData.notified12) {
+          addNotification(`Reminder: Task "${task.title}" is due in less than 12 hours.`, "info");
+          notifiedData.notified12 = true;
+        }
+
+        // **6 Hours Reminder**
+        if (totalHours <= 6 && !notifiedData.notified6) {
+          addNotification(`Urgent: Task "${task.title}" is due in less than 6 hours.`, "warning");
+          notifiedData.notified6 = true;
+        }
+
+        // **3 Hours Reminder**
+        if (totalHours <= 3 && !notifiedData.notified3) {
+          addNotification(`Critical: Task "${task.title}" is due in less than 3 hours.`, "error");
+          notifiedData.notified3 = true;
+        }
+
+        // **Update localStorage if any notification was sent**
+        if (notifiedData.notified12 || notifiedData.notified6 || notifiedData.notified3) {
+          localStorage.setItem(notifiedKey, JSON.stringify(notifiedData));
+        }
+      }
+    });
+  }, [tasks, addNotification]);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -266,6 +327,7 @@ const TaskManager: React.FC = () => {
       </div>
 
       {isLoading && <div className="spinner">Loading...</div>}
+      {/* Removed ToastContainer */}
     </div>
   );
 };

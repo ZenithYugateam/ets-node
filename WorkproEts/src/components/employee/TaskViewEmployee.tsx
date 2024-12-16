@@ -7,9 +7,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { DataGrid, GridColDef, GridSelectionModel } from "@mui/x-data-grid";
 import axios from "axios";
 import { format } from "date-fns";
-import React, { useEffect, useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import React, { useEffect, useState, useContext } from "react";
 import { Separator } from "../../../src/ui/Separator";
 import { cn } from "../../lib/utils";
 import { Badge } from "../../ui/badge";
@@ -25,6 +23,7 @@ import UpdateStatusModal from "./UpdateStatusModal";
 import EditIcon from "@mui/icons-material/Edit";
 import { TaskDrawer } from "../taskStepperFlow/TaskDrawer";
 import { calculateTimeRemaining, UrgencyLevel } from "../../utils/calculateTimeRemaining";
+import { NotificationContext } from "../context/NotificationContext"; // Import NotificationContext
 
 type Priority = "Low" | "Medium" | "High";
 type Status = "Completed" | "In Progress" | "Pending";
@@ -51,6 +50,9 @@ interface Task {
   estimatedUrgencyLevel: UrgencyLevel; // Based on estimatedHours
   displayTimeRemaining: string; // New field for consolidated time remaining
   displayUrgencyLevel: UrgencyLevel; // New field for consolidated urgency level
+  notified12?: boolean;
+  notified6?: boolean;
+  notified3?: boolean;
 }
 
 interface TaskDetailItemProps {
@@ -125,6 +127,11 @@ export function TaskPriorityBadge({
   );
 }
 
+// Utility function to generate a unique hash for each notification based on task ID and threshold
+const getNotificationHash = (taskId: string, threshold: number): number => {
+  return `${taskId}_${threshold}`.hashCode();
+};
+
 const TaskViewEmployee: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -141,11 +148,14 @@ const TaskViewEmployee: React.FC = () => {
     useState<Task | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
+  const { addNotification } = useContext(NotificationContext); // Access addNotification
+
   const handleStatusChange = (task: Task) => {
     setSelectedTaskForStatus(task);
     setStatusModalOpen(true);
   };
 
+  // Function to fetch and process tasks
   const fetchTasks = async (employeeName: string) => {
     setLoading(true);
     try {
@@ -166,7 +176,8 @@ const TaskViewEmployee: React.FC = () => {
         if (task.deadline) {
           const deadlineDate = new Date(task.deadline);
           const now = new Date();
-          const isPastDeadline = deadlineDate.setHours(23, 59, 59, 999) < now.getTime();
+          const deadlineTimestamp = deadlineDate.setHours(23, 59, 59, 999);
+          const isPastDeadline = deadlineTimestamp < now.getTime();
 
           if (isPastDeadline) {
             // **If Deadline is Past, Mark as Expired**
@@ -174,7 +185,6 @@ const TaskViewEmployee: React.FC = () => {
             updatedTask.urgencyLevel = "critical";
           } else {
             // **If Deadline is Future, Calculate Remaining Time**
-            const deadlineTimestamp = deadlineDate.setHours(23, 59, 59, 999);
             const { time, urgencyLevel } = calculateTimeRemaining(deadlineTimestamp);
             updatedTask.timeRemaining = time;
             updatedTask.urgencyLevel = urgencyLevel;
@@ -224,16 +234,53 @@ const TaskViewEmployee: React.FC = () => {
           updatedTask.displayUrgencyLevel = "low";
         }
 
+        // **4. Check and Trigger Notifications**
+        if (updatedTask.displayTimeRemaining !== "Expired" && updatedTask.displayTimeRemaining !== "N/A") {
+          const [hoursStr, minutesStr, secondsStr] = updatedTask.displayTimeRemaining.split(" ");
+          const hours = parseInt(hoursStr.replace("h", ""));
+          const minutes = parseInt(minutesStr.replace("m", ""));
+          const seconds = parseInt(secondsStr.replace("s", ""));
+          const totalHours = hours + minutes / 60 + seconds / 3600;
+
+          // **12 Hours Reminder**
+          if (totalHours <= 12 && !updatedTask.notified12) {
+            const hash = getNotificationHash(task._id, 12);
+            if (!isNotificationDeleted(hash)) {
+              addNotification(`Reminder: Task "${task.taskName}" is due in less than 12 hours.`, "info");
+              updatedTask.notified12 = true;
+              markNotificationAsNotified(task._id, 12);
+            }
+          }
+
+          // **6 Hours Reminder**
+          if (totalHours <= 6 && !updatedTask.notified6) {
+            const hash = getNotificationHash(task._id, 6);
+            if (!isNotificationDeleted(hash)) {
+              addNotification(`Urgent: Task "${task.taskName}" is due in less than 6 hours.`, "warning");
+              updatedTask.notified6 = true;
+              markNotificationAsNotified(task._id, 6);
+            }
+          }
+
+          // **3 Hours Reminder**
+          if (totalHours <= 3 && !updatedTask.notified3) {
+            const hash = getNotificationHash(task._id, 3);
+            if (!isNotificationDeleted(hash)) {
+              addNotification(`Critical: Task "${task.taskName}" is due in less than 3 hours.`, "error");
+              updatedTask.notified3 = true;
+              markNotificationAsNotified(task._id, 3);
+            }
+          }
+        }
+
         return updatedTask;
       });
 
       setTasks(tasksWithTime);
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      toast.error("Failed to fetch tasks. Please try again later.", {
-        position: "top-right",
-        autoClose: 5001,
-      });
+      // Removed toast notifications
+      addNotification("Failed to fetch tasks. Please try again later.", "error");
     } finally {
       setLoading(false);
     }
@@ -246,6 +293,7 @@ const TaskViewEmployee: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userName]);
 
+  // **Real-Time Monitoring with Interval**
   useEffect(() => {
     const interval = setInterval(() => {
       setTasks((prevTasks) =>
@@ -257,13 +305,13 @@ const TaskViewEmployee: React.FC = () => {
             if (task.deadline) {
               const deadlineDate = new Date(task.deadline);
               const now = new Date();
-              const isPastDeadline = deadlineDate.setHours(23, 59, 59, 999) < now.getTime();
+              const deadlineTimestamp = deadlineDate.setHours(23, 59, 59, 999);
+              const isPastDeadline = deadlineTimestamp < now.getTime();
 
               if (isPastDeadline) {
                 updatedTask.timeRemaining = "Expired";
                 updatedTask.urgencyLevel = "critical";
               } else {
-                const deadlineTimestamp = deadlineDate.setHours(23, 59, 59, 999);
                 const { time, urgencyLevel } = calculateTimeRemaining(deadlineTimestamp);
                 updatedTask.timeRemaining = time;
                 updatedTask.urgencyLevel = urgencyLevel;
@@ -308,6 +356,45 @@ const TaskViewEmployee: React.FC = () => {
               updatedTask.displayUrgencyLevel = "low";
             }
 
+            // **4. Check and Trigger Notifications**
+            if (updatedTask.displayTimeRemaining !== "Expired" && updatedTask.displayTimeRemaining !== "N/A") {
+              const [hoursStr, minutesStr, secondsStr] = updatedTask.displayTimeRemaining.split(" ");
+              const hours = parseInt(hoursStr.replace("h", ""));
+              const minutes = parseInt(minutesStr.replace("m", ""));
+              const seconds = parseInt(secondsStr.replace("s", ""));
+              const totalHours = hours + minutes / 60 + seconds / 3600;
+
+              // **12 Hours Reminder**
+              if (totalHours <= 12 && !updatedTask.notified12) {
+                const hash = getNotificationHash(task._id, 12);
+                if (!isNotificationDeleted(hash)) {
+                  addNotification(`Reminder: Task "${task.taskName}" is due in less than 12 hours.`, "info");
+                  updatedTask.notified12 = true;
+                  markNotificationAsNotified(task._id, 12);
+                }
+              }
+
+              // **6 Hours Reminder**
+              if (totalHours <= 6 && !updatedTask.notified6) {
+                const hash = getNotificationHash(task._id, 6);
+                if (!isNotificationDeleted(hash)) {
+                  addNotification(`Urgent: Task "${task.taskName}" is due in less than 6 hours.`, "warning");
+                  updatedTask.notified6 = true;
+                  markNotificationAsNotified(task._id, 6);
+                }
+              }
+
+              // **3 Hours Reminder**
+              if (totalHours <= 3 && !updatedTask.notified3) {
+                const hash = getNotificationHash(task._id, 3);
+                if (!isNotificationDeleted(hash)) {
+                  addNotification(`Critical: Task "${task.taskName}" is due in less than 3 hours.`, "error");
+                  updatedTask.notified3 = true;
+                  markNotificationAsNotified(task._id, 3);
+                }
+              }
+            }
+
             return updatedTask;
           })
           .sort((a, b) => b._id.localeCompare(a._id)) // Maintain sort order
@@ -315,8 +402,41 @@ const TaskViewEmployee: React.FC = () => {
     }, 1000); // Update every second
 
     return () => clearInterval(interval); // Cleanup on unmount
-  }, []);
+  }, [addNotification]);
 
+  // **Functions to Handle Notification Flags**
+
+  // Function to check if a notification hash is in the deleted list
+  const isNotificationDeleted = (hash: number): boolean => {
+    return false; // Implement if you have a separate deleted hashes list
+    // Currently, deletion is handled by removing the notification from the list
+    // If you have a separate list of deleted notification hashes, implement this check
+  };
+
+  // Function to mark a notification as notified by updating localStorage
+  const markNotificationAsNotified = (taskId: string, threshold: number) => {
+    const hash = getNotificationHash(taskId, threshold);
+    const notifiedKey = `notification_${hash}`;
+    localStorage.setItem(notifiedKey, "true");
+  };
+
+  // Function to check if a notification has already been notified
+  const hasNotificationBeenNotified = (taskId: string, threshold: number): boolean => {
+    const hash = getNotificationHash(taskId, threshold);
+    const notifiedKey = `notification_${hash}`;
+    return localStorage.getItem(notifiedKey) === "true";
+  };
+
+  // Update addNotification to prevent duplicate notifications
+  const addUniqueNotification = (message: string, type: "success" | "error" | "info" | "warning", taskId: string, threshold: number) => {
+    const hash = getNotificationHash(taskId, threshold);
+    if (!hasNotificationBeenNotified(taskId, threshold)) {
+      addNotification(message, type);
+      markNotificationAsNotified(taskId, threshold);
+    }
+  };
+
+  // Function to fetch remarks
   const fetchRemarks = async (taskId: string) => {
     try {
       const response = await axios.get(
@@ -325,27 +445,29 @@ const TaskViewEmployee: React.FC = () => {
       setRemarks(response.data.remarks);
     } catch (error) {
       console.error("Error fetching remarks:", error);
-      toast.error("Failed to fetch remarks. Please try again later.", {
-        position: "top-right",
-        autoClose: 5001,
-      });
+      // Removed toast notifications
+      addNotification("Failed to fetch remarks. Please try again later.", "error");
     }
   };
 
+  // Handle row selection
   const handleRowSelection = (newSelection: GridSelectionModel) => {
     setSelectedRows(newSelection as string[]);
   };
 
+  // Open dialog to add notes
   const handleOpenDialog = (task: Task) => {
     setSelectedTask(task);
     fetchRemarks(task._id);
     setOpenDialog(true);
   };
 
+  // Close dialog
   const handleCloseDialog = () => {
     setOpenDialog(false);
   };
 
+  // Handle adding notes
   const handleAddNotes = async () => {
     if (newRemark.trim()) {
       try {
@@ -358,17 +480,13 @@ const TaskViewEmployee: React.FC = () => {
           setRemarks((prevRemarks) => [...prevRemarks, newRemark]);
           setNewRemark("");
 
-          toast.success("Note added successfully!", {
-            position: "top-right",
-            autoClose: 5001,
-          });
+          // Removed toast notifications
+          addNotification("Note added successfully!", "success");
         }
       } catch (error) {
         console.error("Error adding note:", error);
-        toast.error("Failed to add note. Please try again.", {
-          position: "top-right",
-          autoClose: 5001,
-        });
+        // Removed toast notifications
+        addNotification("Failed to add note. Please try again.", "error");
       } finally {
         handleCloseDialog();
         if (userName) {
@@ -378,6 +496,7 @@ const TaskViewEmployee: React.FC = () => {
     }
   };
 
+  // Define columns for DataGrid
   const columns: GridColDef[] = [
     { field: "projectName", headerName: "Project Name", flex: 2, minWidth: 150 },
     { field: "taskName", headerName: "Task Name", flex: 2, minWidth: 150 },
@@ -761,17 +880,7 @@ const TaskViewEmployee: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <ToastContainer
-        position="top-right"
-        autoClose={2500}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      {/* Removed redundant ToastContainer */}
 
       <UpdateStatusModal
         open={statusModalOpen}
