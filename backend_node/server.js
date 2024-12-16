@@ -1430,11 +1430,22 @@ app.post('/api/bug-report', async (req, res) => {
 
 app.post('/api/vehicles', async (req, res) => {
   try {
-    const { vehicleName, vehicleNumber } = req.body;
-    if (!vehicleName || !vehicleNumber) {
-      return res.status(400).json({ error: 'Vehicle name and number are required.' });
+    const { type, name, role, vehicleName, vehicleNumber, startReading, endReading } = req.body;
+
+    if (!type || !name || !role || !vehicleName || !vehicleNumber) {
+      return res.status(400).json({ error: 'Type, name, role, vehicle name, and vehicle number are required.' });
     }
-    const newVehicle = new Vehicle({ vehicleName, vehicleNumber });
+
+    const newVehicle = new Vehicle({
+      type,
+      name,
+      role,
+      vehicleName,
+      vehicleNumber,
+      startReading: startReading || '0',
+      endReading: endReading || '0',
+    });
+
     await newVehicle.save();
 
     res.status(201).json({ message: 'Vehicle saved successfully', vehicle: newVehicle });
@@ -1446,6 +1457,7 @@ app.post('/api/vehicles', async (req, res) => {
     }
   }
 });
+
 
 app.get('/api/getAllVechileData' , (req, res)=>{
   try{
@@ -1465,15 +1477,11 @@ app.get('/api/getAllVechileData' , (req, res)=>{
 app.post('/api/latest-active-step', async (req, res) => {
   try {
     const { managerTaskId } = req.body;
-    console.log("managerTaskId" , managerTaskId);
-
     const submission = await SubmissionSchema.findOne(
       { managerTaskId: managerTaskId },
       { currentStep: 1, _id: 0 } 
     ).sort({ currentStep: -1 }); 
-
-    console.log(submission);
-
+    
     if (!submission) {
       return res.status(404).json({ message: 'No submission found with the given managerTaskId' });
     }

@@ -1,3 +1,4 @@
+// Frontend Code
 import { useEffect, useState } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -16,11 +17,18 @@ type TravellingDetails = {
   time: string;
   readings: number;
   images: File[];
+  publicTransportDetails?: {
+    mode: string;
+    billAmount: number;
+  };
+  privateVehicleDetails?: string;
+  privateVehicleNumber?: string;
 };
 
 type Vehicle = {
   vehicleNumber: string;
   vehicleName: string;
+  endReading: number;
 };
 
 interface TravellingDetailsFormProps {
@@ -41,34 +49,54 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
   const [vehicleList, setVehicleList] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [initialReading, setInitialReading] = useState<number>(0);
+  const [variant, setVariant] = useState<number>(0);
+  const [transportMode, setTransportMode] = useState<string>('');
 
+  // Fetch company vehicles
   useEffect(() => {
-    const fetchVehicles = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get('http://localhost:5001/api/getAllVechileData');
-        setVehicleList(response.data);
-      } catch (err) {
-        setError(err.message || 'Error fetching vehicles');
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (transportMode === 'Company') {
+      const fetchVehicles = async () => {
+        setLoading(true);
+        try {
+          const response = await axios.get('http://localhost:5001/api/getAllVechileData');
+          setVehicleList(response.data);
+        } catch (err) {
+          setError(err.message || 'Error fetching vehicles');
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchVehicles();
+    }
+  }, [transportMode]);
 
-    fetchVehicles();
-  }, []);
+  const handleReadingChange = (newReading: number) => {
+    setFormData((prev) => ({ ...prev, readings: newReading }));
+    setVariant(newReading - initialReading);
+  };
 
-  // Toggle vehicle selection
   const toggleVehicleSelection = (vehicleNumber: string) => {
+    const selectedVehicle = vehicleList.find((vehicle) => vehicle.vehicleNumber === vehicleNumber);
+
+    if (!selectedVehicle) return;
+
     setFormData((prev) => ({
       ...prev,
       selectedVehicles: prev.selectedVehicles.includes(vehicleNumber)
-        ? [] 
-        : [vehicleNumber], 
+        ? []
+        : [vehicleNumber],
+      readings: selectedVehicle.endReading || 0,
     }));
+
+    setInitialReading(selectedVehicle.endReading || 0);
+    setVariant(0);
   };
 
-  // Convert images to Base64
+  const handleImageCapture = (image: string) => {
+    setCapturedImages((prevImages) => [...prevImages, image]);
+  };
+
   const convertImagesToBase64 = async (images: File[]): Promise<string[]> => {
     const base64Promises = images.map(
       (image) =>
@@ -80,10 +108,6 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
         })
     );
     return Promise.all(base64Promises);
-  };
-
-  const handleImageCapture = (image: string) => {
-    setCapturedImages((prevImages) => [...prevImages, image]);
   };
 
   const handleDeleteCapturedImage = (index: number) => {
@@ -106,6 +130,10 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
         currentStep: currentStep,
         type: 'travellingDetails',
         managerTaskId: task._id,
+        transportMode,
+        publicTransportDetails: formData.publicTransportDetails,
+        privateVehicleDetails: formData.privateVehicleDetails,
+        privateVehicleNumber: formData.privateVehicleNumber,
       };
 
       const response = await axios.post('http://localhost:5001/api/submission', submissionData);
@@ -121,50 +149,206 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
     }
   };
 
+  const handleAddVehicle = async () => {
+    if (formData.privateVehicleDetails && formData.privateVehicleNumber && formData.readings) {
+      try {
+        const newVehicle = {
+          type: 'Private',
+          name: 'User',
+          role: 'Driver',
+          vehicleName: formData.privateVehicleDetails,
+          vehicleNumber: formData.privateVehicleNumber,
+          startReading: 0,
+          endReading: formData.readings,
+        };
+
+        const response = await axios.post('http://localhost:5001/api/vehicles', newVehicle);
+
+        setVehicleList((prev) => [...prev, response.data.vehicle]);
+        setFormData((prev) => ({ ...prev, privateVehicleDetails: '', privateVehicleNumber: '', readings: 0 }));
+        toast.success('Vehicle added successfully!');
+      } catch (error) {
+        console.error('Error adding vehicle:', error);
+        toast.error(error.response?.data?.error || 'Failed to add vehicle.');
+      }
+    } else {
+      toast.error('Please fill in all fields!');
+    }
+  };
+
+  const renderTransportOptions = () => {
+    switch (transportMode) {
+      case 'Company':
+        return (
+          <div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {vehicleList.map((vehicle) => (
+                <div
+                  key={vehicle.vehicleNumber}
+                  onClick={() => toggleVehicleSelection(vehicle.vehicleNumber)}
+                  className={`cursor-pointer rounded-lg border-2 p-4 text-center ${
+                    formData.selectedVehicles.includes(vehicle.vehicleNumber)
+                      ? 'border-green-500 bg-green-100'
+                      : 'border-gray-300'
+                  }`}
+                >
+                  <p className="font-medium">{vehicle.vehicleName}</p>
+                  <p className="text-sm text-gray-500">{vehicle.vehicleNumber}</p>
+                </div>
+              ))}
+            </div>
+
+            {formData.selectedVehicles.length > 0 && (
+              <div className="mt-4 p-4 rounded-lg border bg-gray-50">
+                <FormField label="Vehicle Reading (Editable)">
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="number"
+                      value={formData.readings}
+                      onChange={(e) => handleReadingChange(Number(e.target.value))}
+                      className="block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    />
+                    {variant !== 0 && (
+                      <span className="text-blue-600 font-medium">
+                        Variant: {variant > 0 ? `+${variant} km` : `${variant} km`}
+                      </span>
+                    )}
+                  </div>
+                </FormField>
+              </div>
+            )}
+          </div>
+        );
+
+        case 'Public':
+          return (
+            <div>
+              <FormField label="Public Transport Mode">
+                <select
+                  value={formData.publicTransportDetails?.mode || ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      publicTransportDetails: {
+                        ...prev.publicTransportDetails,
+                        mode: e.target.value,
+                      },
+                    }))
+                  }
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                >
+                  <option value="">Select Mode</option>
+                  <option value="Bus">Bus</option>
+                  <option value="Train">Train</option>
+                  <option value="Taxi">Taxi</option>
+                  <option value="Metro">Metro</option>
+                </select>
+              </FormField>
+        
+              <FormField label="Bill Amount">
+                <input
+                  type="number"
+                  value={formData.publicTransportDetails?.billAmount || ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      publicTransportDetails: {
+                        ...prev.publicTransportDetails,
+                        billAmount: parseFloat(e.target.value) || 0,
+                      },
+                    }))
+                  }
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+              </FormField>
+            </div>
+          );
+        
+      case 'Private':
+        return (
+          <div>
+            <FormField label="Add Private Vehicle">
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={formData.privateVehicleDetails || ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      privateVehicleDetails: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter vehicle name (e.g., Honda Civic)"
+                  className="block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+                <input
+                  type="text"
+                  value={formData.privateVehicleNumber || ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      privateVehicleNumber: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter vehicle number (e.g., ABC-1234)"
+                  className="block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+                <input
+                  type="number"
+                  value={formData.readings || 0}
+                  onChange={(e) => handleReadingChange(Number(e.target.value))}
+                  placeholder="Enter initial reading"
+                  className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddVehicle}
+                  className="rounded-md bg-indigo-600 py-2 px-4 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Add Vehicle
+                </button>
+              </div>
+            </FormField>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
       <ToastContainer />
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {vehicleList.map((vehicle) => (
+      <div className="grid grid-cols-3 gap-6">
+        {['Company', 'Public', 'Private'].map((mode) => (
           <div
-            key={vehicle.vehicleNumber}
-            onClick={() => toggleVehicleSelection(vehicle.vehicleNumber)}
+            key={mode}
+            onClick={() => setTransportMode(mode)}
             className={`cursor-pointer rounded-lg border-2 p-4 text-center ${
-              formData.selectedVehicles.includes(vehicle.vehicleNumber)
-                ? 'border-green-500 bg-green-100'
-                : 'border-gray-300'
+              transportMode === mode ? 'border-blue-500 bg-blue-100' : 'border-gray-300'
             }`}
           >
-            <p className="font-medium">{vehicle.vehicleName}</p>
-            <p className="text-sm text-gray-500">{vehicle.vehicleNumber}</p>
+            <p className="font-medium">{mode} Vehicle</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <FormField label="Date">
-          <DatePicker
-            selected={formData.date}
-            onChange={(date) => setFormData({ ...formData, date: date || new Date() })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-        </FormField>
+      {renderTransportOptions()}
 
-        <FormField label="Time">
-          <input
-            type="time"
-            value={formData.time}
-            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-        </FormField>
-      </div>
+      <FormField label="Date">
+        <DatePicker
+          selected={formData.date}
+          onChange={(date) => setFormData({ ...formData, date: date || new Date() })}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        />
+      </FormField>
 
-      <FormField label="Readings">
+      <FormField label="Time">
         <input
-          type="number"
-          value={formData.readings}
-          onChange={(e) => setFormData({ ...formData, readings: Number(e.target.value) })}
+          type="time"
+          value={formData.time}
+          onChange={(e) => setFormData({ ...formData, time: e.target.value })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         />
       </FormField>
@@ -200,9 +384,6 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
         )}
       </FormField>
 
-      {loading && <p>Loading...</p>}
-      {error && <p className="text-red-500">{error}</p>}
-
       <button
         type="submit"
         className="mt-4 w-full rounded-md bg-indigo-600 py-2 px-4 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
@@ -212,3 +393,4 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
     </form>
   );
 };
+
