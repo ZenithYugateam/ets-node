@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+import Confetti from 'react-confetti';
 import { motion } from 'framer-motion';
 import { DroneDetailsForm } from './Forms/DroneDetailsForm';
 import { TravellingDetailsForm } from './Forms/TravellingDetailsForm';
@@ -31,23 +33,31 @@ interface TaskStepperProps {
   task: Task;
 }
 
-export const TaskStepper = ({ currentStep, setCurrentStep , task }: TaskStepperProps) => {
+export const TaskStepper = ({ currentStep, setCurrentStep, task }: TaskStepperProps) => {
+  const [showConfetti, setShowConfetti] = useState(false);
+
   const forms = [
-    <DroneDetailsForm currentStep={currentStep}  task = {task} />,
-    <TravellingDetailsForm currentStep={currentStep}  task = {task} />,
-    <OnFieldDetailsForm currentStep={currentStep}  task = {task} />,
-    <BeforeFlightForm currentStep={currentStep} task = {task} />,
-    <AfterFlightForm currentStep={currentStep} task = {task} />,
-    <GettingOffFieldForm currentStep={currentStep}  task = {task} />,
-    <ReturnToOfficeForm currentStep={currentStep}  task = {task} />,
-    <DroneSubmissionForm currentStep={currentStep}  task = {task} />,
-    <DataSubmissionForm currentStep={currentStep}  task = {task} />,
-    <TaskProgressForm currentStep={currentStep}  task = {task} />,
+    <DroneDetailsForm currentStep={currentStep} task={task} />,
+    <TravellingDetailsForm currentStep={currentStep} task={task} />,
+    <OnFieldDetailsForm currentStep={currentStep} task={task} />,
+    <BeforeFlightForm currentStep={currentStep} task={task} />,
+    <AfterFlightForm currentStep={currentStep} task={task} />,
+    <GettingOffFieldForm currentStep={currentStep} task={task} />,
+    <ReturnToOfficeForm currentStep={currentStep} task={task} />,
+    <DroneSubmissionForm currentStep={currentStep} task={task} />,
+    <DataSubmissionForm currentStep={currentStep} task={task} />,
+    <TaskProgressForm currentStep={currentStep} task={task} />,
   ];
+
+  const handleFinish = () => {
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 8000); 
+  };
 
   return (
     <div>
       <ToastContainer />
+      {showConfetti && <Confetti />}
       <div className="mb-8">
         <div className="overflow-hidden rounded-full bg-gray-200">
           <div
@@ -96,10 +106,16 @@ export const TaskStepper = ({ currentStep, setCurrentStep , task }: TaskStepperP
           Previous
         </button>
         <button
-          onClick={() => setCurrentStep(Math.min(steps.length - 1, currentStep + 1))}
+          onClick={() => {
+            if (currentStep === steps.length - 1) {
+              handleFinish();
+            } else {
+              setCurrentStep(Math.min(steps.length - 1, currentStep + 1));
+            }
+          }}
           className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
         >
-          {currentStep === steps.length -1  ? "Finish" : "Next"}
+          {currentStep === steps.length - 1 ? 'Finish' : 'Next'}
         </button>
       </div>
     </div>
