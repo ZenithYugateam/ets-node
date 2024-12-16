@@ -1,12 +1,29 @@
-// src/components/Navbar.tsx
-import { Bell, Settings, Users, Bug } from "lucide-react";
+import {
+  Bell,
+  Settings,
+  Users,
+  Bug,
+  AlertTriangle,
+  Info,
+  CheckCircle,
+  XCircle,
+} from "lucide-react"; // Updated to use 'Info' instead of 'InformationCircle'
 import { Link } from "react-router-dom";
 import { Button } from "@mui/material";
-import { useState } from "react";
-import { BugReportModal } from "./shared/BugReportModal"; // Named import
+import { useState, useContext, useEffect, useRef } from "react";
+import { BugReportModal } from "./shared/BugReportModal";
+import { NotificationContext } from "./context/NotificationContext";
 
 const Navbar = () => {
   const [open, setOpen] = useState<boolean>(false);
+  const {
+    notifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useContext(NotificationContext);
+  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleClick = () => {
     setOpen(true);
@@ -15,6 +32,26 @@ const Navbar = () => {
   const handleClose = () => {
     setOpen(false);
   };
+
+  // Calculate unread notifications
+  const unreadNotifications = notifications.filter((notif) => !notif.read)
+    .length;
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -27,9 +64,114 @@ const Navbar = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <button className="p-2 rounded-full hover:bg-gray-100">
-                <Bell className="h-6 w-6 text-gray-500" />
-              </button>
+              {/* Bell Button with Dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  className="p-2 rounded-full hover:bg-gray-100 focus:outline-none"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
+                  <Bell className="h-6 w-6 text-gray-500" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
+                      {unreadNotifications}
+                    </span>
+                  )}
+                </button>
+
+                {/* Dropdown Menu */}
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">Notifications</h3>
+                      {unreadNotifications > 0 && (
+                        <button
+                          className="text-sm text-blue-500 hover:underline"
+                          onClick={() => markAllAsRead()}
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
+                    <ul className="max-h-60 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <li className="p-4 text-center text-gray-500">
+                          No notifications
+                        </li>
+                      ) : (
+                        notifications.map((notif) => {
+                          let IconComponent;
+                          switch (notif.type) {
+                            case "info":
+                              IconComponent = Info; // Updated to use 'Info'
+                              break;
+                            case "warning":
+                              IconComponent = AlertTriangle;
+                              break;
+                            case "success":
+                              IconComponent = CheckCircle;
+                              break;
+                            case "error":
+                              IconComponent = XCircle;
+                              break;
+                            default:
+                              IconComponent = Info; // Default to 'Info'
+                          }
+
+                          return (
+                            <li
+                              key={notif.id}
+                              className={`p-4 border-b border-gray-200 flex justify-between items-center ${
+                                !notif.read ? "bg-blue-50" : "bg-white"
+                              } cursor-pointer transition-colors duration-200`}
+                              onClick={() => {
+                                if (!notif.read) {
+                                  markAsRead(notif.id);
+                                }
+                              }}
+                            >
+                              <div className="flex items-center">
+                                <IconComponent
+                                  className={`h-5 w-5 mr-2 ${
+                                    !notif.read
+                                      ? "text-blue-500"
+                                      : "text-gray-500"
+                                  }`}
+                                />
+                                <span
+                                  className={`text-sm ${
+                                    !notif.read
+                                      ? "text-blue-700 font-medium"
+                                      : "text-gray-700"
+                                  }`}
+                                >
+                                  {notif.message}
+                                </span>
+                              </div>
+                              <div className="flex space-x-2">
+                                {!notif.read && (
+                                  <span className="text-xs text-blue-500">
+                                    New
+                                  </span>
+                                )}
+                                <button
+                                  className="text-sm text-red-500 hover:underline"
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent triggering mark as read
+                                    deleteNotification(notif.id);
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
               <Link to="/profile" className="p-2 rounded-full hover:bg-gray-100">
                 <Settings className="h-6 w-6 text-gray-500" />
               </Link>
