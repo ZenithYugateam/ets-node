@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import Confetti from 'react-confetti';
 import { motion } from 'framer-motion';
 import { DroneDetailsForm } from './Forms/DroneDetailsForm';
@@ -31,11 +31,10 @@ interface TaskStepperProps {
   currentStep: number;
   setCurrentStep: (step: number) => void;
   task: Task;
+  onClose : () => void;
 }
 
-export const TaskStepper = ({ currentStep, setCurrentStep, task }: TaskStepperProps) => {
-  const [showConfetti, setShowConfetti] = useState(false);
-
+export const TaskStepper = ({ currentStep, setCurrentStep, task, onClose }: TaskStepperProps) => {
   const forms = [
     <DroneDetailsForm currentStep={currentStep} task={task} />,
     <TravellingDetailsForm currentStep={currentStep} task={task} />,
@@ -50,14 +49,12 @@ export const TaskStepper = ({ currentStep, setCurrentStep, task }: TaskStepperPr
   ];
 
   const handleFinish = () => {
-    setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 8000); 
+    setTimeout(()=> onClose() , 5000);
   };
 
   return (
     <div>
       <ToastContainer />
-      {showConfetti && <Confetti />}
       <div className="mb-8">
         <div className="overflow-hidden rounded-full bg-gray-200">
           <div

@@ -1,33 +1,48 @@
 import { useState } from 'react';
-import { Check, AlertCircle } from 'lucide-react';
+import { Check, RefreshCw } from 'lucide-react';
+import axios from 'axios';
+import Confetti from 'react-confetti'; // Import Confetti
 import { Task } from '../types';
 
-type TaskStatus = 'completed' | 'not_completed';
-
+type Status = "Completed" | "In Progress"; // Restrict the status types
 
 interface TaskProgressFormProps {
   currentStep: number;
   task: Task;
-}
+} 
+export const TaskProgressForm = ({ currentStep, task }: TaskProgressFormProps) => {
+  const [status, setStatus] = useState<Status | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
-export const TaskProgressForm = ({currentStep, task}:TaskProgressFormProps) => {
-  const [status, setStatus] = useState<TaskStatus | null>(null);
-
-  const handleStatusChange = (newStatus: TaskStatus) => {
+  const handleStatusChange = async (newStatus: Status) => {
     setStatus(newStatus);
-    console.log(`Task Status: ${newStatus === 'completed' ? 'Completed' : 'Not Completed'}`);
+    try {
+      const response = await axios.put(`http://localhost:5001/api/manager-tasks/update-status`, {
+        id: task._id, 
+        status: newStatus,
+      });
+
+      if (response.status === 200 && newStatus === "Completed") {
+        setShowConfetti(true); 
+        setTimeout(() => setShowConfetti(false), 5000);
+      }
+    } catch (error) {
+      console.error('Error updating task status:', error);
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} />}
+
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-4">Task Status</h3>
         <div className="flex items-center space-x-4">
           <button
             type="button"
-            onClick={() => handleStatusChange('completed')}
+            onClick={() => handleStatusChange("Completed")}
             className={`flex items-center px-4 py-2 rounded-md ${
-              status === 'completed'
+              status === "Completed"
                 ? 'bg-green-50 text-green-700 border-green-200'
                 : 'bg-gray-50 text-gray-700 border-gray-200'
             } border`}
@@ -37,14 +52,14 @@ export const TaskProgressForm = ({currentStep, task}:TaskProgressFormProps) => {
           </button>
           <button
             type="button"
-            onClick={() => handleStatusChange('not_completed')}
+            onClick={() => handleStatusChange("In Progress")}
             className={`flex items-center px-4 py-2 rounded-md ${
-              status === 'not_completed'
-                ? 'bg-red-50 text-red-700 border-red-200'
+              status === "In Progress"
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
                 : 'bg-gray-50 text-gray-700 border-gray-200'
             } border`}
           >
-            <AlertCircle className="h-4 w-4 mr-2" />
+            <RefreshCw className="h-4 w-4 mr-2" />
             Not Completed
           </button>
         </div>

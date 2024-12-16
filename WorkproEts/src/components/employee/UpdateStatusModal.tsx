@@ -31,7 +31,7 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({ open, onClose, ta
         pauseOnHover: true,
       });
 
-      fetchTasks();  // Fetch updated tasks after status update.
+      fetchTasks();  
       onClose();
     } catch (error) {
       console.error("Error updating status:", error);
