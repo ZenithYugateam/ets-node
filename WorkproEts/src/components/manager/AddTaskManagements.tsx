@@ -199,18 +199,29 @@ const AddTaskManagements: React.FC = () => {
             managerName: sessionStorage.getItem("userName"),
           }
         );
-
-        const employeeData = response.data.map((employee: any) => ({
-          id: employee._id,
-          name: employee.name,
-        }));
-
+    
+        const employeeNameSet = new Set();
+    
+        const employeeData = response.data
+          .map((employee: any) => ({
+            id: employee._id,
+            name: employee.name,
+          }))
+          .filter((employee) => {
+            if (employeeNameSet.has(employee.name)) {
+              return false;
+            }
+            employeeNameSet.add(employee.name);
+            return true; 
+          });
+    
         setEmployees(employeeData);
       } catch (error) {
         console.error("Error fetching employees:", error);
         toast.error("Failed to fetch employees");
       }
     };
+    
 
     fetchManagerTasks();
     fetchProjects();
