@@ -60,6 +60,7 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
         setLoading(true);
         try {
           const response = await axios.get('http://localhost:5001/api/getAllVechileData');
+          console.log(response.data)
           setVehicleList(response.data);
         } catch (err) {
           setError(err.message || 'Error fetching vehicles');
@@ -154,8 +155,8 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
       try {
         const newVehicle = {
           type: 'Private',
-          name: 'User',
-          role: 'Driver',
+          name: sessionStorage.getItem('userName'),
+          role: sessionStorage.getItem('role')?.slice(1, -1),
           vehicleName: formData.privateVehicleDetails,
           vehicleNumber: formData.privateVehicleNumber,
           startReading: 0,
@@ -174,6 +175,49 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
     } else {
       toast.error('Please fill in all fields!');
     }
+  };
+
+  const [privateVehicles, setPrivateVehicles] = useState<Vehicle[]>([]);
+  const [fetchingPrivateVehicles, setFetchingPrivateVehicles] = useState(false);
+          
+    const fetchPrivateVehicles = async () => {
+      try {
+        setFetchingPrivateVehicles(true);
+        const response = await axios.post(
+          "http://localhost:5001/api/getPrivateVehiclesByName",{
+            name : sessionStorage.getItem('userName'),
+          }
+        );
+        setPrivateVehicles(response.data);
+      } catch (error) {
+        console.error('Error fetching private vehicles:', error);
+        toast.error('Failed to fetch private vehicles.');
+      } finally {
+        setFetchingPrivateVehicles(false);
+      }
+    };
+  
+  useEffect(() => {
+    fetchPrivateVehicles();
+  }, [transportMode]);
+
+  const [selectedPrivateVehicle, setSelectedPrivateVehicle] = useState<string | null>(null);
+
+  const handlePrivateVehicleSelection = (vehicle: Vehicle) => {
+    // Toggle selection of a vehicle
+    setSelectedPrivateVehicle((prev) =>
+      prev === vehicle.vehicleNumber ? null : vehicle.vehicleNumber
+    );
+
+    // Set readings and vehicle number in the form data
+    setFormData((prev) => ({
+      ...prev,
+      selectedVehicles: [vehicle.vehicleNumber],
+      readings: vehicle.endReading || 0,
+    }));
+
+    setInitialReading(vehicle.endReading || 0);
+    setVariant(0);
   };
 
   const renderTransportOptions = () => {
@@ -264,53 +308,84 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
             </div>
           );
         
-      case 'Private':
-        return (
-          <div>
-            <FormField label="Add Private Vehicle">
-              <div className="flex flex-col gap-2">
-                <input
-                  type="text"
-                  value={formData.privateVehicleDetails || ''}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      privateVehicleDetails: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter vehicle name (e.g., Honda Civic)"
-                  className="block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                />
-                <input
-                  type="text"
-                  value={formData.privateVehicleNumber || ''}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      privateVehicleNumber: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter vehicle number (e.g., ABC-1234)"
-                  className="block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                />
-                <input
-                  type="number"
-                  value={formData.readings || 0}
-                  onChange={(e) => handleReadingChange(Number(e.target.value))}
-                  placeholder="Enter initial reading"
-                  className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddVehicle}
-                  className="rounded-md bg-indigo-600 py-2 px-4 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  Add Vehicle
-                </button>
+          case 'Private':    
+          return (
+            <div>
+              <FormField label="Add Private Vehicle">
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="text"
+                    value={formData.privateVehicleDetails || ''}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        privateVehicleDetails: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter vehicle name (e.g., Honda Civic)"
+                    className="block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  />
+                  <input
+                    type="text"
+                    value={formData.privateVehicleNumber || ''}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        privateVehicleNumber: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter vehicle number (e.g., ABC-1234)"
+                    className="block rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  />
+                  <input
+                    type="number"
+                    value={formData.readings || ''}
+                    onChange={(e) => handleReadingChange(Number(e.target.value))}
+                    placeholder="Enter initial reading"
+                    className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    min="0"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddVehicle}
+                    className="rounded-md bg-indigo-600 py-2 px-4 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  >
+                    Add Vehicle
+                  </button>
+                </div>
+              </FormField>
+        
+              {/* Show Private Vehicles */}
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">Your Private Vehicles</h3>
+                {fetchingPrivateVehicles ? (
+                  <p>Loading...</p>
+                ) : privateVehicles.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {privateVehicles.map((vehicle) => (
+                      <div
+                        key={vehicle.vehicleNumber}
+                        onClick={() => handlePrivateVehicleSelection(vehicle)}
+                        className={`cursor-pointer rounded-lg border-2 p-4 shadow-sm ${
+                          selectedPrivateVehicle === vehicle.vehicleNumber
+                            ? 'border-green-500 bg-green-100'
+                            : 'border-gray-300 bg-gray-50'
+                        }`}
+                      >
+                        <p className="font-medium">{vehicle.vehicleName}</p>
+                        <p className="text-sm text-gray-500">Number: {vehicle.vehicleNumber}</p>
+                        <p className="text-sm">Start Reading: {vehicle.startReading}</p>
+                        <p className="text-sm">End Reading: {vehicle.endReading}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>No private vehicles found.</p>
+                )}
               </div>
-            </FormField>
-          </div>
-        );
+            </div>
+          );
+          
 
       default:
         return null;
