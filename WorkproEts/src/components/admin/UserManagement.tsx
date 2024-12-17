@@ -570,8 +570,6 @@ const UserManagement = () => {
         />
       </div>
 
-      {/* User Modal */}
-      {/* User Modal */}
       <Modal open={showModal} onClose={handleCloseModal}>
         <Box
           sx={{

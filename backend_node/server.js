@@ -1461,7 +1461,7 @@ app.post('/api/vehicles', async (req, res) => {
 
 app.get('/api/getAllVechileData' , (req, res)=>{
   try{
-    Vehicle.find().then(data => {
+    Vehicle.find({ type: { $ne: 'Private' } }).then(data => {
       res.status(200).json(data);
     }).catch(error => {
       console.error("Error fetching data:", error);
@@ -1647,6 +1647,26 @@ app.post('/api/submission', async (req, res) => {
   } catch (error) {
     console.error('Error saving submission:', error);
     res.status(500).json({ error: 'Failed to store submission.' });
+  }
+});
+
+app.post('/api/getPrivateVehiclesByName', async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Name parameter is required' });
+    }
+
+    const privateVehicles = await Vehicle.find({ type: 'Private', name: name });
+
+    if (privateVehicles.length === 0) {
+      return res.status(404).json({ message: 'No private vehicles found for the given name' });
+    }
+
+    res.status(200).json(privateVehicles);
+  } catch (error) {
+    console.error('Error fetching private vehicles:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
