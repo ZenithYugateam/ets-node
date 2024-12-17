@@ -642,28 +642,33 @@ const UserManagement = () => {
               ))}
             </TextField>
             {showManagerField && (
-              <TextField
-                select
-                label="Select Manager"
-                value={formData.manager || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    manager: e.target.value,
-                    managerId:
-                      managers.find((m) => m.name === e.target.value)?._id ||
-                      "",
-                  })
-                }
-                fullWidth
-              >
-                {managers.map((manager) => (
-                  <MenuItem key={manager._id} value={manager.name}>
-                    {manager.name}
-                  </MenuItem>
-                ))}
-              </TextField>
-            )}
+                <TextField
+                  select
+                  label="Select Manager"
+                  value={formData.manager || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      manager: e.target.value,
+                      managerId:
+                        managers.find((m) => m.name === e.target.value)?._id || "",
+                    })
+                  }
+                  fullWidth
+                >
+                  {Array.from(
+                    new Set(managers.map((m) => m.name)) // Extract unique names
+                  ).map((uniqueName) => {
+                    const manager = managers.find((m) => m.name === uniqueName);
+                    return (
+                      <MenuItem key={manager._id} value={manager.name}>
+                        {manager.name}
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
+              )}
+
             {/* Sub-Department Selection - Shows only when main department is selected */}
             {selectedMainDepartment && (
               <TextField
