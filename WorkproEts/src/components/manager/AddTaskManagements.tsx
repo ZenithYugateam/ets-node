@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
   Checkbox,
+  Chip,
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import axios from "axios";
@@ -191,7 +192,6 @@ const AddTaskManagements: React.FC = () => {
         toast.error("Failed to fetch projects");
       }
     };
-
     const fetchEmployees = async () => {
       try {
         const response = await axios.post(
@@ -201,20 +201,13 @@ const AddTaskManagements: React.FC = () => {
           }
         );
     
-        const employeeNameSet = new Set();
-    
         const employeeData = response.data
+          .filter((employee: any) => employee.status === "free to work") // Filter free employees
           .map((employee: any) => ({
             id: employee._id,
             name: employee.name,
-          }))
-          .filter((employee) => {
-            if (employeeNameSet.has(employee.name)) {
-              return false;
-            }
-            employeeNameSet.add(employee.name);
-            return true; 
-          });
+            status: employee.status,
+          }));
     
         setEmployees(employeeData);
       } catch (error) {
@@ -222,6 +215,7 @@ const AddTaskManagements: React.FC = () => {
         toast.error("Failed to fetch employees");
       }
     };
+    
     
 
     fetchManagerTasks();
@@ -391,14 +385,27 @@ const AddTaskManagements: React.FC = () => {
                   }))
                 }
                 required
+                displayEmpty
               >
                 {employees.map((employee) => (
-                  <MenuItem key={employee.id} value={employee.name}>
-                    {employee.name}
+                  <MenuItem
+                    key={employee.id}
+                    value={employee.name}
+                    disabled={employee.status !== "free to work"} // Only disable those with "have work"
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span>{employee.name}</span>
+                      <Chip
+                        label={employee.status === "free to work" ? "Free to Work" : "Have Work"}
+                        color={employee.status === "free to work" ? "success" : "default"}
+                      />
+                    </div>
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
+
+
             <Typography>Drone Required</Typography>
             <RadioGroup row value={droneRequired} onChange={handleDroneChange}>
               <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
