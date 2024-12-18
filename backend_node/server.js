@@ -1321,13 +1321,13 @@ app.post('/api/worksheets/manager', async (req, res) => {
   try {
     const roleCriteria = role === "Manager" ? ["Employee", "Admin", "Manager"] : [role];
     const worksheets = role === "Manager"
-    ? await Worksheet.find({
+  ? await Worksheet.find({
       role: { $in: roleCriteria },
-    })
-    : await Worksheet.find({
+    }).sort({ _id: -1 }) 
+  : await Worksheet.find({
       assign_to: assign_to,
       role: { $in: roleCriteria },
-    });
+    }).sort({ _id: -1 }); 
 
     if (worksheets.length === 0) {
       return res.status(404).json({ message: 'No worksheets found for the given criteria.' });
