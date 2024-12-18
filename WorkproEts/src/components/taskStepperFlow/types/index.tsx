@@ -16,6 +16,7 @@ export interface Task {
   droneRequired: string; 
   selectedEmployees: string[];
   managerTaskId : string;
+  dgpsRequired : string;
 }
 
   

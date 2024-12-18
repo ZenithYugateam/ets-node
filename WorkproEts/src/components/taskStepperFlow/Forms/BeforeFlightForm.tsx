@@ -111,7 +111,7 @@ export const BeforeFlightForm = ({ task, currentStep }: BeforeFlightForm) => {
           </div>
         </FormField>
 
-        <FormField label="Method">
+        <FormField label="Method of Survey">
           <input
             type="text"
             value={formData.method}
@@ -121,14 +121,14 @@ export const BeforeFlightForm = ({ task, currentStep }: BeforeFlightForm) => {
         </FormField>
       </div>
 
-      <FormField label="Sight Name">
+      {/* <FormField label="Sight Name">
         <input
           type="text"
           value={formData.sightName}
           onChange={(e) => setFormData({ ...formData, sightName: e.target.value })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         />
-      </FormField>
+      </FormField> */}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <FormField label="Date">

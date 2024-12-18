@@ -14,6 +14,7 @@ const predefinedDroneNames = [
   'MAVIC 3 Enterprises RTK',
   'M 350 LIDAR',
   'Phantom 4 RTK-1',
+  'Dgps'
 ];
 
 const droneChecklistMapping: Record<string, { item: string; quantity?: number }[]> = {
@@ -73,15 +74,15 @@ const droneChecklistMapping: Record<string, { item: string; quantity?: number }[
     { item: 'Landing Pad (Using Car Matt)', quantity: 1 },
     { item: 'Drone Pilot T-Shirts (Must)', quantity: 1 }, 
     { item: 'LIDAR L2 Sensor', quantity: 1 },
-    { item: 'Base No: B2', quantity: 1 },
-    { item: 'Tripod No:', quantity: 1 },
-    { item: 'Rover No: R3', quantity: 1 },
-    { item: 'BI Under', quantity: 1 },
-    { item: 'Center Pole', quantity: 1 },
+    { item: 'Dgps Base No: B2', quantity: 1 },
+    { item: 'Dgps Tripod No:', quantity: 1 },
+    { item: 'Dgps Rover No: R3', quantity: 1 },
+    { item: 'Dgps Bipod', quantity: 1 },
+    { item: 'Dgps Center Pole', quantity: 1 },
   ],
   'Phantom 4 RTK-1': [
     { item: 'RC', quantity: 1 },
-    { item: 'Propeller', quantity: 1 }, // Sets
+    { item: 'Propeller', quantity: 1 }, 
     { item: 'Batteries (RTKI-A1, A2, A3)', quantity: 1 },
     { item: 'Charging HUB', quantity: 1 },
     { item: 'RC Charging HUB', quantity: 1 },
@@ -101,6 +102,12 @@ const droneChecklistMapping: Record<string, { item: string; quantity?: number }[
     { item: 'Tripod Rod', quantity: 1 },
     { item: 'iPad Holder', quantity: 1 },
     { item: 'iPad', quantity: 1 },
+  ],'Dgps': [
+    { item: 'DGPS Base', quantity: 1 },
+    { item: 'DGPS Rover', quantity: 1 },
+    { item: 'DGPS Tripod', quantity: 1 },
+    { item: 'DGPS Bipod Rod', quantity: 1 },
+    { item: 'DGPS Centre Pole', quantity: 1 },
   ],
 };
 
@@ -147,6 +154,7 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
     }));
   };
 
+  
   const handleDroneSelection = (droneName: string) => {
     setFormData({
       droneName,
@@ -154,6 +162,9 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
       images: formData.images,
     });
   };
+  
+  
+  
 
   const convertToBase64 = (file: File) => {
     return new Promise<string>((resolve, reject) => {
@@ -219,6 +230,7 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
       toast.error('Failed to submit the form. Please try again.');
     }
   };
+  
 
   return (
     <form className="space-y-6">
@@ -226,19 +238,30 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
       <FormField label="Drone Name">
-        <select
-          value={formData.droneName}
-          onChange={(e) => handleDroneSelection(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-        >
-          <option value="" disabled>Select a Drone</option>
-          {predefinedDroneNames.map((name) => (
+      <select
+        value={formData.droneName}
+        onChange={(e) => handleDroneSelection(e.target.value)}
+        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+      >
+        <option value="" disabled>Select a Drone</option>
+        {predefinedDroneNames
+          .filter((name) => {
+            console.log(name)
+            if (name === "Dgps" && task.dgpsRequired !== "No") {
+              return false;
+            }else{
+              return true
+            }
+            
+          })
+          .map((name) => (
             <option key={name} value={name}>
               {name}
             </option>
           ))}
-        </select>
-      </FormField>
+      </select>
+    </FormField>
+
 
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-4">Pre-flight Checklist</h3>

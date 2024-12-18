@@ -1126,6 +1126,7 @@ app.post("/api/store-form-data", async (req, res) => {
       managerName: req.body.managerName,
       status: req.body.status,
       droneRequired: req.body.droneRequired,
+      dgpsRequired : req.body.dgpsRequired,
       selectedEmployees: req.body.selectedEmployees,
       estimatedHours: req.body.estimatedHours,
     });
