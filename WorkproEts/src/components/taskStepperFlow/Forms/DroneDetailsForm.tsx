@@ -247,7 +247,7 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
         {predefinedDroneNames
           .filter((name) => {
             console.log(name)
-            if (name === "Dgps" && task.dgpsRequired !== "No") {
+            if (name === "Dgps" && task.dgpsRequired === "No") {
               return false;
             }else{
               return true
