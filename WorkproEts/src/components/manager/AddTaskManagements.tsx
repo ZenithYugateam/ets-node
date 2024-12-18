@@ -30,6 +30,7 @@ const AddTaskManagements: React.FC = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState<boolean>(false);
   const [taskId, setTaskId] = useState<string>("");
   const [droneRequired, setDroneRequired] = useState<string>("No");
+  const [dgpsRequired, setDgpsRequired] = useState<string>("No");
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
 
   const handleViewTask = (task: any) => {
@@ -231,8 +232,9 @@ const AddTaskManagements: React.FC = () => {
   const resetForm = () => {
     setFormData(initialFormData);
     setDroneRequired("No");
+    setDgpsRequired("No");
     setSelectedEmployees([]);
-  };
+  }
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -261,6 +263,10 @@ const AddTaskManagements: React.FC = () => {
     setDroneRequired(event.target.value);
   };
 
+  const handleDgpsChange = (event: React.ChangeEvent<HTMLInputElement>) => { 
+    setDgpsRequired(event.target.value);
+  };
+
   const handleEmployeeSelect = (
     event: React.ChangeEvent<{ value: unknown }>
   ) => {
@@ -274,6 +280,7 @@ const AddTaskManagements: React.FC = () => {
       ...formData,
       managerName: sessionStorage.getItem("userName"),
       droneRequired,
+      dgpsRequired, 
       selectedEmployees,
       estimatedHours: formData.estimatedHours,
     };
@@ -416,6 +423,12 @@ const AddTaskManagements: React.FC = () => {
                 </Select>
               </FormControl>
             )}
+
+           <Typography>DGPS Required</Typography>
+            <RadioGroup row value={dgpsRequired} onChange={handleDgpsChange}>
+              <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
+              <FormControlLabel value="No" control={<Radio />} label="No" />
+            </RadioGroup>
             <Typography>Priority</Typography>
             <FormControl fullWidth sx={{ mb: 1 }}>
               <Select
