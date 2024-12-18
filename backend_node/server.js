@@ -1644,7 +1644,6 @@ app.post('/api/submission', async (req, res) => {
 
     const submission = new SubmissionSchema(formattedData); 
     const savedSubmission = await submission.save();
-
     res.status(201).json({
       message: 'Submission stored successfully!',
       data: savedSubmission,
