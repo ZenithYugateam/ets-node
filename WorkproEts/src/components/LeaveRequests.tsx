@@ -64,15 +64,20 @@ const LeaveRequests: React.FC = () => {
       if (leaveForm.userid) {
         try {
           const data = await getLeaveRequests(leaveForm.userid);
-          setLeaveRequests(data);
+          // Sort the requests by creation date in descending order
+          const sortedData = data.sort(
+            (a: LeaveRequest, b: LeaveRequest) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setLeaveRequests(sortedData);
         } catch (error) {
           console.error('Error fetching leave requests:', error.message);
         }
       }
     };
-
+  
     fetchLeaveRequests();
   }, [leaveForm.userid]);
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const ChecklistItemSchema = new mongoose.Schema({
   item: { type: String, required: false },
@@ -16,28 +16,34 @@ const FlightSchema = new mongoose.Schema({
 });
 
 const SubmissionSchema = new mongoose.Schema({
-  type: { type: String, required: true }, 
+  type: { type: String, required: true },
+  projectSubmitted: { type: Boolean, required: false },
+  currentStep: { type: Number, required: true },
+  managerTaskId: { type: String, required: true },
+  submissions: {
+    type: Object,
+    required: false,
+    default: {},
+  },
   droneName: { type: String, required: false },
   checklistItems: { type: [ChecklistItemSchema], required: false },
   images: { type: [String], required: false },
-  currentStep: { type: Number, required: true },
-  managerTaskId: { type: String, required: true },
   date: { type: String, required: false },
   readings: { type: Number, required: false },
   selectedVehicles: { type: [String], required: false },
   time: { type: String, required: false },
   location: { type: LocationSchema, required: false },
   isReporting: { type: Boolean, required: false },
-  crew: { type: [String], required: false },            
-  flights: { type: [FlightSchema], required: false },  
+  crew: { type: [String], required: false },
+  flights: { type: [FlightSchema], required: false },
   method: { type: String, required: false },
   sightName: { type: String, required: false },
-  departingTime : {type : String , required : false},
-  timeReached: { type: String, required: false }, // time when returning to office
+  departingTime: { type: String, required: false },
+  timeReached: { type: String, required: false },
   endReading: { type: Number, required: false },
-  checkedItems: { type: [String], required: false }, // Add this line
-});
+  checkedItems: { type: [String], required: false },
+}, { timestamps: true }); // Add timestamps for createdAt and updatedAt
 
-const Submission = mongoose.model('Submission', SubmissionSchema);
+const Submission = mongoose.model("Submission", SubmissionSchema);
 
 module.exports = Submission;
