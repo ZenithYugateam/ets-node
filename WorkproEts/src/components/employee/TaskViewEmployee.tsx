@@ -165,10 +165,9 @@ const TaskViewEmployee: React.FC = () => {
       );
       let allTasks = response.data;
 
-      // Sort tasks by _id in descending order to have the latest tasks first
+     
       allTasks.sort((a, b) => b._id.localeCompare(a._id));
 
-      // Add timeRemaining and urgencyLevel based on deadline and estimatedHours
       const tasksWithTime = allTasks.map((task) => {
         let updatedTask = { ...task };
 
