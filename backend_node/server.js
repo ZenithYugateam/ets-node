@@ -1100,16 +1100,53 @@ app.post("/api/getAllProjectNamesForEmployee", async (req, res) => {
 });
 
 app.post('/api/employees-by-manager', async (req, res) => {
-  const { managerName } = req.body; 
+  const { managerName } = req.body;
   try {
+    // Step 1: Get employees managed by the manager
     const employees = await User.find({
       role: 'Employee',
       manager: managerName,
-    }).select('name email department'); 
-    res.status(200).json(employees);
+    }).select('name email department');
+
+    if (!employees || employees.length === 0) {
+      return res.status(404).json({ message: 'No employees found under this manager' });
+    }
+
+    const employeeNames = employees.map(emp => emp.name);
+
+    // Step 2: Get all tasks for these employees
+    const tasks = await ManagerTask.find({
+      employeeName: { $in: employeeNames },
+    });
+
+    // Step 3: Group tasks by employee name
+    const tasksGroupedByEmployee = tasks.reduce((acc, task) => {
+      if (!acc[task.employeeName]) {
+        acc[task.employeeName] = [];
+      }
+      acc[task.employeeName].push(task);
+      return acc;
+    }, {});
+
+    // Step 4: Check each group for pending/in-progress tasks
+    const result = employees.map(emp => {
+      const employeeTasks = tasksGroupedByEmployee[emp.name] || [];
+      const hasWork = employeeTasks.some(
+        task => task.status === 'pending' || task.status === 'In Progress' || task.status === 'Pending'
+      );
+
+      return {
+        name: emp.name,
+        email: emp.email,
+        department: emp.department,
+        status: hasWork ? 'have work' : 'free to work',
+      };
+    });
+
+    res.status(200).json(result);
   } catch (err) {
-    console.error('Error fetching employees:', err.message);
-    res.status(500).json({ message: 'Error fetching employees', error: err.message });
+    console.error('Error fetching employees work status:', err.message);
+    res.status(500).json({ message: 'Error fetching employees work status', error: err.message });
   }
 });
 
