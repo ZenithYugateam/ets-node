@@ -1,0 +1,72 @@
+const mongoose = require('mongoose');
+
+// Define Department Schema
+const departmentSchema = new mongoose.Schema({
+  departmentId: {
+    type: String,
+    unique: true,
+    required: true,
+    trim: true,
+  },
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+  },
+  company: {
+    type: String,
+    required: true,
+    enum: ['IPU', 'IDA'], // Restrict values to "IPU" or "IDA"
+    trim: true,
+  },
+});
+
+// Pre-validate middleware to ensure `departmentId` is set
+departmentSchema.pre('validate', async function (next) {
+  if (this.isNew && !this.departmentId) {
+    try {
+      console.log('Generating departmentId...');
+
+      // Find the last department by `departmentId`
+      const lastDepartment = await this.constructor.findOne().sort({ departmentId: -1 });
+      console.log('Last department:', lastDepartment);
+
+      // Generate the next `departmentId`
+      if (lastDepartment && lastDepartment.departmentId) {
+        const lastId = parseInt(lastDepartment.departmentId, 10);
+        if (isNaN(lastId)) {
+          throw new Error('Invalid departmentId in the database. Please clean up the data.');
+        }
+        this.departmentId = String(lastId + 1).padStart(2, '0'); // Increment and pad with leading zeros
+      } else {
+        this.departmentId = '01'; // Start with '01' if no departments exist
+      }
+
+      console.log('Generated departmentId:', this.departmentId);
+      next();
+    } catch (error) {
+      console.error('Error generating departmentId:', error.message);
+      next(error);
+    }
+  } else {
+    next();
+  }
+});
+
+// Error handling for duplicate keys
+departmentSchema.post('save', function (error, doc, next) {
+  if (error.name === 'MongoServerError' && error.code === 11000) {
+    if (error.keyValue.departmentId) {
+      next(new Error('Duplicate departmentId found. Please ensure unique department IDs.'));
+    } else if (error.keyValue.name) {
+      next(new Error('Duplicate department name found. Department names must be unique.'));
+    } else {
+      next(new Error('Duplicate key error occurred.'));
+    }
+  } else {
+    next(error);
+  }
+});
+
+module.exports = mongoose.model('DepartmentList', departmentSchema);

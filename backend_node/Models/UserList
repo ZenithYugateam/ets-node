@@ -1,0 +1,18 @@
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+  empId: { type: String, required: true, trim: true },
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, trim: true },
+  phone: { type: String, required: true, match: /^\d{10}$/, trim: true },
+  password: { type: String, required: true },
+  company: { type: String, enum: ['IDA', 'IPU'], required: true },
+  department: { type: String, required: true },
+  departmentId: { type: String, required: true },
+  otherDepartments: { type: [String], default: [] }, // Added field for other departments
+  role: { type: String, enum: ['Employee', 'Manager', 'HR', 'Accountant'], required: true },
+  manager: { type: String, default: null },
+  joinedDate: { type: Date },
+});
+
+module.exports = mongoose.model('UserDataList', userSchema);

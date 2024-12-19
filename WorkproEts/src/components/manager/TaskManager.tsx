@@ -89,7 +89,7 @@ const TaskManager: React.FC = () => {
     const fetchTasks = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get<Task[]>("http://localhost:5001/api/tasks");
+        const response = await axios.get<Task[]>("http://localhost:5000/api/tasks");
         const allTasks = response.data;
 
         // Filter tasks for the current manager
@@ -125,7 +125,7 @@ const TaskManager: React.FC = () => {
     );
 
     try {
-      const response = await axios.put(`http://localhost:5001/api/tasks/${_id}`, { status: newStatus });
+      const response = await axios.put(`http://localhost:5000/api/tasks/${_id}`, { status: newStatus });
       console.log("Status updated response:", response.data);
       addNotification(`Task "${response.data.title}" status updated to "${newStatus}".`, "success");
     } catch (error) {

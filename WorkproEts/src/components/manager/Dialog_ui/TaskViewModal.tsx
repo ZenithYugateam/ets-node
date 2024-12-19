@@ -121,7 +121,7 @@ export function TaskViewModal({
   useEffect(() => {
     if (open && taskId) {
       axios
-        .get(`http://localhost:5001/api/remarks/${taskId}`)
+        .get(`http://localhost:5000/api/remarks/${taskId}`)
         .then((response) => {
           setRemarks(response.data.remarks);
         })
@@ -130,7 +130,7 @@ export function TaskViewModal({
         });
 
       axios
-        .post(`http://localhost:5001/api/employeeNotes`, {
+        .post(`http://localhost:5000/api/employeeNotes`, {
           id: taskId,
         })
         .then((response) => {
@@ -146,7 +146,7 @@ export function TaskViewModal({
     if (message.trim()) {
       try {
         const response = await axios.put(
-          `http://localhost:5001/api/update-remarks/${taskId}`,
+          `http://localhost:5000/api/update-remarks/${taskId}`,
           {
             remarks: message,
           }

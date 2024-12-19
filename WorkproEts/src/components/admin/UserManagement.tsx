@@ -125,7 +125,7 @@ const UserManagement = () => {
   const fetchManagersByDepartment = async (departmentName: string) => {
     try {
       const response = await axios.get(
-        `http://localhost:5001/users/managers/${departmentName}`
+        `http://localhost:5000/users/managers/${departmentName}`
       );
       setManagers(response.data);
     } catch (error) {
@@ -168,7 +168,7 @@ const UserManagement = () => {
   const handleSaveDepartment = async () => {
     try {
       const response = await axios.post(
-        "http://localhost:5001/api/departments/add",
+        "http://localhost:5000/api/departments/add",
         departmentFormData
       );
 
@@ -193,7 +193,7 @@ const UserManagement = () => {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const response = await fetch("http://localhost:5001/api/usersData", {
+        const response = await fetch("http://localhost:5000/api/usersData", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ adminId: USER_ID }),
@@ -219,7 +219,7 @@ const UserManagement = () => {
       setIsLoading(true);
       try {
         const response = await axios.get(
-          "http://localhost:5001/api/departments"
+          "http://localhost:5000/api/departments"
         );
         const departmentsData = response.data;
 
@@ -263,12 +263,12 @@ const UserManagement = () => {
   //       return;
   //     }
 
-  //     let url = "http://localhost:5001/api/users/add"; // Default URL for POST
+  //     let url = "http://localhost:5000/api/users/add"; // Default URL for POST
   //     let method = "POST"; // Default method
 
   //     // Only change URL and method if we're updating an existing user
   //     if (selectedUser && selectedUser._id) {
-  //       url = `http://localhost:5001/api/users/${selectedUser._id}`;
+  //       url = `http://localhost:5000/api/users/${selectedUser._id}`;
   //       method = "PUT";
   //     }
 
@@ -328,8 +328,8 @@ const UserManagement = () => {
 
       // Check if selectedUser exists and has a valid _id
       const url = selectedUser?._id
-        ? `http://localhost:5001/api/users/edit/${selectedUser._id}`
-        : "http://localhost:5001/api/users/add";
+        ? `http://localhost:5000/api/users/edit/${selectedUser._id}`
+        : "http://localhost:5000/api/users/add";
 
       const method = selectedUser?._id ? "PUT" : "POST";
 
@@ -371,7 +371,7 @@ const UserManagement = () => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
         const response = await fetch(
-          `http://localhost:5001/api/users/${userId}`,
+          `http://localhost:5000/api/users/${userId}`,
           {
             method: "DELETE",
           }

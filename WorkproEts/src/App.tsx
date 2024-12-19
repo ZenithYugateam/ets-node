@@ -17,7 +17,14 @@ import { AuthProvider } from "./AuthContext";
 import LeaveApprovals from "./components/shared/LeaveApprovals";
 import WorksheetManagement from "./components/employee/WorksheetManagement";
 import { NotificationProvider } from "././components/context/NotificationContext"; // Import NotificationProvider
+import Hrdashboard from "./components/Hr/Hrdasboard";
+import UsersView from "./components/Hr/Pages/UsersView";
+import Side from "./components/Hr/Side";
+import ClientsPage from './components/Hr/Pages/ClientsPage';
+import StudentsPage from './components/Hr/Pages/StudentsPage';
 
+
+const CURRENT_USER_ROLE = "employee";
 const adminId = "647f1f77bcf86cd799439011";
 
 // Layout Component
@@ -38,110 +45,114 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider> {/* Wrap NotificationProvider around the entire app */}
-        <ErrorBoundary>
-          <BrowserRouter>
-            <div className="min-h-screen bg-gray-50">
-              <Routes>
-                {/* Public Route: No Layout, hence no Navbar or Sidebar */}
-                <Route path="/" element={<LoginForm />} />
-
-                {/* Profile is assumed to be a private route */}
-                <Route path="/profile" element={
-                  <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <div className="min-h-screen bg-gray-50">
+            <Routes>
+            
+              <Route path="/" element={<LoginForm />} />
+              <Route path="/profile" element={<Profile />} />{" "}
+              <Route
+                path="/admin"
+                element={
+                  <PrivateRoute requiredRoles={["Admin"]}>
                     <Layout>
-                      <Profile />
+                      <AdminDashboard />
+                      {/* <div className="max-w-7xl mx-auto">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+                          Leave Management Dashboard
+                        </h1> */}
+                        {/* <LeaveApprovals adminId={adminId} /> */}
+                      {/* </div> */}
                     </Layout>
                   </PrivateRoute>
-                } />
-
-                {/* Admin Routes */}
-                <Route
-                  path="/admin"
-                  element={
-                    <PrivateRoute requiredRoles={["Admin"]}>
-                      <Layout>
-                        <AdminDashboard />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/leave-approvals"
-                  element={
-                    <PrivateRoute requiredRoles={["Admin"]}>
-                      <Layout>
-                        <div className="max-w-7xl mx-auto">
-                          <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                            Leave Approvals Dashboard
-                          </h1>
-                          <LeaveApprovals adminId={adminId} />
-                        </div>
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-
-                {/* Manager Routes */}
-                <Route
-                  path="/manager"
-                  element={
-                    <PrivateRoute requiredRoles={["Manager"]}>
-                      <Layout>
-                        <ManagerDashboard />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-
-                {/* Employee Routes */}
-                <Route
-                  path="/employee"
-                  element={
-                    <PrivateRoute requiredRoles={["Employee"]}>
-                      <Layout>
-                        <EmployeeDashboard />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/leave-requests"
-                  element={
-                    <PrivateRoute requiredRoles={["Manager", "Employee"]}>
-                      <Layout>
-                        <LeaveRequests />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/work-sheets"
-                  element={
-                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
-                      <Layout>
-                        <WorksheetManagement />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/timesheets"
-                  element={
-                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
-                      <Layout>
-                        <Timesheets />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-
-                {/* You can add a 404 Not Found route here if desired */}
-              </Routes>
-            </div>
-          </BrowserRouter>
-        </ErrorBoundary>
-      </NotificationProvider>
+                }
+              />
+              <Route
+                path="/leave-approvals"
+                element={
+                  <PrivateRoute requiredRoles={["Admin"]}>
+                    <Layout>
+                      <div className="max-w-7xl mx-auto">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+                          Leave Approvals Dashboard
+                        </h1>
+                        <LeaveApprovals adminId={adminId} />
+                      </div>
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/manager"
+                element={
+                  <PrivateRoute requiredRoles={["Manager"]}>
+                    <Layout>
+                      <ManagerDashboard />
+                      {/* <div className="max-w-7xl mx-auto">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+                          Leave Management Dashboard
+                        </h1>
+                        <LeaveApprovals adminId={adminId} />
+                      </div> */}
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/employee"
+                element={
+                  <PrivateRoute requiredRoles={["Employee"]}>
+                    <Layout>
+                      <EmployeeDashboard />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/leave-requests"
+                element={
+                  <PrivateRoute requiredRoles={["Manager", "Employee"]}>
+                    <Layout>
+                      <LeaveRequests />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/work-sheets"
+                element={
+                  <PrivateRoute
+                    requiredRoles={["Admin", "Manager", "Employee"]}
+                  >
+                    <Layout>
+                      <WorksheetManagement />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/timesheets"
+                element={
+                  <PrivateRoute
+                    requiredRoles={["Admin", "Manager", "Employee"]}
+                  >
+                    <Layout>
+                      <Timesheets />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route path="/HRDashboard" element={<Hrdashboard />}></Route>
+              <Route path="/Userview" element={<UsersView />}></Route>
+              <Route path="/Side" element={<Side />}></Route>
+              <Route path="/clients" element={<ClientsPage />} />
+              <Route path="/students" element={<StudentsPage />} />
+              
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

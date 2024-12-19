@@ -6,10 +6,13 @@ const nodemailer = require('nodemailer');
 const multer = require('multer');
 const bodyParser = require("body-parser");
 const ManagerTask = require("./Models/ManagerTask");
-const Worksheet = require("./Models/Worksheet")
-const BugReport = require("./Models/BugReport")
-const Vehicle = require("./Models/Vehicle")
-const SubmissionSchema = require("./Models/SubmissionSchema");
+const Worksheet = require("./Models/Worksheet");
+const UserDataList = require("./Models/UserList");
+const DepartmentList = require('./Models/DepartmentList');
+const StudentList = require('./Models/StudentList');
+const Clientlist = require('./Models/Clientlist')
+const MultiTask = require('./Models/Tasktypes')
+
 
 const app = express();
 app.use(cors());
@@ -1364,318 +1367,382 @@ app.put("/api/manager-tasks/update-status", async (req, res) => {
   }
 });
 
-
-app.post('/api/bug-report', async (req, res) => {
+//UserListData
+app.post('/api/users/hr', async (req, res) => {
   try {
-    console.log("Bug report request received");
-    const { username, role, img, description } = req.body;
-
-    console.log("username ", username, role, description);
-
-    if (!img || img.length === 0 || !description) {
-      return res.status(400).json({ message: 'Images and description are required.' });
-    }
-
-    const newBugReport = new BugReport({
-      username,
-      role,
-      img,
-      description,
-    });
-
-    await newBugReport.save();
-
-    // Decode base64 images and prepare attachments
-    const attachments = img.map((base64Image, index) => {
-      let mimeType = 'image/jpeg'; // Default MIME type
-      let base64Data = base64Image;
-
-      const matches = base64Image.match(/^data:(.+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        mimeType = matches[1];
-        base64Data = matches[2];
-      }
-
-      try {
-        const buffer = Buffer.from(base64Data, 'base64');
-        return {
-          filename: `image${index + 1}.${mimeType.split('/')[1]}`,
-          content: buffer,
-          contentType: mimeType,
-        };
-      } catch (err) {
-        throw new Error(`Invalid Base64 format for image ${index + 1}`);
-      }
-    });
-
-    const mailOptions = {
-      from: '"Bug Report" <sharan.medamoni4243@gmail.com>', // Sender address
-      to: 'temporary34576@gmail.com',
-      subject: 'Bug Report Submitted',
-      text: `A bug report was submitted by ${username}.
-
-      Role: ${role}
-      
-      Description:
-        ${description}`,
-          html: `
-            <p><strong>Username:</strong> ${username}</p>
-            <p><strong>Role:</strong> ${role}</p>
-            <p><strong>Description:</strong> ${description}</p>
-          `,
-          attachments, 
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    res.status(201).json({ message: 'Bug report submitted successfully!', data: newBugReport });
-  } catch (error) {
-    console.error('Error saving bug report:', error);
-    res.status(500).json({ message: 'Internal server error.' });
-  }
-});
-
-app.post('/api/vehicles', async (req, res) => {
-  try {
-    const { type, name, role, vehicleName, vehicleNumber, startReading, endReading } = req.body;
-
-    if (!type || !name || !role || !vehicleName || !vehicleNumber) {
-      return res.status(400).json({ error: 'Type, name, role, vehicle name, and vehicle number are required.' });
-    }
-
-    const newVehicle = new Vehicle({
-      type,
+    const {
       name,
+      email,
+      phone,
+      password,
+      company,
+      department,
+      departmentId,
+      otherDepartments = [],
       role,
-      vehicleName,
-      vehicleNumber,
-      startReading: startReading || '0',
-      endReading: endReading || '0',
+      manager,
+      joinedDate,
+    } = req.body;
+
+    // Collect missing fields
+    const missingFields = [];
+    if (!name) missingFields.push('name');
+    if (!email) missingFields.push('email');
+    if (!phone) missingFields.push('phone');
+    if (!password) missingFields.push('password');
+    if (!company) missingFields.push('company');
+    if (!department) missingFields.push('department');
+    if (!departmentId) missingFields.push('departmentId');
+    if (!role) missingFields.push('role');
+
+    if (missingFields.length > 0) {
+      return res
+        .status(400)
+        .json({ error: `Missing required fields: ${missingFields.join(', ')}` });
+    }
+
+    // Check for duplicate email
+    const existingUser = await UserDataList.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ error: 'Email already exists' });
+    }
+
+    // Validate that `department` exists
+    const departmentExists = await DepartmentList.findOne({ name: department });
+    if (!departmentExists) {
+      return res.status(400).json({ error: `Invalid department: ${department}` });
+    }
+
+    // Validate `otherDepartments`
+    if (otherDepartments.length > 0) {
+      const invalidDepartments = [];
+      for (const deptName of otherDepartments) {
+        const isValid = await DepartmentList.findOne({ name: deptName });
+        if (!isValid) {
+          invalidDepartments.push(deptName);
+        }
+      }
+
+      if (invalidDepartments.length > 0) {
+        return res.status(400).json({
+          error: `Invalid departments: ${invalidDepartments.join(', ')}`,
+        });
+      }
+    }
+
+    // Generate a unique empId
+    const lastUser = await UserDataList.findOne({ company, departmentId })
+      .sort({ empId: -1 })
+      .exec();
+    let uniqueNumber = '0001';
+    if (lastUser) {
+      const lastEmpId = lastUser.empId.slice(-4); // Get the last 4 digits
+      uniqueNumber = String(parseInt(lastEmpId) + 1).padStart(4, '0'); // Increment and pad
+    }
+
+    const empId = `${company}${departmentId}${uniqueNumber}`; // Construct empId
+
+    // Save the user
+    const newUser = new UserDataList({
+      empId,
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      password,
+      company,
+      department,
+      departmentId,
+      otherDepartments, // Save department names directly
+      role,
+      manager,
+      joinedDate: new Date(joinedDate),
     });
 
-    await newVehicle.save();
-
-    res.status(201).json({ message: 'Vehicle saved successfully', vehicle: newVehicle });
+    const savedUser = await newUser.save();
+    return res.status(201).json({ message: 'User created successfully', data: savedUser });
   } catch (error) {
-    if (error.code === 11000) {
-      res.status(409).json({ error: 'Vehicle number already exists.' });
-    } else {
-      res.status(500).json({ error: 'Error saving vehicle', details: error.message });
+    console.error('Error creating user:', error.message);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// get user details 
+app.get('/api/getusers/hr', async (req, res) => {
+  try {
+    // Fetch all users from the database
+    const users = await UserDataList.find({}, '-password'); // Exclude password for security
+
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found' });
     }
+
+    return res.status(200).json({ data: users });
+  } catch (error) {
+    console.error('Error fetching users:', error.message);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
 
-app.get('/api/getAllVechileData' , (req, res)=>{
-  try{
-    Vehicle.find({ type: { $ne: 'Private' } }).then(data => {
-      res.status(200).json(data);
-    }).catch(error => {
-      console.error("Error fetching data:", error);
-      res.status(500).json({ message: "Server error" });
-    });
-
-  }catch(error){
-    console.error("Error fetching data:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-})
-
-app.post('/api/latest-active-step', async (req, res) => {
+//maangers hr 
+app.get('/api/managers/hr', async (req, res) => {
   try {
-    const { managerTaskId } = req.body;
-    const submission = await SubmissionSchema.findOne(
-      { managerTaskId: managerTaskId },
-      { currentStep: 1, _id: 0 } 
-    ).sort({ currentStep: -1 }); 
-    
-    if (!submission) {
-      return res.status(404).json({ message: 'No submission found with the given managerTaskId' });
+    const { department, company } = req.query;
+
+    // Log the incoming query parameters for debugging
+    console.log("Query parameters received:", { department, company });
+
+    // Validate query parameters
+    if (!department || !company) {
+      return res.status(400).json({ error: 'Both department and company are required.' });
     }
 
-    return res.status(200).json({ latestActiveStep: submission.currentStep });
-  } catch (error) {
-    console.error('Error fetching latest active step:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
+    // Query the database for managers
+    const managers = await UserDataList.find(
+      { role: 'Manager', department, company },
+      'name department company email -_id' // Select only the fields needed
+    );
 
-app.post('/api/submissions/selected-vehicles', async (req, res) => {
-  try {
-    const { managerTaskId } = req.body;
-
-    const submission = await SubmissionSchema.findOne({
-      managerTaskId: managerTaskId,
-      currentStep: 1
-    });
-
-    if (!submission) {
-      return res.status(404).json({ 
-        message: 'Submission not found for the given managerTaskId and currentStep=2' 
+    if (!managers || managers.length === 0) {
+      return res.status(404).json({
+        message: 'No managers found for the selected department and company',
+        data: [],
       });
     }
 
-    res.json({ selectedVehicles: submission.selectedVehicles || [] });
+    return res.status(200).json({ data: managers });
   } catch (error) {
-    console.error('Error fetching submission:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error fetching managers:', error.message);
+    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 
-app.post('/api/droneDetailsList', async (req, res) => {
-  const { managerTaskId } = req.body;
 
-  if (!managerTaskId) {
-    return res.status(400).json({ error: 'managerTaskId is required' });
-  }
 
+
+//DepartmentLists 
+app.post('/api/departments/hr', async (req, res) => {
   try {
-    const submissions = await SubmissionSchema.find({
-      managerTaskId,
-      currentStep: 0
-    });
+    const { name, company } = req.body;
+    console.log("name:", name, "company:", company);
 
-    if (submissions.length === 0) {
-      return res.status(404).json({ message: 'No submissions found for the given managerTaskId with currentStep = 0' });
+    // Validate input
+    if (!name || !company) {
+      return res.status(400).json({ error: 'Both department name and company are required' });
     }
 
-    return res.json(submissions);
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/submission', async (req, res) => {
-  try {
-    const { type, onFieldDetails, ...data } = req.body;
-    
-    if (!type) {
-      return res.status(400).json({ error: 'Type field is required to differentiate the submission.' });
+    // Validate company name
+    const validCompanies = ['IPU', 'IDA']; // Allowed company values
+    if (!validCompanies.includes(company)) {
+      return res.status(400).json({ error: `Invalid company. Allowed values are: ${validCompanies.join(', ')}` });
     }
 
-    let formattedData = {};
+    // Create a new department instance
+    const newDepartment = new DepartmentList({ name, company });
 
-    if (type === "onFieldDetails") {
-      if (!onFieldDetails || !onFieldDetails.location) {
-        return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
-      }
+    // Save the department to the database
+    await newDepartment.save();
 
-      const { location, isReporting } = onFieldDetails;
-
-      formattedData = {
-        type,
-        ...data,
-        location: {
-          latitude: location.latitude || null,
-          longitude: location.longitude || null,
-        },
-        isReporting: isReporting || false,
-      };
-    } else if (type === "beforeFlight") {
-      formattedData = {
-        type,
-        crew: data.crew,
-        method: data.method,
-        sightName: data.sightName,
-        date: data.date,
-        flights: data.flights,
-        images: data.images,
-        currentStep: data.currentStep,
-        managerTaskId: data.managerTaskId,
-      };
-    }
-    else if (type === "afterFlight") {
-      formattedData = {
-        type,
-        crew: data.crew,
-        method: data.method,
-        sightName: data.sightName,
-        date: data.date,
-        flights: data.flights,
-        images: data.images,
-        currentStep: data.currentStep,
-        managerTaskId: data.managerTaskId,
-      };
-    } 
-    else if (type === "gettingOffField") {
-      if (!onFieldDetails || !onFieldDetails.location) {
-        return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
-      }
-
-      const { location, departingTime, currentStep } = onFieldDetails;
-
-      formattedData = {
-        type,
-        ...data,
-        location: {
-          latitude: location.latitude || null,
-          longitude: location.longitude || null,
-        },
-        departingTime: departingTime || null,
-        currentStep: currentStep || null,
-      };
-    } 
-    else if (type === "returnToOffice") {
-      formattedData = {
-        type,
-        selectedVehicles: data.selectedVehicles,  
-        timeReached: data.timeReached,            
-        endReading: data.endReading,              
-        images: data.images,                     
-        currentStep: data.currentStep,            
-        managerTaskId: data.managerTaskId,        
-      };
-    }
-    else if (type === "DroneSubmitForm") {
-      if (!data.checkedItems) {
-        return res.status(400).json({ error: 'checkedItems are required for DroneSubmitForm.' });
-      }
-      formattedData = {
-        type,
-        checkedItems: data.checkedItems,
-        managerTaskId: data.managerTaskId,
-        currentStep: data.currentStep,
-      };
-    }
-     else {
-      formattedData = {
-        type,
-        ...data,
-      };
-    }
-
-    const submission = new SubmissionSchema(formattedData); 
-    const savedSubmission = await submission.save();
     res.status(201).json({
-      message: 'Submission stored successfully!',
-      data: savedSubmission,
+      message: 'Department created successfully',
+      department: newDepartment,
     });
   } catch (error) {
-    console.error('Error saving submission:', error);
-    res.status(500).json({ error: 'Failed to store submission.' });
+    console.error('Error creating department:', error); // Log the full error object
+    if (error.code === 11000) {
+      return res.status(409).json({ error: 'Department name or ID already exists' });
+    }
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});
+//get departments 
+
+app.get('/api/getdepartments/hr', async (req, res) => {
+  try {
+    const { company } = req.query; // Get company name from query parameters
+
+    // Validate company parameter
+    if (!company) {
+      return res.status(400).json({ error: 'Company name is required.' });
+    }
+
+    // Fetch departments for the given company
+    const departments = await DepartmentList.find({ company }).select('name departmentId');
+
+    if (departments.length === 0) {
+      return res.status(200).json({ message: `No departments found for company ${company}`, data: [] });
+    }
+
+    // Return the filtered list of departments
+    res.status(200).json({ data: departments });
+  } catch (error) {
+    console.error('Error fetching departments:', error); // Log full error
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 
-app.post('/api/getPrivateVehiclesByName', async (req, res) => {
+
+//genetate emp id 
+app.get('/api/generate-empid/hr', async (req, res) => {
   try {
-    const { name } = req.body;
-    if (!name) {
-      return res.status(400).json({ error: 'Name parameter is required' });
+    const { company, departmentId } = req.query;
+
+    if (!company || !departmentId) {
+      return res.status(400).json({ error: 'Company and department ID are required' });
     }
 
-    const privateVehicles = await Vehicle.find({ type: 'Private', name: name });
+    // Fetch the last user globally to ensure unique ID across all employees
+    const lastUser = await UserDataList.findOne().sort({ empId: -1 }).exec();
 
-    if (privateVehicles.length === 0) {
-      return res.status(404).json({ message: 'No private vehicles found for the given name' });
+    let uniqueNumber = '0001';
+    if (lastUser) {
+      const lastEmpId = lastUser.empId.slice(-4);
+      uniqueNumber = String(parseInt(lastEmpId) + 1).padStart(4, '0');
     }
 
-    res.status(200).json(privateVehicles);
+    const empId = `${company}${departmentId}${uniqueNumber}`;
+    res.status(200).json({ empId });
   } catch (error) {
-    console.error('Error fetching private vehicles:', error);
+    console.error('Error generating empId:', error.message);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-const PORT = 5001;
+//Student data 
+
+app.post('/api/students', async (req, res) => {
+  try {
+    // Extract data from request body
+    const { name, age, hasPassport, highestQualification, status } = req.body;
+
+    // Validate required fields
+    if (!name || !age || !highestQualification || !status) {
+      return res.status(400).json({ error: 'All required fields must be provided.' });
+    }
+
+    // Create a new student document
+    const newStudent = new StudentList({
+      name,
+      age,
+      hasPassport,
+      highestQualification,
+      status,
+    });
+
+    // Save the student to the database
+    const savedStudent = await newStudent.save();
+
+    // Respond with success message
+    res.status(201).json({ message: 'Student added successfully', data: savedStudent });
+  } catch (error) {
+    console.error('Error saving student:', error); // Log the full error
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});
+
+app.get('/api/getstudents/hr', async (req, res) => {
+  try {
+    const students = await StudentList.find({});
+    if (!students.length) {
+      return res.status(200).json({ message: 'No students found', data: [] });
+    }
+    res.status(200).json({ data: students });
+  } catch (error) {
+    console.error('Error fetching students:', error.message);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});
+
+//Clients data
+app.post('/api/clients', async (req, res) => {
+  try {
+    // Extract data from the request body
+    const { name, email, phone, company, status } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !phone || !company || !status) {
+      return res.status(400).json({ error: 'All required fields must be provided.' });
+    }
+
+    // Check if email is unique
+    const existingClient = await Clientlist.findOne({ email });
+    if (existingClient) {
+      return res.status(409).json({ error: 'Client with this email already exists.' });
+    }
+
+    // Create a new client document
+    const newClient = new Clientlist({
+      name,
+      email,
+      phone,
+      company,
+      status,
+    });
+
+    // Save the client to the database
+    const savedClient = await newClient.save();
+
+    // Respond with a success message and the saved client data
+    res.status(201).json({ message: 'Client added successfully', data: savedClient });
+  } catch (error) {
+    console.error('Error saving client:', error); // Log the full error
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});
+
+app.get('/api/getclients', async (req, res) => {
+  try {
+    const clients = await Clientlist.find();
+    res.status(200).json({ data: clients });
+  } catch (error) {
+    console.error('Error fetching clients:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});
+
+//task types  
+app.post('/api/multitasks/hr', async (req, res) => {
+  try {
+    const { company, tasks } = req.body;
+
+    // Validate company
+    if (!company || !['IDA', 'IPU'].includes(company)) {
+      return res.status(400).json({ error: 'A valid company is required (IDA or IPU).' });
+    }
+
+    // Validate tasks
+    if (!Array.isArray(tasks) || tasks.length === 0) {
+      return res.status(400).json({ error: 'At least one task is required.' });
+    }
+
+    // Validate individual tasks
+    for (const task of tasks) {
+      if (!task.name || !task.department) {
+        return res
+          .status(400)
+          .json({ error: 'Each task must have a name and a department.' });
+      }
+    }
+
+    // Create a new MultiTask instance
+    const newMultiTask = new MultiTask({ company, tasks });
+
+    // Save the MultiTask instance to the database
+    await newMultiTask.save();
+
+    res.status(201).json({
+      message: 'Tasks saved successfully',
+      data: newMultiTask,
+    });
+  } catch (error) {
+    console.error('Error saving tasks:', error);
+    res.status(500).json({ error: 'Internal Server Error', details: error.message });
+  }
+});
+
+                                                
+const PORT = 5000;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
+

@@ -17,7 +17,7 @@ export const TaskProgressForm = ({ currentStep, task }: TaskProgressFormProps) =
   const handleStatusChange = async (newStatus: Status) => {
     setStatus(newStatus);
     try {
-      const response = await axios.put(`http://localhost:5001/api/manager-tasks/update-status`, {
+      const response = await axios.put(`http://localhost:5000/api/manager-tasks/update-status`, {
         id: task._id, 
         status: newStatus,
       });

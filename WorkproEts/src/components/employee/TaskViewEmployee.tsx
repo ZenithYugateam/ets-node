@@ -160,7 +160,7 @@ const TaskViewEmployee: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.post<Task[]>(
-        "http://localhost:5001/api/tasks/employee",
+        "http://localhost:5000/api/tasks/employee",
         { employeeName }
       );
       let allTasks = response.data;
@@ -440,7 +440,7 @@ const TaskViewEmployee: React.FC = () => {
   const fetchRemarks = async (taskId: string) => {
     try {
       const response = await axios.get(
-        `http://localhost:5001/api/remarks/${taskId}`
+        `http://localhost:5000/api/remarks/${taskId}`
       );
       setRemarks(response.data.remarks);
     } catch (error) {
@@ -472,7 +472,7 @@ const TaskViewEmployee: React.FC = () => {
     if (newRemark.trim()) {
       try {
         if (selectedTask) {
-          await axios.put(`http://localhost:5001/api/Employee/notes`, {
+          await axios.put(`http://localhost:5000/api/Employee/notes`, {
             id: selectedTask._id,
             note: newRemark,
           });

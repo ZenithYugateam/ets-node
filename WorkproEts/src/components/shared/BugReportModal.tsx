@@ -18,7 +18,7 @@ export function BugReportModal({ isOpen, onClose }: BugReportModalProps) {
 
   const submitBugReport = async (formData: any) => {
     try {
-      const response = await axios.post('http://localhost:5001/api/bug-report', formData);
+      const response = await axios.post('http://localhost:5000/api/bug-report', formData);
 
       if (response.status === 201 || response.status === 200) {
         toast.success('Bug reported successfully, sended Maintenance Team!', {
