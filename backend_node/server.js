@@ -111,29 +111,59 @@ const userSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-const taskSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  assignee: {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" }, // Updated type
-    name: { type: String, required: true },
-    avatar: { type: String, default: "" },
+
+const taskSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    assignee: {
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" }, // Updated type
+      name: { type: String, required: true },
+      avatar: { type: String, default: "" },
+    },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "users" }, // Added field
+    priority: {
+      type: String,
+      enum: ["Low", "Medium", "High"],
+      default: "Medium",
+    },
+    deadline: { type: Date },
+    status: {
+      type: String,
+      enum: ["Pending", "In Progress", "Completed"],
+      default: "Pending",
+    },
+    progress: { type: Number, default: 0 },
+    department: { type: String },
+    description: { type: String },
+    completedAt: { type: Date, default: null }, // New field for completion time
   },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "users" }, // Added field
-  priority: {
-    type: String,
-    enum: ["Low", "Medium", "High"],
-    default: "Medium",
-  },
-  deadline: { type: Date },
-  status: {
-    type: String,
-    enum: ["Pending", "In Progress", "Completed"],
-    default: "Pending",
-  },
-  progress: { type: Number, default: 0 },
-  department: { type: String },
-  description: { type: String },
+  {
+    timestamps: true, // Automatically manages createdAt and updatedAt
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+// Virtual for timeRemaining
+taskSchema.virtual("timeRemaining").get(function () {
+  if (this.status === "Completed" || !this.deadline) {
+    return null;
+  }
+  const now = new Date();
+  const deadline = new Date(this.deadline);
+  const diff = deadline.getTime() - now.getTime();
+
+  if (diff <= 0) {
+    return "Expired";
+  }
+
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  return `${hours}h ${minutes}m ${seconds}s`;
 });
+const Task = mongoose.model("Task", taskSchema);
+
 
 app.put("/api/users/edit/:id", async (req, res) => {
   const { id } = req.params; // Extract the user ID from the URL parameters
@@ -177,7 +207,7 @@ app.post("/api/usersData_total", async (req, res) => {
   }
 });
 
-const Task = mongoose.model("Task", taskSchema);
+
 
 const leaveRequestSchema = new mongoose.Schema({
   type: {
@@ -389,21 +419,35 @@ app.post("/api/save_entries", async (req, res) => {
   }
 });
 app.put("/api/tasks/:taskId", async (req, res) => {
-  const { taskId } = req.params; 
-  const updatedData = req.body;
+  const { taskId } = req.params;
+  const updateData = req.body;
 
   try {
+    // Find the task by ID
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    // Check if status is being updated
+    if (updateData.status) {
+      if (updateData.status === "Completed" && task.status !== "Completed") {
+        // If status is being set to "Completed", set completedAt
+        updateData.completedAt = new Date();
+      } else if (task.status === "Completed" && updateData.status !== "Completed") {
+        // If status is being changed from "Completed" to something else, remove completedAt
+        updateData.completedAt = null;
+      }
+    }
+
+    // Update the task
     const updatedTask = await Task.findByIdAndUpdate(
       taskId,
-      { $set: updatedData }, 
-      { new: true, runValidators: true } 
+      { $set: updateData },
+      { new: true, runValidators: true }
     )
-      .populate("assignee.userId", "name") 
-      .populate("createdBy", "name"); 
-
-    if (!updatedTask) {
-      return res.status(404).json({ error: "Task not found" }); 
-    }
+      .populate("assignee.userId", "name")
+      .populate("createdBy", "name");
 
     res.status(200).json({
       message: "Task updated successfully",
@@ -411,9 +455,10 @@ app.put("/api/tasks/:taskId", async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating task:", error);
-    res.status(500).json({ error: "Failed to update task" }); // General error response
+    res.status(500).json({ error: "Failed to update task", details: error.message });
   }
 });
+
 app.get("/users/managers/:departmentName", async (req, res) => {
   try {
     const { departmentName } = req.params;

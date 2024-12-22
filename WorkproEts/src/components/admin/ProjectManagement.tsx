@@ -169,21 +169,27 @@ const ProjectManagement: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const dataToSubmit: Partial<Task> = {
+      ...formData,
+      deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
+    };
+
+    // If the status is set to "Completed" and it's a new task or status is changing to "Completed"
+    if (formData.status === "Completed") {
+      dataToSubmit.completedAt = new Date().toISOString();
+    } else {
+      dataToSubmit.completedAt = null; // Reset if status is not "Completed"
+    }
+
     if (editingTask) {
       // Update existing project
       updateMutation.mutate({
         taskId: editingTask._id,
-        data: {
-          ...formData,
-          deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
-        },
+        data: dataToSubmit,
       });
     } else {
       // Create new project
-      createMutation.mutate({
-        ...formData,
-        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
-      });
+      createMutation.mutate(dataToSubmit);
     }
   };
 
@@ -209,7 +215,7 @@ const ProjectManagement: React.FC = () => {
     }
   };
 
-  // Handle Time Remaining Calculation
+  // Handle Time Remaining Calculation and Time to Complete
   const [tasksWithTime, setTasksWithTime] = useState<Task[]>([]);
 
   useEffect(() => {
@@ -217,56 +223,9 @@ const ProjectManagement: React.FC = () => {
       const processedTasks = tasks.map((task) => {
         let updatedTask = { ...task };
 
-        // Calculate Time Remaining based on deadline or estimatedHours
-        if (task.deadline) {
-          const deadlineTimestamp = new Date(task.deadline).setHours(23, 59, 59, 999);
-          const deadlineCalculation: TimeRemaining = calculateTimeRemaining(
-            deadlineTimestamp,
-            "deadline"
-          );
-          updatedTask.timeRemaining = deadlineCalculation.time;
-          updatedTask.urgencyLevel = deadlineCalculation.urgencyLevel;
-        } else if (task.estimatedHours) {
-          const estimatedDeadline = Date.now() + task.estimatedHours * 60 * 60 * 1000;
-          const estimatedCalculation: TimeRemaining = calculateTimeRemaining(
-            estimatedDeadline,
-            "estimated"
-          );
-          updatedTask.timeRemaining = estimatedCalculation.time;
-          updatedTask.urgencyLevel = estimatedCalculation.urgencyLevel;
-        } else {
-          updatedTask.timeRemaining = "N/A";
-          updatedTask.urgencyLevel = "low";
-        }
-
-        // Determine display fields
-        updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
-        updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
-
-        return updatedTask;
-      });
-
-      // Sort tasks by createdAt in descending order to have the latest tasks first
-      // Ensure that 'createdAt' exists in your Task data. If not, use another timestamp field.
-      // Replace 'createdAt' with the appropriate field if necessary.
-      processedTasks.sort((a, b) => {
-        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bDate - aDate;
-      });
-
-      setTasksWithTime(processedTasks);
-      console.log("Fetched and set tasks with timeRemaining:", processedTasks);
-    }
-  }, [tasks]);
-
-  // Update Time Remaining every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTasksWithTime((prevTasks) =>
-        prevTasks.map((task) => {
-          let updatedTask = { ...task };
-
+        // Only calculate time remaining if the task is not completed
+        if (task.status !== "Completed") {
+          // Calculate Time Remaining based on deadline or estimatedHours
           if (task.deadline) {
             const deadlineTimestamp = new Date(task.deadline).setHours(23, 59, 59, 999);
             const deadlineCalculation: TimeRemaining = calculateTimeRemaining(
@@ -287,22 +246,97 @@ const ProjectManagement: React.FC = () => {
             updatedTask.timeRemaining = "N/A";
             updatedTask.urgencyLevel = "low";
           }
+        } else {
+          // If completed, set timeRemaining and urgencyLevel to defaults
+          updatedTask.timeRemaining = "Completed";
+          updatedTask.urgencyLevel = "low";
 
-          // Determine displayTimeRemaining and displayUrgencyLevel
-          if (task.estimatedHours) {
-            updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
-            updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
-          } else if (task.deadline) {
-            updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
-            updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+          // Calculate timeToComplete
+          if (task.deadline && task.completedAt) {
+            const deadline = new Date(task.deadline);
+            const completedAt = new Date(task.completedAt);
+            const diff = completedAt.getTime() - deadline.getTime();
+
+            const isBefore = diff <= 0;
+            const absDiff = Math.abs(diff);
+
+            const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+            updatedTask.timeToComplete = `${isBefore ? "Before" : "After"} Deadline by ${days}d ${hours}h ${minutes}m`;
           } else {
-            updatedTask.displayTimeRemaining = "N/A";
-            updatedTask.displayUrgencyLevel = "low";
+            updatedTask.timeToComplete = "N/A";
+          }
+        }
+
+        // Determine display fields
+        updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
+        updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+
+        return updatedTask;
+      });
+
+      // Sort tasks by createdAt in descending order to have the latest tasks first
+      processedTasks.sort((a, b) => {
+        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      });
+
+      setTasksWithTime(processedTasks);
+      console.log("Fetched and set tasks with timeRemaining and timeToComplete:", processedTasks);
+    }
+  }, [tasks]);
+
+  // Update Time Remaining every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTasksWithTime((prevTasks) =>
+        prevTasks.map((task) => {
+          // Only update timeRemaining if the task is not completed
+          if (task.status !== "Completed") {
+            let updatedTask = { ...task };
+
+            if (task.deadline) {
+              const deadlineTimestamp = new Date(task.deadline).setHours(23, 59, 59, 999);
+              const deadlineCalculation: TimeRemaining = calculateTimeRemaining(
+                deadlineTimestamp,
+                "deadline"
+              );
+              updatedTask.timeRemaining = deadlineCalculation.time;
+              updatedTask.urgencyLevel = deadlineCalculation.urgencyLevel;
+            } else if (task.estimatedHours) {
+              const estimatedDeadline = Date.now() + task.estimatedHours * 60 * 60 * 1000;
+              const estimatedCalculation: TimeRemaining = calculateTimeRemaining(
+                estimatedDeadline,
+                "estimated"
+              );
+              updatedTask.timeRemaining = estimatedCalculation.time;
+              updatedTask.urgencyLevel = estimatedCalculation.urgencyLevel;
+            } else {
+              updatedTask.timeRemaining = "N/A";
+              updatedTask.urgencyLevel = "low";
+            }
+
+            // Determine displayTimeRemaining and displayUrgencyLevel
+            if (task.estimatedHours) {
+              updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
+              updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+            } else if (task.deadline) {
+              updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
+              updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+            } else {
+              updatedTask.displayTimeRemaining = "N/A";
+              updatedTask.displayUrgencyLevel = "low";
+            }
+
+            return updatedTask;
           }
 
-          return updatedTask;
+          // If task is completed, do not update timeRemaining
+          return task;
         })
-        .sort((a, b) => b._id.localeCompare(a._id)) // Maintain sort order
       );
     }, 1000); // Update every second
 
@@ -374,13 +408,24 @@ const ProjectManagement: React.FC = () => {
           {params.value ? new Date(params.value).toLocaleDateString() : "N/A"}
         </div>
       ),
-    },{
+    },
+    {
       field: "timeRemaining",
       headerName: "Time Remaining",
       flex: 2,
       minWidth: 200,
       renderCell: (params) => {
-        const { displayTimeRemaining, displayUrgencyLevel } = params.row;
+        const { displayTimeRemaining, displayUrgencyLevel, status } = params.row;
+
+        // If the task is completed, display "Completed" with a different style
+        if (status === "Completed") {
+          return (
+            <div className="flex items-center text-sm font-medium text-green-700 mt-4">
+              Completed
+            </div>
+          );
+        }
+
         let colorClass = "text-green-500";
 
         if (displayUrgencyLevel === "high") {
@@ -395,6 +440,23 @@ const ProjectManagement: React.FC = () => {
             {displayUrgencyLevel === "critical" && (
               <AlertTriangle className="inline h-4 w-4 ml-1 animate-bounce" />
             )}
+          </div>
+        );
+      },
+    },
+    {
+      field: "completedAt",
+      headerName: "Completed At",
+      flex: 2,
+      minWidth: 200,
+      renderCell: (params) => {
+        const completedAt = params.value;
+        if (!completedAt) return "N/A";
+
+        const date = new Date(completedAt);
+        return (
+          <div className="flex items-center text-sm text-gray-700 mt-4">
+            {date.toLocaleString()}
           </div>
         );
       },

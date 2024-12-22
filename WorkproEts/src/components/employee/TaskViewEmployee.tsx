@@ -880,7 +880,7 @@ const TaskViewEmployee: React.FC = () => {
                   label="Completed At"
                   value={
                     selectedTask.completedAt
-                      ? format(new Date(selectedTask.completedAt), "MM/dd/yyyy HH:mm")
+                      ? format(new Date(selectedTask.completedAt), "MM/dd/yyyy HH:mm a")
                       : "Not Recorded"
                   }
                 />
