@@ -201,23 +201,30 @@ const AddTaskManagements: React.FC = () => {
           }
         );
     
-        const employeeData = response.data
-          .filter((employee: any) => employee.status === "free to work") // Filter free employees
-          .map((employee: any) => ({
+        const uniqueEmployees = Array.from(
+          new Set(
+            response.data
+              .filter((employee: any) => employee.status === "free to work")
+              .map((employee: any) => employee.name) 
+          )
+        ).map((uniqueName) => {
+          const employee = response.data.find(
+            (emp: any) => emp.name === uniqueName
+          );
+          return {
             id: employee._id,
             name: employee.name,
             status: employee.status,
-          }));
+          };
+        });
     
-        setEmployees(employeeData);
+        setEmployees(uniqueEmployees);
       } catch (error) {
         console.error("Error fetching employees:", error);
         toast.error("Failed to fetch employees");
       }
     };
-    
-    
-
+  
     fetchManagerTasks();
     fetchProjects();
     fetchEmployees();
