@@ -1,16 +1,15 @@
-import { Fragment, useState , useEffect} from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { Calendar, X } from 'lucide-react';
-import type { Task } from './types/index';
-import { TaskStepper } from './TaskStepper';
-import axios from 'axios';
+import { Fragment, useState, useEffect } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { Calendar, X } from "lucide-react";
+import type { Task } from "./types/index";
+import { TaskStepper } from "./TaskStepper";
+import axios from "axios";
 
 interface TaskDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   task: Task;
 }
-
 
 export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -19,19 +18,22 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
     const fetchCurrentStep = async () => {
       if (isOpen) {
         try {
-          const response = await axios.post(`http://localhost:5000/api/latest-active-step`,{
-            managerTaskId : task._id
-          });
+          const response = await axios.post(
+            `http://localhost:5000/api/latest-active-step`,
+            {
+              managerTaskId: task._id,
+            }
+          );
           const latestStep = response.data.latestActiveStep;
           setCurrentStep(latestStep + 1);
         } catch (error) {
-          console.error('Error fetching latest active step:', error);
+          console.error("Error fetching latest active step:", error);
         }
       }
     };
 
     fetchCurrentStep();
-  }, [isOpen, task.managerTaskId]);
+  }, [isOpen, task._id]);
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -49,6 +51,7 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
             <Dialog.Panel className="pointer-events-auto fixed inset-y-0 right-0 flex max-w-full pl-10">
               <div className="pointer-events-auto w-screen max-w-2xl">
                 <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
+                  {/* Header */}
                   <div className="px-4 py-6 sm:px-6">
                     <div className="flex items-start justify-between">
                       <Dialog.Title className="text-lg font-medium text-gray-900">
@@ -63,7 +66,9 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
                       </button>
                     </div>
                   </div>
-                  <div className="border-t border-gray-200">
+
+                  {/* Content */}
+                  <div className="border-t border-gray-200 flex-1">
                     <div className="px-4 py-6 sm:px-6">
                       <div className="mb-8">
                         <h3 className="text-lg font-medium text-gray-900">Project Details</h3>
@@ -85,8 +90,24 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
                           </div>
                         </dl>
                       </div>
-                      <TaskStepper currentStep={currentStep} setCurrentStep={setCurrentStep} task={task}  onClose={onClose}/>
+                      <TaskStepper
+                        currentStep={currentStep}
+                        setCurrentStep={setCurrentStep}
+                        task={task}
+                        onClose={onClose}
+                      />
                     </div>
+                  </div>
+
+                  {/* Close Button at the Bottom */}
+                  <div className="p-4 border-t border-gray-200">
+                    <button
+                      type="button"
+                      className="w-full rounded-md bg-blue-500 py-2 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+                      onClick={onClose}
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
               </div>

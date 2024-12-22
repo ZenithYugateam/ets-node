@@ -16,6 +16,7 @@ const Profile = () => {
   const [currentPassword, setCurrentPassword] = useState<string>("");
   const [newPassword, setNewPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false); // New state for sidebar toggle
 
   const userId = sessionStorage.getItem("userId");
 
@@ -83,29 +84,34 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Navbar */}
       <Navbar />
 
-      {/* Content with Sidebar */}
+      {/* Responsive Sidebar and Content */}
       <div className="flex flex-1">
-        {/* Sidebar */}
-        <Sidebar />
 
-        {/* Main Profile Content */}
-        <main className="flex-1 p-6">
-          <div className="min-h-screen bg-gray-50">
+        <div
+          className={`fixed z-40 inset-0 md:relative md:block bg-white shadow-lg transform ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } transition-transform duration-300 ease-in-out`}
+        >
+          <Sidebar />
+        </div>
+
+        {/* Main Content */}
+        <main className="flex-1 p-4 md:p-6">
+          <div className="bg-gray-50">
             <div className="max-w-3xl mx-auto pt-8 pb-12 px-4 sm:px-6 lg:px-8">
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 {/* Profile Header */}
                 <div className="relative">
-                  <div className="h-32 bg-gradient-to-r from-blue-500 to-purple-600 animate-gradient"></div>
+                  <div className="h-32 bg-gradient-to-r from-blue-500 to-purple-600"></div>
                   <div className="relative px-6 -mt-16">
                     <div className="text-center">
                       <img
-                        className="mx-auto h-32 w-32 rounded-full border-4 border-white shadow-xl ring-4 ring-blue-500/30 animate__animated animate__fadeIn" // Added fade-in animation
+                        className="mx-auto h-32 w-32 rounded-full border-4 border-white shadow-xl ring-4 ring-blue-500/30"
                         src={profile.imageUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=John"}
                         alt={profile.name || "Default User"}
-                        onError={(e) => (e.target.src = '/default-avatar.png')} // Use a default avatar on error
+                        onError={(e) => (e.target.src = '/default-avatar.png')}
                       />
                       <h2 className="mt-4 text-2xl font-bold text-gray-900">{profile.name}</h2>
                       <p className="text-md text-gray-600">{profile.email}</p>
@@ -141,7 +147,7 @@ const Profile = () => {
                             type={showPassword ? 'text' : 'password'}
                             name="current"
                             id="current"
-                            value={profile.password || ''}
+                            value={currentPassword}
                             onChange={(e) => handlePasswordChange(e, 'current')}
                             className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none transition duration-150"
                           />

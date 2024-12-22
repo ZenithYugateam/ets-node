@@ -1,41 +1,38 @@
+import React, { useState, useContext, useEffect, useRef } from "react";
 import {
   Bell,
   Settings,
   Users,
   Bug,
+  Menu,
   AlertTriangle,
   Info,
   CheckCircle,
   XCircle,
-} from "lucide-react"; // Updated to use 'Info' instead of 'InformationCircle'
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@mui/material";
-import { useState, useContext, useEffect, useRef } from "react";
 import { BugReportModal } from "./shared/BugReportModal";
 import { NotificationContext } from "./context/NotificationContext";
 
-const Navbar = () => {
-  const [open, setOpen] = useState<boolean>(false);
-  const {
-    notifications,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-  } = useContext(NotificationContext);
-  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+const Navbar: React.FC<{ onSidebarToggle: () => void }> = ({
+  onSidebarToggle,
+}) => {
+  const [isBugModalOpen, setIsBugModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleClick = () => {
-    setOpen(true);
-  };
+  const { notifications, markAsRead, markAllAsRead, deleteNotification } =
+    useContext(NotificationContext);
 
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  // Calculate unread notifications
   const unreadNotifications = notifications.filter((notif) => !notif.read)
     .length;
+
+  const toggleBugModal = () => setIsBugModalOpen(!isBugModalOpen);
+
+  const handleDropdownToggle = () => setIsDropdownOpen(!isDropdownOpen);
+
+  const handleDropdownClose = () => setIsDropdownOpen(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -44,31 +41,42 @@ const Navbar = () => {
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        setDropdownOpen(false);
+        handleDropdownClose();
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
     <>
       <nav className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
+          <div className="flex items-center justify-between h-16 flex-wrap">
+            {/* Left Section */}
+            <div className="flex items-center space-x-4">
+              {/* Hamburger Icon */}
+              <button
+                onClick={onSidebarToggle}
+                className="lg:hidden text-gray-600 focus:outline-none"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
               <Users className="h-8 w-8 text-indigo-600" />
-              <span className="ml-2 text-xl font-semibold">WorkForce Pro</span>
+              <span className="text-lg font-semibold text-gray-800">
+                WorkForce Pro
+              </span>
             </div>
 
-            <div className="flex items-center space-x-4">
-              {/* Bell Button with Dropdown */}
+            {/* Right Section */}
+            <div className="flex items-center space-x-4 flex-wrap">
+              {/* Notification Bell */}
               <div className="relative" ref={dropdownRef}>
                 <button
-                  className="p-2 rounded-full hover:bg-gray-100 focus:outline-none"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200"
+                  onClick={handleDropdownToggle}
+                  aria-expanded={isDropdownOpen}
+                  aria-label="Open notifications"
                 >
                   <Bell className="h-6 w-6 text-gray-500" />
                   {unreadNotifications > 0 && (
@@ -79,7 +87,7 @@ const Navbar = () => {
                 </button>
 
                 {/* Dropdown Menu */}
-                {dropdownOpen && (
+                {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-md shadow-lg z-20">
                     <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                       <h3 className="text-lg font-semibold">Notifications</h3>
@@ -102,7 +110,7 @@ const Navbar = () => {
                           let IconComponent;
                           switch (notif.type) {
                             case "info":
-                              IconComponent = Info; // Updated to use 'Info'
+                              IconComponent = Info;
                               break;
                             case "warning":
                               IconComponent = AlertTriangle;
@@ -114,7 +122,7 @@ const Navbar = () => {
                               IconComponent = XCircle;
                               break;
                             default:
-                              IconComponent = Info; // Default to 'Info'
+                              IconComponent = Info;
                           }
 
                           return (
@@ -124,9 +132,7 @@ const Navbar = () => {
                                 !notif.read ? "bg-blue-50" : "bg-white"
                               } cursor-pointer transition-colors duration-200`}
                               onClick={() => {
-                                if (!notif.read) {
-                                  markAsRead(notif.id);
-                                }
+                                if (!notif.read) markAsRead(notif.id);
                               }}
                             >
                               <div className="flex items-center">
@@ -147,22 +153,15 @@ const Navbar = () => {
                                   {notif.message}
                                 </span>
                               </div>
-                              <div className="flex space-x-2">
-                                {!notif.read && (
-                                  <span className="text-xs text-blue-500">
-                                    New
-                                  </span>
-                                )}
-                                <button
-                                  className="text-sm text-red-500 hover:underline"
-                                  onClick={(e) => {
-                                    e.stopPropagation(); // Prevent triggering mark as read
-                                    deleteNotification(notif.id);
-                                  }}
-                                >
-                                  Delete
-                                </button>
-                              </div>
+                              <button
+                                className="text-sm text-red-500 hover:underline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteNotification(notif.id);
+                                }}
+                              >
+                                Delete
+                              </button>
                             </li>
                           );
                         })
@@ -172,12 +171,20 @@ const Navbar = () => {
                 )}
               </div>
 
-              <Link to="/profile" className="p-2 rounded-full hover:bg-gray-100">
+              {/* Profile Link */}
+              <Link
+                to="/profile"
+                className="p-2 rounded-full hover:bg-gray-100 focus:ring focus:ring-blue-200"
+                aria-label="Go to profile"
+              >
                 <Settings className="h-6 w-6 text-gray-500" />
               </Link>
+
+              {/* Bug Report Button */}
               <Button
                 className="p-2 rounded-full hover:bg-gray-100"
-                onClick={handleClick}
+                onClick={toggleBugModal}
+                aria-label="Report a bug"
               >
                 <Bug className="h-6 w-6 text-red-500" />
               </Button>
@@ -185,10 +192,12 @@ const Navbar = () => {
           </div>
         </div>
       </nav>
+
+      {/* Bug Report Modal */}
+      <BugReportModal isOpen={isBugModalOpen} onClose={toggleBugModal} />
+
       {/* Add top padding to avoid content being hidden behind the fixed navbar */}
-      <div className="pt-16">
-        <BugReportModal isOpen={open} onClose={handleClose} />
-      </div>
+      <div className="pt-16"></div>
     </>
   );
 };

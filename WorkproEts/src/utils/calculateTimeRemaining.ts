@@ -8,8 +8,7 @@ export interface TimeRemaining {
 }
 
 export const calculateTimeRemaining = (
-  targetTime: number
-): TimeRemaining => {
+targetTime: number, p0: string): TimeRemaining => {
   const now = Date.now();
   const diff = targetTime - now;
 

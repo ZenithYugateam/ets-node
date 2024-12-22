@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Eye, Edit } from "lucide-react";
 import { User } from "./Types/types";
+import { useNavigate } from "react-router-dom";
 
 interface UserTableProps {
   onEdit: (user: User) => void;
-  onView: (user: User) => void;
 }
 
-const UserTable: React.FC<UserTableProps> = ({ onEdit, onView }) => {
+const UserTable: React.FC<UserTableProps> = ({ onEdit }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   // Fetch users from the backend
   useEffect(() => {
@@ -23,7 +24,7 @@ const UserTable: React.FC<UserTableProps> = ({ onEdit, onView }) => {
         } else {
           throw new Error("Failed to fetch users");
         }
-      } catch (error) {
+      } catch (error: any) {
         setError(error.message);
       } finally {
         setLoading(false);
@@ -32,6 +33,10 @@ const UserTable: React.FC<UserTableProps> = ({ onEdit, onView }) => {
 
     fetchUsers();
   }, []);
+
+  const handleView = (user: User) => {
+    navigate(`/Profileview`, { state: { user } });
+  };
 
   if (loading) {
     return <p>Loading users...</p>;
@@ -80,8 +85,13 @@ const UserTable: React.FC<UserTableProps> = ({ onEdit, onView }) => {
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {users.map((user, index) => (
-            <tr key={user.empId} className="hover:bg-gray-50 transition-colors duration-200">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{index + 1}</td>
+            <tr
+              key={user.empId}
+              className="hover:bg-gray-50 transition-colors duration-200"
+            >
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {index + 1}
+              </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
                   <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -90,16 +100,20 @@ const UserTable: React.FC<UserTableProps> = ({ onEdit, onView }) => {
                     </span>
                   </div>
                   <div className="ml-3">
-                    <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {user.name}
+                    </div>
                   </div>
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.empId}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {user.empId}
+              </td>
               <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {user.email}
               </td>
               <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {user.phone || '-'}
+                {user.phone || "-"}
               </td>
               <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -110,7 +124,7 @@ const UserTable: React.FC<UserTableProps> = ({ onEdit, onView }) => {
                 {user.department}
               </td>
               <td className="hidden xl:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {user.manager || '-'}
+                {user.manager || "-"}
               </td>
               <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {new Date(user.joinedDate).toLocaleDateString()}
@@ -118,7 +132,7 @@ const UserTable: React.FC<UserTableProps> = ({ onEdit, onView }) => {
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div className="flex justify-end space-x-3">
                   <button
-                    onClick={() => onView(user)}
+                    onClick={() => handleView(user)}
                     className="text-gray-400 hover:text-gray-900 transition-colors duration-200"
                   >
                     <Eye size={18} />

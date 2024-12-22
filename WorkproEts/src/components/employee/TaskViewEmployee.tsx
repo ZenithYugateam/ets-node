@@ -22,7 +22,10 @@ import { ScrollArea } from "../../ui/scroll-area";
 import UpdateStatusModal from "./UpdateStatusModal";
 import EditIcon from "@mui/icons-material/Edit";
 import { TaskDrawer } from "../taskStepperFlow/TaskDrawer";
-import { calculateTimeRemaining, UrgencyLevel } from "../../utils/calculateTimeRemaining";
+import {
+  calculateTimeRemaining,
+  UrgencyLevel,
+} from "../../utils/calculateTimeRemaining";
 import { NotificationContext } from "../context/NotificationContext"; // Import NotificationContext
 
 type Priority = "Low" | "Medium" | "High";
@@ -185,7 +188,8 @@ const TaskViewEmployee: React.FC = () => {
             updatedTask.urgencyLevel = "critical";
           } else {
             // **If Deadline is Future, Calculate Remaining Time**
-            const { time, urgencyLevel } = calculateTimeRemaining(deadlineTimestamp);
+            const { time, urgencyLevel } =
+              calculateTimeRemaining(deadlineTimestamp);
             updatedTask.timeRemaining = time;
             updatedTask.urgencyLevel = urgencyLevel;
           }
@@ -196,7 +200,7 @@ const TaskViewEmployee: React.FC = () => {
         }
 
         // **2. Handle Estimated Hours Only if Deadline is Not Expired**
-        if (task.estimatedHours && (updatedTask.timeRemaining !== "Expired")) {
+        if (task.estimatedHours && updatedTask.timeRemaining !== "Expired") {
           const estimatedDeadlineKey = `estimatedDeadline_${task._id}`;
           let estimatedDeadline = parseInt(
             localStorage.getItem(estimatedDeadlineKey) || "0"
@@ -212,9 +216,8 @@ const TaskViewEmployee: React.FC = () => {
             );
           }
 
-          const { time, urgencyLevel } = calculateTimeRemaining(
-            estimatedDeadline
-          );
+          const { time, urgencyLevel } =
+            calculateTimeRemaining(estimatedDeadline);
           updatedTask.estimatedTimeRemaining = time;
           updatedTask.estimatedUrgencyLevel = urgencyLevel;
         } else {
@@ -223,7 +226,7 @@ const TaskViewEmployee: React.FC = () => {
         }
 
         // **3. Determine Display Fields Based on Conditions**
-        if (task.estimatedHours && (updatedTask.timeRemaining !== "Expired")) {
+        if (task.estimatedHours && updatedTask.timeRemaining !== "Expired") {
           updatedTask.displayTimeRemaining = updatedTask.estimatedTimeRemaining;
           updatedTask.displayUrgencyLevel = updatedTask.estimatedUrgencyLevel;
         } else if (task.deadline) {
@@ -235,8 +238,12 @@ const TaskViewEmployee: React.FC = () => {
         }
 
         // **4. Check and Trigger Notifications**
-        if (updatedTask.displayTimeRemaining !== "Expired" && updatedTask.displayTimeRemaining !== "N/A") {
-          const [hoursStr, minutesStr, secondsStr] = updatedTask.displayTimeRemaining.split(" ");
+        if (
+          updatedTask.displayTimeRemaining !== "Expired" &&
+          updatedTask.displayTimeRemaining !== "N/A"
+        ) {
+          const [hoursStr, minutesStr, secondsStr] =
+            updatedTask.displayTimeRemaining.split(" ");
           const hours = parseInt(hoursStr.replace("h", ""));
           const minutes = parseInt(minutesStr.replace("m", ""));
           const seconds = parseInt(secondsStr.replace("s", ""));
@@ -246,7 +253,10 @@ const TaskViewEmployee: React.FC = () => {
           if (totalHours <= 12 && !updatedTask.notified12) {
             const hash = getNotificationHash(task._id, 12);
             if (!isNotificationDeleted(hash)) {
-              addNotification(`Reminder: Task "${task.taskName}" is due in less than 12 hours.`, "info");
+              addNotification(
+                `Reminder: Task "${task.taskName}" is due in less than 12 hours.`,
+                "info"
+              );
               updatedTask.notified12 = true;
               markNotificationAsNotified(task._id, 12);
             }
@@ -256,7 +266,10 @@ const TaskViewEmployee: React.FC = () => {
           if (totalHours <= 6 && !updatedTask.notified6) {
             const hash = getNotificationHash(task._id, 6);
             if (!isNotificationDeleted(hash)) {
-              addNotification(`Urgent: Task "${task.taskName}" is due in less than 6 hours.`, "warning");
+              addNotification(
+                `Urgent: Task "${task.taskName}" is due in less than 6 hours.`,
+                "warning"
+              );
               updatedTask.notified6 = true;
               markNotificationAsNotified(task._id, 6);
             }
@@ -266,7 +279,10 @@ const TaskViewEmployee: React.FC = () => {
           if (totalHours <= 3 && !updatedTask.notified3) {
             const hash = getNotificationHash(task._id, 3);
             if (!isNotificationDeleted(hash)) {
-              addNotification(`Critical: Task "${task.taskName}" is due in less than 3 hours.`, "error");
+              addNotification(
+                `Critical: Task "${task.taskName}" is due in less than 3 hours.`,
+                "error"
+              );
               updatedTask.notified3 = true;
               markNotificationAsNotified(task._id, 3);
             }
@@ -280,7 +296,10 @@ const TaskViewEmployee: React.FC = () => {
     } catch (error) {
       console.error("Error fetching tasks:", error);
       // Removed toast notifications
-      addNotification("Failed to fetch tasks. Please try again later.", "error");
+      addNotification(
+        "Failed to fetch tasks. Please try again later.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -296,108 +315,135 @@ const TaskViewEmployee: React.FC = () => {
   // **Real-Time Monitoring with Interval**
   useEffect(() => {
     const interval = setInterval(() => {
-      setTasks((prevTasks) =>
-        prevTasks
-          .map((task) => {
-            let updatedTask = { ...task };
+      setTasks(
+        (prevTasks) =>
+          prevTasks
+            .map((task) => {
+              let updatedTask = { ...task };
 
-            // **1. Update Deadline Time Remaining**
-            if (task.deadline) {
-              const deadlineDate = new Date(task.deadline);
-              const now = new Date();
-              const deadlineTimestamp = deadlineDate.setHours(23, 59, 59, 999);
-              const isPastDeadline = deadlineTimestamp < now.getTime();
-
-              if (isPastDeadline) {
-                updatedTask.timeRemaining = "Expired";
-                updatedTask.urgencyLevel = "critical";
-              } else {
-                const { time, urgencyLevel } = calculateTimeRemaining(deadlineTimestamp);
-                updatedTask.timeRemaining = time;
-                updatedTask.urgencyLevel = urgencyLevel;
-              }
-            } else {
-              updatedTask.timeRemaining = "N/A";
-              updatedTask.urgencyLevel = "low";
-            }
-
-            // **2. Update Estimated Time Remaining Only if Not Expired**
-            if (task.estimatedHours && (updatedTask.timeRemaining !== "Expired")) {
-              const estimatedDeadlineKey = `estimatedDeadline_${task._id}`;
-              let estimatedDeadline = parseInt(
-                localStorage.getItem(estimatedDeadlineKey) || "0"
-              );
-
-              if (estimatedDeadline) {
-                const { time, urgencyLevel } = calculateTimeRemaining(
-                  estimatedDeadline
+              // **1. Update Deadline Time Remaining**
+              if (task.deadline) {
+                const deadlineDate = new Date(task.deadline);
+                const now = new Date();
+                const deadlineTimestamp = deadlineDate.setHours(
+                  23,
+                  59,
+                  59,
+                  999
                 );
-                updatedTask.estimatedTimeRemaining = time;
-                updatedTask.estimatedUrgencyLevel = urgencyLevel;
+                const isPastDeadline = deadlineTimestamp < now.getTime();
+
+                if (isPastDeadline) {
+                  updatedTask.timeRemaining = "Expired";
+                  updatedTask.urgencyLevel = "critical";
+                } else {
+                  const { time, urgencyLevel } =
+                    calculateTimeRemaining(deadlineTimestamp);
+                  updatedTask.timeRemaining = time;
+                  updatedTask.urgencyLevel = urgencyLevel;
+                }
               } else {
-                // **If Estimated Deadline is Not Set, Mark as Expired**
-                updatedTask.estimatedTimeRemaining = "Expired";
-                updatedTask.estimatedUrgencyLevel = "critical";
+                updatedTask.timeRemaining = "N/A";
+                updatedTask.urgencyLevel = "low";
               }
-            } else {
-              updatedTask.estimatedTimeRemaining = "N/A";
-              updatedTask.estimatedUrgencyLevel = "low";
-            }
 
-            // **3. Determine Display Fields Based on Conditions**
-            if (task.estimatedHours && (updatedTask.timeRemaining !== "Expired")) {
-              updatedTask.displayTimeRemaining = updatedTask.estimatedTimeRemaining;
-              updatedTask.displayUrgencyLevel = updatedTask.estimatedUrgencyLevel;
-            } else if (task.deadline) {
-              updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
-              updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
-            } else {
-              updatedTask.displayTimeRemaining = "N/A";
-              updatedTask.displayUrgencyLevel = "low";
-            }
+              // **2. Update Estimated Time Remaining Only if Not Expired**
+              if (
+                task.estimatedHours &&
+                updatedTask.timeRemaining !== "Expired"
+              ) {
+                const estimatedDeadlineKey = `estimatedDeadline_${task._id}`;
+                let estimatedDeadline = parseInt(
+                  localStorage.getItem(estimatedDeadlineKey) || "0"
+                );
 
-            // **4. Check and Trigger Notifications**
-            if (updatedTask.displayTimeRemaining !== "Expired" && updatedTask.displayTimeRemaining !== "N/A") {
-              const [hoursStr, minutesStr, secondsStr] = updatedTask.displayTimeRemaining.split(" ");
-              const hours = parseInt(hoursStr.replace("h", ""));
-              const minutes = parseInt(minutesStr.replace("m", ""));
-              const seconds = parseInt(secondsStr.replace("s", ""));
-              const totalHours = hours + minutes / 60 + seconds / 3600;
+                if (estimatedDeadline) {
+                  const { time, urgencyLevel } =
+                    calculateTimeRemaining(estimatedDeadline);
+                  updatedTask.estimatedTimeRemaining = time;
+                  updatedTask.estimatedUrgencyLevel = urgencyLevel;
+                } else {
+                  // **If Estimated Deadline is Not Set, Mark as Expired**
+                  updatedTask.estimatedTimeRemaining = "Expired";
+                  updatedTask.estimatedUrgencyLevel = "critical";
+                }
+              } else {
+                updatedTask.estimatedTimeRemaining = "N/A";
+                updatedTask.estimatedUrgencyLevel = "low";
+              }
 
-              // **12 Hours Reminder**
-              if (totalHours <= 12 && !updatedTask.notified12) {
-                const hash = getNotificationHash(task._id, 12);
-                if (!isNotificationDeleted(hash)) {
-                  addNotification(`Reminder: Task "${task.taskName}" is due in less than 12 hours.`, "info");
-                  updatedTask.notified12 = true;
-                  markNotificationAsNotified(task._id, 12);
+              // **3. Determine Display Fields Based on Conditions**
+              if (
+                task.estimatedHours &&
+                updatedTask.timeRemaining !== "Expired"
+              ) {
+                updatedTask.displayTimeRemaining =
+                  updatedTask.estimatedTimeRemaining;
+                updatedTask.displayUrgencyLevel =
+                  updatedTask.estimatedUrgencyLevel;
+              } else if (task.deadline) {
+                updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
+                updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+              } else {
+                updatedTask.displayTimeRemaining = "N/A";
+                updatedTask.displayUrgencyLevel = "low";
+              }
+
+              // **4. Check and Trigger Notifications**
+              if (
+                updatedTask.displayTimeRemaining !== "Expired" &&
+                updatedTask.displayTimeRemaining !== "N/A"
+              ) {
+                const [hoursStr, minutesStr, secondsStr] =
+                  updatedTask.displayTimeRemaining.split(" ");
+                const hours = parseInt(hoursStr.replace("h", ""));
+                const minutes = parseInt(minutesStr.replace("m", ""));
+                const seconds = parseInt(secondsStr.replace("s", ""));
+                const totalHours = hours + minutes / 60 + seconds / 3600;
+
+                // **12 Hours Reminder**
+                if (totalHours <= 12 && !updatedTask.notified12) {
+                  const hash = getNotificationHash(task._id, 12);
+                  if (!isNotificationDeleted(hash)) {
+                    addNotification(
+                      `Reminder: Task "${task.taskName}" is due in less than 12 hours.`,
+                      "info"
+                    );
+                    updatedTask.notified12 = true;
+                    markNotificationAsNotified(task._id, 12);
+                  }
+                }
+
+                // **6 Hours Reminder**
+                if (totalHours <= 6 && !updatedTask.notified6) {
+                  const hash = getNotificationHash(task._id, 6);
+                  if (!isNotificationDeleted(hash)) {
+                    addNotification(
+                      `Urgent: Task "${task.taskName}" is due in less than 6 hours.`,
+                      "warning"
+                    );
+                    updatedTask.notified6 = true;
+                    markNotificationAsNotified(task._id, 6);
+                  }
+                }
+
+                // **3 Hours Reminder**
+                if (totalHours <= 3 && !updatedTask.notified3) {
+                  const hash = getNotificationHash(task._id, 3);
+                  if (!isNotificationDeleted(hash)) {
+                    addNotification(
+                      `Critical: Task "${task.taskName}" is due in less than 3 hours.`,
+                      "error"
+                    );
+                    updatedTask.notified3 = true;
+                    markNotificationAsNotified(task._id, 3);
+                  }
                 }
               }
 
-              // **6 Hours Reminder**
-              if (totalHours <= 6 && !updatedTask.notified6) {
-                const hash = getNotificationHash(task._id, 6);
-                if (!isNotificationDeleted(hash)) {
-                  addNotification(`Urgent: Task "${task.taskName}" is due in less than 6 hours.`, "warning");
-                  updatedTask.notified6 = true;
-                  markNotificationAsNotified(task._id, 6);
-                }
-              }
-
-              // **3 Hours Reminder**
-              if (totalHours <= 3 && !updatedTask.notified3) {
-                const hash = getNotificationHash(task._id, 3);
-                if (!isNotificationDeleted(hash)) {
-                  addNotification(`Critical: Task "${task.taskName}" is due in less than 3 hours.`, "error");
-                  updatedTask.notified3 = true;
-                  markNotificationAsNotified(task._id, 3);
-                }
-              }
-            }
-
-            return updatedTask;
-          })
-          .sort((a, b) => b._id.localeCompare(a._id)) // Maintain sort order
+              return updatedTask;
+            })
+            .sort((a, b) => b._id.localeCompare(a._id)) // Maintain sort order
       );
     }, 1000); // Update every second
 
@@ -421,14 +467,22 @@ const TaskViewEmployee: React.FC = () => {
   };
 
   // Function to check if a notification has already been notified
-  const hasNotificationBeenNotified = (taskId: string, threshold: number): boolean => {
+  const hasNotificationBeenNotified = (
+    taskId: string,
+    threshold: number
+  ): boolean => {
     const hash = getNotificationHash(taskId, threshold);
     const notifiedKey = `notification_${hash}`;
     return localStorage.getItem(notifiedKey) === "true";
   };
 
   // Update addNotification to prevent duplicate notifications
-  const addUniqueNotification = (message: string, type: "success" | "error" | "info" | "warning", taskId: string, threshold: number) => {
+  const addUniqueNotification = (
+    message: string,
+    type: "success" | "error" | "info" | "warning",
+    taskId: string,
+    threshold: number
+  ) => {
     const hash = getNotificationHash(taskId, threshold);
     if (!hasNotificationBeenNotified(taskId, threshold)) {
       addNotification(message, type);
@@ -446,7 +500,10 @@ const TaskViewEmployee: React.FC = () => {
     } catch (error) {
       console.error("Error fetching remarks:", error);
       // Removed toast notifications
-      addNotification("Failed to fetch remarks. Please try again later.", "error");
+      addNotification(
+        "Failed to fetch remarks. Please try again later.",
+        "error"
+      );
     }
   };
 
@@ -613,7 +670,6 @@ const TaskViewEmployee: React.FC = () => {
           </MuiButton>
         );
       },
-      
     },
     {
       field: "updateStatus",
@@ -666,8 +722,14 @@ const TaskViewEmployee: React.FC = () => {
   ];
 
   return (
-    <div className="overflow-hidden rounded-lg shadow-md p-4">
-      <div className="relative overflow-x-auto">
+<div className="overflow-hidden rounded-lg shadow-md p-4" style={{ height: "100vh" }}>
+    <div className="relative h-full">
+      {/* DataGrid Section */}
+      <div
+        className={`absolute top-0 left-0 w-full h-full ${
+          isDrawerOpen ? "hidden" : "block"
+        }`}
+      >
         {loading ? (
           <Box
             sx={{
@@ -680,7 +742,7 @@ const TaskViewEmployee: React.FC = () => {
             <CircularProgress />
           </Box>
         ) : (
-          <div style={{ minWidth: "1700px" }}>
+          <div style={{ height: "100%", overflowY: "auto" }} className="overflow-x-auto">
             <DataGrid
               rows={tasks}
               columns={columns}
@@ -692,8 +754,9 @@ const TaskViewEmployee: React.FC = () => {
                 handleRowSelection(newSelection)
               }
               selectionModel={selectedRows}
-              autoHeight
+              autoHeight={false} // Disable autoHeight for consistent scroll behavior
               sx={{
+                height: "100%",
                 "& .MuiDataGrid-root": {
                   overflowX: "auto",
                 },
@@ -717,7 +780,7 @@ const TaskViewEmployee: React.FC = () => {
 
       {/* Task Details Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white">
+        <DialogContent className="max-w-full lg:max-w-3xl p-0 overflow-hidden bg-white">
           <DialogHeader className="px-6 pt-6">
             <div className="flex items-start justify-between">
               <div className="space-y-1">
@@ -789,12 +852,9 @@ const TaskViewEmployee: React.FC = () => {
                       : "N/A"
                   }
                 />
-                {/* Consolidated Time Remaining */}
                 <TaskDetailItem
                   label="Time Remaining"
-                  value={
-                    selectedTask?.displayTimeRemaining || "Not Applicable"
-                  }
+                  value={selectedTask?.displayTimeRemaining || "Not Applicable"}
                   valueColor={
                     selectedTask?.displayUrgencyLevel === "critical"
                       ? "text-red-500"
@@ -838,10 +898,14 @@ const TaskViewEmployee: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">Notes</span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Notes
+                </span>
                 <div className="space-y-2">
                   {selectedTask?.notes && selectedTask.notes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No notes yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      No notes yet
+                    </p>
                   ) : (
                     selectedTask?.notes?.map((note, index) => (
                       <div key={index} className="p-2 bg-gray-100 rounded-md">
@@ -871,7 +935,6 @@ const TaskViewEmployee: React.FC = () => {
                 </div>
               </div>
 
-              {/* New Section for Notes */}
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">
                   Add Notes *
@@ -914,8 +977,6 @@ const TaskViewEmployee: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Removed redundant ToastContainer */}
-
       <UpdateStatusModal
         open={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
@@ -923,11 +984,12 @@ const TaskViewEmployee: React.FC = () => {
         currentStatus={selectedTaskForStatus?.status || "Pending"}
         fetchTasks={() => {
           if (userName) {
-            fetchTasks(userName); // Re-fetch tasks after updating the status
+            fetchTasks(userName);
           }
         }}
       />
 
+      {/* Task Drawer */}
       {selectedTask && (
         <TaskDrawer
           isOpen={isDrawerOpen}
@@ -936,6 +998,7 @@ const TaskViewEmployee: React.FC = () => {
         />
       )}
     </div>
+  </div>
   );
 };
 

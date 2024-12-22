@@ -6,11 +6,22 @@ import { useQuery, useMutation, useQueryClient } from "react-query";
 import { createTask, getTasks, updateTask, deleteTask } from "../../api/admin";
 import { toast } from "react-toastify";
 import { AuthContext } from "../../AuthContext";
-import { Task, Priority, Status, UrgencyLevel, TimeRemaining } from "../../types/task";
+import {
+  Task,
+  Priority,
+  Status,
+  UrgencyLevel,
+  TimeRemaining,
+} from "../../types/task";
 import { calculateTimeRemaining } from "../../utils/calculateTimeRemaining";
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
 import { Button } from "../../ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../ui/dialog";
 import { Separator } from "../../ui/Separator";
 import { ScrollArea } from "../../ui/scroll-area";
 import EditIcon from "@mui/icons-material/Edit";
@@ -175,14 +186,18 @@ const ProjectManagement: React.FC = () => {
         taskId: editingTask._id,
         data: {
           ...formData,
-          deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
+          deadline: formData.deadline
+            ? new Date(formData.deadline).toISOString()
+            : null,
         },
       });
     } else {
       // Create new project
       createMutation.mutate({
         ...formData,
-        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
+        deadline: formData.deadline
+          ? new Date(formData.deadline).toISOString()
+          : null,
       });
     }
   };
@@ -219,7 +234,12 @@ const ProjectManagement: React.FC = () => {
 
         // Calculate Time Remaining based on deadline or estimatedHours
         if (task.deadline) {
-          const deadlineTimestamp = new Date(task.deadline).setHours(23, 59, 59, 999);
+          const deadlineTimestamp = new Date(task.deadline).setHours(
+            23,
+            59,
+            59,
+            999
+          );
           const deadlineCalculation: TimeRemaining = calculateTimeRemaining(
             deadlineTimestamp,
             "deadline"
@@ -227,7 +247,8 @@ const ProjectManagement: React.FC = () => {
           updatedTask.timeRemaining = deadlineCalculation.time;
           updatedTask.urgencyLevel = deadlineCalculation.urgencyLevel;
         } else if (task.estimatedHours) {
-          const estimatedDeadline = Date.now() + task.estimatedHours * 60 * 60 * 1000;
+          const estimatedDeadline =
+            Date.now() + task.estimatedHours * 60 * 60 * 1000;
           const estimatedCalculation: TimeRemaining = calculateTimeRemaining(
             estimatedDeadline,
             "estimated"
@@ -263,46 +284,50 @@ const ProjectManagement: React.FC = () => {
   // Update Time Remaining every second
   useEffect(() => {
     const interval = setInterval(() => {
-      setTasksWithTime((prevTasks) =>
-        prevTasks.map((task) => {
-          let updatedTask = { ...task };
+      setTasksWithTime(
+        (prevTasks) =>
+          prevTasks
+            .map((task) => {
+              let updatedTask = { ...task };
 
-          if (task.deadline) {
-            const deadlineTimestamp = new Date(task.deadline).setHours(23, 59, 59, 999);
-            const deadlineCalculation: TimeRemaining = calculateTimeRemaining(
-              deadlineTimestamp,
-              "deadline"
-            );
-            updatedTask.timeRemaining = deadlineCalculation.time;
-            updatedTask.urgencyLevel = deadlineCalculation.urgencyLevel;
-          } else if (task.estimatedHours) {
-            const estimatedDeadline = Date.now() + task.estimatedHours * 60 * 60 * 1000;
-            const estimatedCalculation: TimeRemaining = calculateTimeRemaining(
-              estimatedDeadline,
-              "estimated"
-            );
-            updatedTask.timeRemaining = estimatedCalculation.time;
-            updatedTask.urgencyLevel = estimatedCalculation.urgencyLevel;
-          } else {
-            updatedTask.timeRemaining = "N/A";
-            updatedTask.urgencyLevel = "low";
-          }
+              if (task.deadline) {
+                const deadlineTimestamp = new Date(task.deadline).setHours(
+                  23,
+                  59,
+                  59,
+                  999
+                );
+                const deadlineCalculation: TimeRemaining =
+                  calculateTimeRemaining(deadlineTimestamp, "deadline");
+                updatedTask.timeRemaining = deadlineCalculation.time;
+                updatedTask.urgencyLevel = deadlineCalculation.urgencyLevel;
+              } else if (task.estimatedHours) {
+                const estimatedDeadline =
+                  Date.now() + task.estimatedHours * 60 * 60 * 1000;
+                const estimatedCalculation: TimeRemaining =
+                  calculateTimeRemaining(estimatedDeadline, "estimated");
+                updatedTask.timeRemaining = estimatedCalculation.time;
+                updatedTask.urgencyLevel = estimatedCalculation.urgencyLevel;
+              } else {
+                updatedTask.timeRemaining = "N/A";
+                updatedTask.urgencyLevel = "low";
+              }
 
-          // Determine displayTimeRemaining and displayUrgencyLevel
-          if (task.estimatedHours) {
-            updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
-            updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
-          } else if (task.deadline) {
-            updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
-            updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
-          } else {
-            updatedTask.displayTimeRemaining = "N/A";
-            updatedTask.displayUrgencyLevel = "low";
-          }
+              // Determine displayTimeRemaining and displayUrgencyLevel
+              if (task.estimatedHours) {
+                updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
+                updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+              } else if (task.deadline) {
+                updatedTask.displayTimeRemaining = updatedTask.timeRemaining;
+                updatedTask.displayUrgencyLevel = updatedTask.urgencyLevel;
+              } else {
+                updatedTask.displayTimeRemaining = "N/A";
+                updatedTask.displayUrgencyLevel = "low";
+              }
 
-          return updatedTask;
-        })
-        .sort((a, b) => b._id.localeCompare(a._id)) // Maintain sort order
+              return updatedTask;
+            })
+            .sort((a, b) => b._id.localeCompare(a._id)) // Maintain sort order
       );
     }, 1000); // Update every second
 
@@ -374,7 +399,8 @@ const ProjectManagement: React.FC = () => {
           {params.value ? new Date(params.value).toLocaleDateString() : "N/A"}
         </div>
       ),
-    },{
+    },
+    {
       field: "timeRemaining",
       headerName: "Time Remaining",
       flex: 2,
@@ -390,7 +416,9 @@ const ProjectManagement: React.FC = () => {
         }
 
         return (
-          <div className={`flex items-center text-sm font-medium ${colorClass} mt-4`}>
+          <div
+            className={`flex items-center text-sm font-medium ${colorClass} mt-4`}
+          >
             {displayTimeRemaining}
             {displayUrgencyLevel === "critical" && (
               <AlertTriangle className="inline h-4 w-4 ml-1 animate-bounce" />
@@ -455,17 +483,20 @@ const ProjectManagement: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-medium text-gray-900">Project Management</h2>
+        <h2 className="text-lg font-medium text-gray-900">
+          Project Management
+        </h2>
         <Button
           onClick={() => {
             resetForm();
             setEditingTask(null);
             setIsModalOpen(true);
           }}
-          variant="contained"
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-400"
+          variant="default"
           color="primary"
           startIcon={<Plus />}
         >
@@ -530,23 +561,28 @@ const ProjectManagement: React.FC = () => {
                     {editingTask ? "Edit Project" : "Create New Project"}
                   </DialogTitle>
                 </div>
+                {/* Single Close Button */}
                 <button
                   onClick={() => {
                     setIsModalOpen(false);
                     setEditingTask(null);
                     resetForm();
                   }}
-                  className="text-gray-400 hover:text-gray-500"
+                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
             </DialogHeader>
+
             <Separator className="my-4" />
             <ScrollArea className="px-6 pb-6 max-h-[calc(80vh-8rem)]">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form
+                onSubmit={handleSubmit}
+                className="space-y-6 border border-gray-300 rounded-md p-6 shadow-sm bg-white"
+              >
                 {/* Project Title */}
-                <div>
+                <div className="border border-gray-300 p-3 rounded-md hover:shadow-md transition">
                   <label className="block text-sm font-medium text-gray-700">
                     Project Title
                   </label>
@@ -556,12 +592,14 @@ const ProjectManagement: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, title: e.target.value })
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none p-2"
+                    placeholder="Enter the project title"
                     required
                   />
                 </div>
+
                 {/* Department */}
-                <div>
+                <div className="border border-gray-300 p-3 rounded-md hover:shadow-md transition">
                   <label className="block text-sm font-medium text-gray-700">
                     Department
                   </label>
@@ -583,7 +621,7 @@ const ProjectManagement: React.FC = () => {
                           },
                         })
                       }
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                      className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none p-2"
                       required
                     >
                       <option value="">Select Department</option>
@@ -595,8 +633,9 @@ const ProjectManagement: React.FC = () => {
                     </select>
                   )}
                 </div>
+
                 {/* Assignee Name */}
-                <div>
+                <div className="border border-gray-300 p-3 rounded-md hover:shadow-md transition">
                   <label className="block text-sm font-medium text-gray-700">
                     Assignee Name
                   </label>
@@ -618,12 +657,13 @@ const ProjectManagement: React.FC = () => {
                             assignee: {
                               userId: assignee._id,
                               name: assignee.name,
-                              avatar: assignee.avatar || formData.assignee.avatar,
+                              avatar:
+                                assignee.avatar || formData.assignee.avatar,
                             },
                           });
                         }
                       }}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                      className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none p-2"
                       required
                       disabled={!formData.department}
                     >
@@ -636,8 +676,9 @@ const ProjectManagement: React.FC = () => {
                     </select>
                   )}
                 </div>
+
                 {/* Priority */}
-                <div>
+                <div className="border border-gray-300 p-3 rounded-md hover:shadow-md transition">
                   <label className="block text-sm font-medium text-gray-700">
                     Priority
                   </label>
@@ -649,15 +690,16 @@ const ProjectManagement: React.FC = () => {
                         priority: e.target.value as Priority,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none p-2"
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
                   </select>
                 </div>
+
                 {/* Status */}
-                <div>
+                <div className="border border-gray-300 p-3 rounded-md hover:shadow-md transition">
                   <label className="block text-sm font-medium text-gray-700">
                     Status
                   </label>
@@ -669,7 +711,7 @@ const ProjectManagement: React.FC = () => {
                         status: e.target.value as Status,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none p-2"
                   >
                     <option value="Pending">Pending</option>
                     <option value="In Progress">In Progress</option>
@@ -678,8 +720,9 @@ const ProjectManagement: React.FC = () => {
                     <option value="Accepted">Accepted</option>
                   </select>
                 </div>
+
                 {/* Estimated Hours */}
-                <div>
+                <div className="border border-gray-300 p-3 rounded-md hover:shadow-md transition">
                   <label className="block text-sm font-medium text-gray-700">
                     Estimated Hours
                   </label>
@@ -692,13 +735,15 @@ const ProjectManagement: React.FC = () => {
                         estimatedHours: parseInt(e.target.value) || 0,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none p-2"
                     min="0"
+                    placeholder="Enter estimated hours"
                     required
                   />
                 </div>
+
                 {/* Description */}
-                <div>
+                <div className="border border-gray-300 p-3 rounded-md hover:shadow-md transition">
                   <label className="block text-sm font-medium text-gray-700">
                     Description
                   </label>
@@ -707,11 +752,13 @@ const ProjectManagement: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    className="mt-1 block w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none p-2"
+                    placeholder="Enter a detailed description"
                   />
                 </div>
+
                 {/* Deadline */}
-                <div>
+                <div className="border border-gray-300 p-3 rounded-md hover:shadow-md transition">
                   <label className="block text-sm font-medium text-gray-700">
                     Deadline
                   </label>
@@ -721,32 +768,30 @@ const ProjectManagement: React.FC = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, deadline: e.target.value })
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none p-2"
                     required
                   />
                 </div>
+
                 {/* Submit and Cancel Buttons */}
                 <div className="flex justify-end space-x-3 mt-6">
-                  <Button
+                  <button
                     type="button"
                     onClick={() => {
                       setIsModalOpen(false);
                       setEditingTask(null);
                       resetForm();
                     }}
-                    variant="outlined"
-                    color="secondary"
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:ring-2 focus:ring-gray-300 transition"
                   >
                     Cancel
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="submit"
-                    variant="contained"
-                    color="primary"
-                    startIcon={<Plus />}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:ring-2 focus:ring-blue-400 transition"
                   >
                     {editingTask ? "Update Project" : "Create Project"}
-                  </Button>
+                  </button>
                 </div>
               </form>
             </ScrollArea>
