@@ -20,7 +20,6 @@ import UsersView from "./components/Hr/Pages/UsersView";
 import Side from "./components/Hr/Side";
 import ClientsPage from "./components/Hr/Pages/ClientsPage";
 import StudentsPage from "./components/Hr/Pages/StudentsPage";
-import { ProfileView } from "./components/Profileuser/VIew/ProfileView";
 
 const adminId = "647f1f77bcf86cd799439011";
 
@@ -97,7 +96,6 @@ function App() {
                 <Route path="/Side" element={<Side />} />
                 <Route path="/clients" element={<ClientsPage />} />
                 <Route path="/students" element={<StudentsPage />} />
-                <Route path="/Profileview" element={<ProfileView />} />
 
                 {/* Protected routes with Layout */}
                 <Route
