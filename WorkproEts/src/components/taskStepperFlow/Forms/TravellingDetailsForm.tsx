@@ -191,16 +191,12 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
         setPrivateVehicles(response.data);
       } catch (error) {
         console.error('Error fetching private vehicles:', error);
-        toast.error('Failed to fetch private vehicles.');
+        toast.info('F');
       } finally {
         setFetchingPrivateVehicles(false);
       }
     };
   
-  useEffect(() => {
-    fetchPrivateVehicles();
-  }, [transportMode]);
-
   const [selectedPrivateVehicle, setSelectedPrivateVehicle] = useState<string | null>(null);
 
   const handlePrivateVehicleSelection = (vehicle: Vehicle) => {
@@ -399,7 +395,13 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
         {['Company', 'Public', 'Private'].map((mode) => (
           <div
             key={mode}
-            onClick={() => setTransportMode(mode)}
+            onClick={() => {
+              if(mode === "Private"){
+                fetchPrivateVehicles();
+              }
+              setTransportMode(mode)
+            }
+            }
             className={`cursor-pointer rounded-lg border-2 p-4 text-center ${
               transportMode === mode ? 'border-blue-500 bg-blue-100' : 'border-gray-300'
             }`}

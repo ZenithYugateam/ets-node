@@ -130,15 +130,6 @@ export const AfterFlightForm = ({ task, currentStep }: AfterFlightFormProps) => 
         </FormField>
       </div>
 
-      <FormField label="Sight Name">
-        <input
-          type="text"
-          value={formData.sightName}
-          onChange={(e) => setFormData({ ...formData, sightName: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-        />
-      </FormField>
-
       <div>
         <button
           type="button"
