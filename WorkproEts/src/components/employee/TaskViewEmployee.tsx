@@ -68,7 +68,7 @@ interface Task {
   timeLeft?: number;     // leftover hours
 }
 
-// For detail items
+// For small detail items
 interface TaskDetailItemProps {
   label: string;
   value: string;
@@ -99,7 +99,6 @@ const priorityStyles = {
   Low: "bg-green-100 text-green-700 hover:bg-green-100",
 } as const;
 
-// Small components
 export function TaskDetailItem({
   label,
   value,
@@ -176,16 +175,12 @@ const TaskViewEmployee: React.FC = () => {
 
   //
   // 1) Accept Task => sets accepted = true, acceptedAt = now
-  //    Edge Case #3 (Deadline already expired) => We check if "Expired" => no acceptance.
+  //    NO check for 'Expired' so user can still accept after deadline
   //
   const handleAcceptTask = async (task: Task) => {
-    // If it's expired, disallow acceptance
-    if (task.timeRemaining === "Expired") {
-      addNotification("Cannot accept an expired task.", "error");
-      return;
-    }
     try {
       const now = new Date();
+      // Send request to mark accepted on server
       await axios.put(`http://localhost:5001/api/tasks/accept/${task._id}`, {
         accepted: true,
         acceptedAt: now,
@@ -201,6 +196,11 @@ const TaskViewEmployee: React.FC = () => {
         })
       );
 
+      // Re-fetch from server so the UI is 100% consistent
+      if (userName) {
+        fetchTasks(userName);
+      }
+
       addNotification(`You accepted task "${task.taskName}"!`, "success");
     } catch (error) {
       console.error("Error accepting task:", error);
@@ -209,12 +209,15 @@ const TaskViewEmployee: React.FC = () => {
   };
 
   //
-  // 2) Update Status => "Completed" etc. 
-  //    Edge Case #1, #2: If not accepted, disallow completion from the front end.
+  // 2) Update Status => "Completed"
   //
   const handleStatusChange = (task: Task) => {
+    // If user tries to complete without acceptance, warn
     if (!task.accepted) {
-      addNotification("You must accept the task before updating its status.", "warning");
+      addNotification(
+        "You must accept the task before updating its status.",
+        "warning"
+      );
       return;
     }
     setSelectedTaskForStatus(task);
@@ -223,7 +226,6 @@ const TaskViewEmployee: React.FC = () => {
 
   //
   // 3) Fetch tasks => main data load
-  //    Edge Case #7: If estimatedHours changed on the server, we reset localStorage
   //
   const fetchTasks = async (employeeName: string) => {
     setLoading(true);
@@ -234,12 +236,14 @@ const TaskViewEmployee: React.FC = () => {
       );
       let allTasks = response.data;
 
+      // Sort descending by _id
       allTasks.sort((a, b) => b._id.localeCompare(a._id));
 
+      // Process each for time-remaining logic
       const tasksWithTime = allTasks.map((task) => {
         let updatedTask = { ...task };
 
-        // If not accepted => skip
+        // If not accepted => skip timer
         if (!task.accepted) {
           updatedTask.timeRemaining = "Awaiting Acceptance";
           updatedTask.urgencyLevel = "low";
@@ -250,7 +254,7 @@ const TaskViewEmployee: React.FC = () => {
           return updatedTask;
         }
 
-        // If accepted => normal countdown
+        // If accepted => normal countdown logic
         // 1) Deadline
         if (task.deadline) {
           const deadlineDate = new Date(task.deadline);
@@ -262,7 +266,9 @@ const TaskViewEmployee: React.FC = () => {
             updatedTask.timeRemaining = "Expired";
             updatedTask.urgencyLevel = "critical";
           } else {
-            const { time, urgencyLevel } = calculateTimeRemaining(deadlineTimestamp);
+            const { time, urgencyLevel } = calculateTimeRemaining(
+              deadlineTimestamp
+            );
             updatedTask.timeRemaining = time;
             updatedTask.urgencyLevel = urgencyLevel;
           }
@@ -271,16 +277,9 @@ const TaskViewEmployee: React.FC = () => {
           updatedTask.urgencyLevel = "low";
         }
 
-        // 2) Estimated hours
+        // 2) Estimated
         if (task.estimatedHours && updatedTask.timeRemaining !== "Expired") {
           const estKey = `estimatedDeadline_${task._id}`;
-
-          // Edge Case #7: If server changed estimatedHours, reset localStorage
-          // We'll do a simple check. If local storage exists AND the user changed hours in the DB, we reset.
-          // (We can't detect that easily unless you store the hours in local storage too,
-          // but here's a minimal approach: if local storage doesn't match, reset.)
-          // We'll just do a minimal approach: If the localStorage key doesn't exist, we create it.
-          // Otherwise we do normal logic.
           let estDeadline = parseInt(localStorage.getItem(estKey) || "0");
 
           if (!estDeadline) {
@@ -330,7 +329,6 @@ const TaskViewEmployee: React.FC = () => {
 
   //
   // 4) 1-second interval => real-time countdown
-  //    Edge Case #5: If a user tries to revert from completed => we do minimal handling in the status modal.
   //
   useEffect(() => {
     const interval = setInterval(() => {
@@ -347,12 +345,12 @@ const TaskViewEmployee: React.FC = () => {
               };
             }
 
-            // If Completed => show leftover / used time, skip countdown
+            // If Completed => leftover or used time, no countdown
             if (task.status === "Completed") {
               if (task.acceptedAt && task.completedAt) {
                 const aTime = new Date(task.acceptedAt).getTime();
                 const cTime = new Date(task.completedAt).getTime();
-                const hoursUsed = (cTime - aTime) / (3600000);
+                const hoursUsed = (cTime - aTime) / 3600000;
 
                 const leftover = task.estimatedHours
                   ? task.estimatedHours - hoursUsed
@@ -367,7 +365,7 @@ const TaskViewEmployee: React.FC = () => {
                   displayUrgencyLevel: "low",
                 };
               }
-              // If no acceptedAt or completedAt => just show "Completed"
+              // If no acceptedAt or completedAt => just say "Completed"
               return {
                 ...task,
                 timeRemaining: "Completed",
@@ -376,10 +374,10 @@ const TaskViewEmployee: React.FC = () => {
               };
             }
 
-            // Otherwise => normal countdown
+            // If accepted but not completed => normal countdown
             let updated = { ...task };
 
-            // Deadline
+            // (1) Deadline
             if (task.deadline) {
               const deadlineDate = new Date(task.deadline);
               const now = new Date();
@@ -390,7 +388,9 @@ const TaskViewEmployee: React.FC = () => {
                 updated.timeRemaining = "Expired";
                 updated.urgencyLevel = "critical";
               } else {
-                const { time, urgencyLevel } = calculateTimeRemaining(deadlineTimestamp);
+                const { time, urgencyLevel } = calculateTimeRemaining(
+                  deadlineTimestamp
+                );
                 updated.timeRemaining = time;
                 updated.urgencyLevel = urgencyLevel;
               }
@@ -399,7 +399,7 @@ const TaskViewEmployee: React.FC = () => {
               updated.urgencyLevel = "low";
             }
 
-            // Estimated
+            // (2) Estimated
             if (task.estimatedHours && updated.timeRemaining !== "Expired") {
               const estKey = `estimatedDeadline_${task._id}`;
               let estDeadline = parseInt(localStorage.getItem(estKey) || "0");
@@ -417,6 +417,7 @@ const TaskViewEmployee: React.FC = () => {
               updated.estimatedUrgencyLevel = "low";
             }
 
+            // (3) Consolidate display
             if (task.estimatedHours && updated.timeRemaining !== "Expired") {
               updated.displayTimeRemaining = updated.estimatedTimeRemaining;
               updated.displayUrgencyLevel = updated.estimatedUrgencyLevel;
@@ -437,9 +438,7 @@ const TaskViewEmployee: React.FC = () => {
     return () => clearInterval(interval);
   }, [addNotification]);
 
-  //
-  // Notification logic (unchanged)
-  //
+  // Notification logic
   const isNotificationDeleted = (hash: number): boolean => false;
   const markNotificationAsNotified = (taskId: string, threshold: number) => {
     localStorage.setItem(`notification_${getNotificationHash(taskId, threshold)}`, "true");
@@ -461,9 +460,7 @@ const TaskViewEmployee: React.FC = () => {
     }
   };
 
-  //
   // Remarks logic
-  //
   const fetchRemarks = async (taskId: string) => {
     try {
       const response = await axios.get(`http://localhost:5001/api/remarks/${taskId}`);
@@ -517,7 +514,6 @@ const TaskViewEmployee: React.FC = () => {
   // DataGrid columns
   //
   const columns: GridColDef[] = [
-    // Accept? column
     {
       field: "acceptTask",
       headerName: "Accept?",
@@ -525,12 +521,11 @@ const TaskViewEmployee: React.FC = () => {
       minWidth: 120,
       renderCell: (params) => {
         const task = params.row as Task;
-        const isExpired = task.timeRemaining === "Expired";
-        const isAccepted = task.accepted;
+        const isAccepted = !!task.accepted;
         const isCompleted = task.status === "Completed";
 
-        // Only show Accept if not accepted, not expired, not completed
-        if (!isAccepted && !isExpired && !isCompleted) {
+        // Show "Accept" if not accepted and not completed
+        if (!isAccepted && !isCompleted) {
           return (
             <MuiButton
               variant="contained"
@@ -542,10 +537,14 @@ const TaskViewEmployee: React.FC = () => {
           );
         }
 
-        if (isExpired) return <span style={{ color: "red" }}>Expired Task</span>;
-        if (isAccepted && !isCompleted) return <span style={{ color: "green" }}>Accepted</span>;
-        if (isCompleted) return <span style={{ color: "blue" }}>Completed</span>;
+        if (isAccepted && !isCompleted) {
+          return <span style={{ color: "green" }}>Accepted</span>;
+        }
+        if (isCompleted) {
+          return <span style={{ color: "blue" }}>Completed</span>;
+        }
 
+        // default
         return "";
       },
     },
@@ -597,7 +596,8 @@ const TaskViewEmployee: React.FC = () => {
       headerName: "Estimated Hours",
       flex: 1.5,
       minWidth: 150,
-      renderCell: (params) => (params.value ? `${params.value} hrs` : "Not Required"),
+      renderCell: (params) =>
+        params.value ? `${params.value} hrs` : "Not Required",
     },
     {
       field: "deadline",
@@ -616,9 +616,10 @@ const TaskViewEmployee: React.FC = () => {
       flex: 2,
       minWidth: 200,
       renderCell: (params) => {
-        const { displayTimeRemaining, displayUrgencyLevel, status } = params.row as Task;
+        const { displayTimeRemaining, displayUrgencyLevel, status } =
+          params.row as Task;
 
-        // If completed => show "Completed" 
+        // If completed => "Completed"
         if (status === "Completed") {
           return <span style={{ color: "#4A5568" }}>Completed</span>;
         }
@@ -645,26 +646,24 @@ const TaskViewEmployee: React.FC = () => {
       headerName: "Actions",
       flex: 1.5,
       minWidth: 150,
-      renderCell: (params) => {
-        return (
-          <MuiButton
-            variant="outlined"
-            color="primary"
-            onClick={() => handleOpenDialog(params.row)}
-            sx={{
+      renderCell: (params) => (
+        <MuiButton
+          variant="outlined"
+          color="primary"
+          onClick={() => handleOpenDialog(params.row)}
+          sx={{
+            borderColor: "skyblue",
+            "&:hover": {
               borderColor: "skyblue",
-              "&:hover": {
-                borderColor: "skyblue",
-              },
-              "&.MuiButton-outlined": {
-                borderColor: "skyblue",
-              },
-            }}
-          >
-            Add Note →
-          </MuiButton>
-        );
-      },
+            },
+            "&.MuiButton-outlined": {
+              borderColor: "skyblue",
+            },
+          }}
+        >
+          Add Note →
+        </MuiButton>
+      ),
     },
     {
       field: "updateStatus",
@@ -739,7 +738,9 @@ const TaskViewEmployee: React.FC = () => {
               rowsPerPageOptions={[5, 10, 20]}
               getRowId={(row) => row._id}
               checkboxSelection
-              onSelectionModelChange={(newSelection) => handleRowSelection(newSelection)}
+              onSelectionModelChange={(newSelection) =>
+                setSelectedRows(newSelection as string[])
+              }
               selectionModel={selectedRows}
               autoHeight
               sx={{
