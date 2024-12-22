@@ -670,6 +670,27 @@ app.put("/api/tasks/:taskId", async (req, res) => {
     res.status(500).json({ error: "Failed to update task" });
   }
 });
+// In server.js
+app.put("/api/tasks/accept/:id", async (req, res) => {
+  try {
+    const { accepted, acceptedAt } = req.body; 
+
+    const updatedTask = await ManagerTask.findByIdAndUpdate(
+      req.params.id,
+      { accepted, acceptedAt },
+      { new: true } // return the updated document
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    return res.json(updatedTask);
+  } catch (error) {
+    console.error("Error accepting task:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 app.delete("/api/tasks/:taskId", async (req, res) => {
   try {
@@ -1378,28 +1399,78 @@ app.post('/api/worksheets/manager', async (req, res) => {
 });
 
 app.put("/api/manager-tasks/update-status", async (req, res) => {
-  const { status, id } = req.body; 
+  const { status, id } = req.body;
   if (!status) {
     return res.status(400).json({ message: "Status is required" });
   }
 
   try {
+    // If the new status is "Completed", calculate how many hours it took
+    if (status === "Completed") {
+      const task = await ManagerTask.findById(id);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Only compute if the task was accepted
+      if (task.accepted && task.acceptedAt) {
+        const now = new Date();              // current date/time
+        const acceptedTime = new Date(task.acceptedAt).getTime();
+        const hoursTaken = (now.getTime() - acceptedTime) / (1000 * 60 * 60); // in hours
+
+        // Update the task with "Completed" status, how many hours used, and when it completed
+        const updated = await ManagerTask.findByIdAndUpdate(
+          id,
+          { 
+            status: "Completed",
+            completedTime: hoursTaken, // total hours used
+            completedAt: now,          // date/time it finished
+          },
+          { new: true }
+        );
+
+        return res.status(200).json({
+          message: "Task completed successfully",
+          updatedTask: updated,
+        });
+      }
+
+      // If not accepted or no acceptedAt, we can still mark it completed,
+      // but completedTime won't be computed
+      const fallbackTask = await ManagerTask.findByIdAndUpdate(
+        id,
+        { status: "Completed", completedAt: new Date() },
+        { new: true }
+      );
+      
+      return res.status(200).json({
+        message: "Task completed (without acceptance time).",
+        updatedTask: fallbackTask,
+      });
+    }
+
+    // If it's not "Completed" status, just update normally
     const updatedTask = await ManagerTask.findByIdAndUpdate(
       id,
       { status },
-      { new: true, runValidators: true } 
+      { new: true }
     );
 
     if (!updatedTask) {
       return res.status(404).json({ message: "Task not found" });
     }
 
-    res.status(200).json({ message: "Status updated successfully", updatedTask });
+    res.status(200).json({
+      message: "Status updated successfully",
+      updatedTask,
+    });
   } catch (error) {
     console.error("Error updating status:", error);
     res.status(500).json({ message: "Internal Server Error", error });
   }
 });
+
+
 
 
 app.post('/api/bug-report', async (req, res) => {
