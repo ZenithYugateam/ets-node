@@ -31,43 +31,62 @@ const AdminDashboard = () => {
   // Fetch all users and update metrics
   const fetchAllUsers = async () => {
     try {
-      const users = await fetchUsers(); // Call fetchUsers API
-      const employees = users.filter((user: { role: string }) => user.role === 'Employee').length;
-      const managers = users.filter((user: { role: string }) => user.role === 'Manager').length;
-
+      const users = await fetchUsers(); 
+  
+      const employeeUsers = users.filter((user: { role: string }) => user.role === 'Employee');
+      const uniqueEmployeeNames = Array.from(
+        new Set(employeeUsers.map((user: { name: string }) => user.name))
+      );
+  
+      
+      const employees = uniqueEmployeeNames.length;
+  
+     
+      const managerUsers = users.filter((user: { role: string }) => user.role === 'Manager');
+      const managers = managerUsers.length;
+  
       setTotalEmployees(employees);
       setTotalManagers(managers);
-
+  
+     
       const adminId = localStorage.getItem('userId');
       const admin = users.find((user: { _id: string | null }) => user._id === adminId);
       if (admin) setAdminName(admin.name);
+
+      console.log('Unique Employee Names:', uniqueEmployeeNames);
+  
     } catch (error: any) {
       toast.error(`Error fetching users: ${error.message}`);
     }
   };
-
-  // Fetch all departments
+  
   const fetchAllDepartments = async () => {
     try {
-      const departments = await fetchDepartments(); // Call fetchDepartments API
-      setDepartments(departments.length);
+      const departments = await fetchDepartments(); 
+      const uniqueDepartments = Array.from(
+        new Set(departments.map((dept: { name: string }) => dept.name))
+      );
+
+      setDepartments(uniqueDepartments.length);
+  
+      console.log('Unique Departments:', uniqueDepartments);
     } catch (error: any) {
       toast.error(`Error fetching departments: ${error.message}`);
     }
   };
+  
 
-  // Fetch data on component mount
   useEffect(() => {
     fetchAllUsers();
     fetchAllDepartments();
   }, []);
 
   // Function to handle updates dynamically
-  const handleDataUpdated = () => {
-    fetchAllUsers();
-    fetchAllDepartments();
-    queryClient.invalidateQueries('dashboardStats');
-  };
+  // const handleDataUpdated = () => {
+  //   fetchAllUsers();
+  //   fetchAllDepartments();
+  //   queryClient.invalidateQueries('dashboardStats');
+  // };
 
   // Metrics data
   const metrics = [
@@ -87,22 +106,6 @@ const AdminDashboard = () => {
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },
-    // {
-    //   id: 3,
-    //   label: 'Active Tasks',
-    //   value: stats?.activeTasks || 0,
-    //   icon: ClipboardList,
-    //   color: 'text-purple-600',
-    //   bgColor: 'bg-purple-100',
-    // },
-    // {
-    //   id: 4,
-    //   label: 'Pending Approvals',
-    //   value: stats?.pendingApprovals || 0,
-    //   icon: AlertCircle,
-    //   color: 'text-orange-600',
-    //   bgColor: 'bg-orange-100',
-    // },
     {
       id: 5,
       label: 'Total Managers',
