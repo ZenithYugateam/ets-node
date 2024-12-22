@@ -1,3 +1,4 @@
+// Models/ManagerTask.js (or wherever your ManagerTask schema is)
 const mongoose = require("mongoose");
 
 const ManagerTaskSchema = new mongoose.Schema({
@@ -10,12 +11,20 @@ const ManagerTaskSchema = new mongoose.Schema({
   description: { type: String, required: true },
   managerName: { type: String, required: true },
   status: { type: String, required: true },
-  remarks: { type: [String], required: false, default: [] },
-  notes: { type: [String], required: false, default: [] },
-  selectedEmployees: { type: [String], required: false, default: [] },
+  remarks: { type: [String], default: [] },
+  notes: { type: [String], default: [] },
+  selectedEmployees: { type: [String], default: [] },
   droneRequired: { type: String, required: true },
-  estimatedHours: { type: Number, required: false }, 
-  dgpsRequired : {type : String , required : true }
+  dgpsRequired: { type: String, required: true },
+  estimatedHours: { type: Number },
+  
+ 
+  accepted: { type: Boolean, default: false },
+  acceptedAt: { type: Date, default: null },
+
+
+  completedAt: { type: Date, default: null },      
+  completedTime: { type: Number, default: 0 },    
 });
 
 module.exports = mongoose.model("ManagerTask", ManagerTaskSchema);
