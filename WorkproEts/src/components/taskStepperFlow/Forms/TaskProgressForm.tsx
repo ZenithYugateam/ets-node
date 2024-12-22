@@ -14,6 +14,23 @@ export const TaskProgressForm = ({ currentStep, task }: TaskProgressFormProps) =
   const [status, setStatus] = useState<Status | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
+  const submitTaskProgress = async (type, currentStep, status, managerTaskId) => {
+    try {
+      const payload = {
+        type, 
+        currentStep,
+        status,
+        managerTaskId,
+      };
+  
+      const response = await axios.post('http://localhost:5001/api/submission', payload);
+      console.log('Submission successful:', response.data);
+    } catch (error) {
+      console.error('Error submitting task progress:', error);
+    }
+  };
+  
+
   const handleStatusChange = async (newStatus: Status) => {
     setStatus(newStatus);
     try {
@@ -24,7 +41,13 @@ export const TaskProgressForm = ({ currentStep, task }: TaskProgressFormProps) =
 
       if (response.status === 200 && newStatus === "Completed") {
         setShowConfetti(true); 
-        setTimeout(() => setShowConfetti(false), 5000);
+        setTimeout(() => setShowConfetti(false), 3000);
+        await submitTaskProgress(
+          "Submission_task_final", 
+          currentStep,
+          "Completed",
+          task._id 
+        );
       }
     } catch (error) {
       console.error('Error updating task status:', error);

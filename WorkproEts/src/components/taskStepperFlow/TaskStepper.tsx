@@ -49,7 +49,7 @@ export const TaskStepper = ({ currentStep, setCurrentStep, task, onClose }: Task
   ];
 
   const handleFinish = () => {
-    setTimeout(()=> onClose() , 5000);
+    setTimeout(()=> onClose());
   };
 
   return (

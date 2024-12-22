@@ -42,7 +42,8 @@ const SubmissionSchema = new mongoose.Schema({
   timeReached: { type: String, required: false },
   endReading: { type: Number, required: false },
   checkedItems: { type: [String], required: false },
-}, { timestamps: true }); // Add timestamps for createdAt and updatedAt
+  status : {type : String , required: false }
+}, { timestamps: true }); 
 
 const Submission = mongoose.model("Submission", SubmissionSchema);
 

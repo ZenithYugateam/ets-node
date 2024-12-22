@@ -1017,12 +1017,10 @@ app.get("/api/timelog/:userId", async (req, res) => {
   }
 });
 
-// Login Route
+
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -1059,7 +1057,7 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Register Route (for testing purposes)
+
 app.post("/api/auth/register", async (req, res) => {
   const { name, email, password, role, department } = req.body;
 
@@ -1789,7 +1787,15 @@ app.post('/api/submission', async (req, res) => {
         currentStep: data.currentStep,
       };
     }
-     else {
+    else if(type === "Submission_task_final"){
+      formattedData = {
+        type,
+        managerTaskId: data.managerTaskId,
+        currentStep: data.currentStep,
+        status: data.status,
+      };
+    }
+   else {
       formattedData = {
         type,
         ...data,
