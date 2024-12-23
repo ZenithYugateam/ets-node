@@ -2,7 +2,7 @@
 
 import { Button as MuiButton } from "@mui/material";
 import Box from "@mui/material/Box";
-import { AlertTriangle, Eye } from "lucide-react";
+import { AlertTriangle, Eye, ChevronDown } from "lucide-react";
 import CircularProgress from "@mui/material/CircularProgress";
 import { DataGrid, GridColDef, GridSelectionModel } from "@mui/x-data-grid";
 import axios from "axios";
@@ -50,11 +50,11 @@ interface Task {
 
   // Timer logic fields
   estimatedDeadline?: number;
-  timeRemaining: string;          
-  urgencyLevel: UrgencyLevel;     
-  estimatedTimeRemaining: string; 
+  timeRemaining: string;
+  urgencyLevel: UrgencyLevel;
+  estimatedTimeRemaining: string;
   estimatedUrgencyLevel: UrgencyLevel;
-  displayTimeRemaining: string;  
+  displayTimeRemaining: string;
   displayUrgencyLevel: UrgencyLevel;
   notified12?: boolean;
   notified6?: boolean;
@@ -62,10 +62,10 @@ interface Task {
 
   // Accept/Complete fields
   accepted?: boolean;
-  acceptedAt?: string;  
-  completedAt?: string; 
-  timeUsed?: number;     // in hours
-  timeLeft?: number;     // leftover hours
+  acceptedAt?: string;
+  completedAt?: string;
+  timeUsed?: number; // in hours
+  timeLeft?: number; // leftover hours
 }
 
 // For small detail items
@@ -715,55 +715,168 @@ const TaskViewEmployee: React.FC = () => {
     },
   ];
 
-  return (
-    <div className="overflow-hidden rounded-lg shadow-md p-4">
-      <div className="relative overflow-x-auto">
-        {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "300px",
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : (
-          <div style={{ minWidth: "1700px" }}>
-            <DataGrid
-              rows={tasks}
-              columns={columns}
-              pageSize={5}
-              rowsPerPageOptions={[5, 10, 20]}
-              getRowId={(row) => row._id}
-              checkboxSelection
-              onSelectionModelChange={(newSelection) =>
-                setSelectedRows(newSelection as string[])
-              }
-              selectionModel={selectedRows}
-              autoHeight
-              sx={{
-                "& .MuiDataGrid-root": {
-                  overflowX: "auto",
-                },
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "#f0f4f8",
-                  color: "#333",
-                },
-                "& .MuiDataGrid-columnHeaderTitle": {
-                  fontWeight: "bold",
-                },
-                "& .MuiDataGrid-cell": {
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                },
-              }}
-            />
+  // New state for mobile view
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+
+  // Mobile card view component
+  const TaskCard = ({ task }: { task: Task }) => {
+    const isExpanded = expandedTask === task._id;
+
+    return (
+      <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+        <div 
+          className="flex justify-between items-center cursor-pointer"
+          onClick={() => setExpandedTask(isExpanded ? null : task._id)}
+        >
+          <div>
+            <h3 className="font-semibold text-lg">{task.taskName}</h3>
+            <p className="text-sm text-gray-600">{task.projectName}</p>
+          </div>
+          <ChevronDown className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        </div>
+
+        {/* Always visible content */}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <TaskStatusBadge status={task.status} />
+          <TaskPriorityBadge priority={task.priority} />
+        </div>
+
+        {/* Expandable content */}
+        {isExpanded && (
+          <div className="mt-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Deadline</p>
+                <p className="font-medium">
+                  {task.deadline ? format(new Date(task.deadline), "MM/dd/yyyy") : "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Time Remaining</p>
+                <p className={cn(
+                  "font-medium",
+                  task.displayUrgencyLevel === "critical" ? "text-red-500" :
+                  task.displayUrgencyLevel === "high" ? "text-yellow-500" : "text-green-500"
+                )}>
+                  {task.displayTimeRemaining}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">Description</p>
+              <p className="text-sm">{task.description}</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {!task.accepted && task.status !== "Completed" && (
+                <MuiButton
+                  variant="contained"
+                  color="success"
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAcceptTask(task);
+                  }}
+                >
+                  Accept
+                </MuiButton>
+              )}
+              
+              <MuiButton
+                variant="outlined"
+                color="primary"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenDialog(task);
+                }}
+              >
+                Add Note
+              </MuiButton>
+
+              <MuiButton
+                variant="outlined"
+                color="secondary"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStatusChange(task);
+                }}
+              >
+                Update Status
+              </MuiButton>
+
+              <MuiButton
+                variant="outlined"
+                color="info"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedTask(task);
+                  setIsDrawerOpen(true);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                View
+              </MuiButton>
+            </div>
           </div>
         )}
       </div>
+    );
+  };
+
+  return (
+    <div className="p-4">
+      {loading ? (
+        <Box className="flex justify-center items-center h-[300px]">
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {/* Desktop View */}
+          <div className="hidden lg:block overflow-x-auto">
+            <div style={{ minWidth: "1700px" }}>
+              <DataGrid
+                rows={tasks}
+                columns={columns}
+                pageSize={5}
+                rowsPerPageOptions={[5, 10, 20]}
+                getRowId={(row) => row._id}
+                checkboxSelection
+                onSelectionModelChange={handleRowSelection}
+                selectionModel={selectedRows}
+                autoHeight
+                sx={{
+                  "& .MuiDataGrid-root": {
+                    overflowX: "auto",
+                  },
+                  "& .MuiDataGrid-columnHeaders": {
+                    backgroundColor: "#f0f4f8",
+                    color: "#333",
+                  },
+                  "& .MuiDataGrid-columnHeaderTitle": {
+                    fontWeight: "bold",
+                  },
+                  "& .MuiDataGrid-cell": {
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Mobile View */}
+          <div className="lg:hidden">
+            {tasks.map((task) => (
+              <TaskCard key={task._id} task={task} />
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Task Details Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>

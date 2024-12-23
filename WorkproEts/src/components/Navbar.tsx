@@ -7,7 +7,7 @@ import {
   Info,
   CheckCircle,
   XCircle,
-} from "lucide-react"; // Updated to use 'Info' instead of 'InformationCircle'
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@mui/material";
 import { useState, useContext, useEffect, useRef } from "react";
@@ -33,11 +33,8 @@ const Navbar = () => {
     setOpen(false);
   };
 
-  // Calculate unread notifications
-  const unreadNotifications = notifications.filter((notif) => !notif.read)
-    .length;
+  const unreadNotifications = notifications.filter((notif) => !notif.read).length;
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -59,18 +56,23 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Users className="h-8 w-8 text-indigo-600" />
-              <span className="ml-2 text-xl font-semibold">WorkForce Pro</span>
+              {/* Logo and title - hidden on mobile when menu is open */}
+              <div className="flex items-center ml-12 lg:ml-0">
+                <Users className="h-8 w-8 text-indigo-600" />
+                <span className="ml-2 text-xl font-semibold hidden sm:block">
+                  WorkForce Pro
+                </span>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {/* Bell Button with Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   className="p-2 rounded-full hover:bg-gray-100 focus:outline-none"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 >
-                  <Bell className="h-6 w-6 text-gray-500" />
+                  <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
                   {unreadNotifications > 0 && (
                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
                       {unreadNotifications}
@@ -80,7 +82,7 @@ const Navbar = () => {
 
                 {/* Dropdown Menu */}
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                  <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 bg-white border border-gray-200 rounded-md shadow-lg z-20">
                     <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                       <h3 className="text-lg font-semibold">Notifications</h3>
                       {unreadNotifications > 0 && (
@@ -92,7 +94,7 @@ const Navbar = () => {
                         </button>
                       )}
                     </div>
-                    <ul className="max-h-60 overflow-y-auto">
+                    <ul className="max-h-[60vh] sm:max-h-60 overflow-y-auto">
                       {notifications.length === 0 ? (
                         <li className="p-4 text-center text-gray-500">
                           No notifications
@@ -102,7 +104,7 @@ const Navbar = () => {
                           let IconComponent;
                           switch (notif.type) {
                             case "info":
-                              IconComponent = Info; // Updated to use 'Info'
+                              IconComponent = Info;
                               break;
                             case "warning":
                               IconComponent = AlertTriangle;
@@ -114,13 +116,13 @@ const Navbar = () => {
                               IconComponent = XCircle;
                               break;
                             default:
-                              IconComponent = Info; // Default to 'Info'
+                              IconComponent = Info;
                           }
 
                           return (
                             <li
                               key={notif.id}
-                              className={`p-4 border-b border-gray-200 flex justify-between items-center ${
+                              className={`p-4 border-b border-gray-200 flex justify-between items-start ${
                                 !notif.read ? "bg-blue-50" : "bg-white"
                               } cursor-pointer transition-colors duration-200`}
                               onClick={() => {
@@ -129,9 +131,9 @@ const Navbar = () => {
                                 }
                               }}
                             >
-                              <div className="flex items-center">
+                              <div className="flex items-start">
                                 <IconComponent
-                                  className={`h-5 w-5 mr-2 ${
+                                  className={`h-5 w-5 mr-2 flex-shrink-0 ${
                                     !notif.read
                                       ? "text-blue-500"
                                       : "text-gray-500"
@@ -147,16 +149,16 @@ const Navbar = () => {
                                   {notif.message}
                                 </span>
                               </div>
-                              <div className="flex space-x-2">
+                              <div className="flex flex-col items-end ml-2">
                                 {!notif.read && (
-                                  <span className="text-xs text-blue-500">
+                                  <span className="text-xs text-blue-500 mb-1">
                                     New
                                   </span>
                                 )}
                                 <button
-                                  className="text-sm text-red-500 hover:underline"
+                                  className="text-xs text-red-500 hover:underline"
                                   onClick={(e) => {
-                                    e.stopPropagation(); // Prevent triggering mark as read
+                                    e.stopPropagation();
                                     deleteNotification(notif.id);
                                   }}
                                 >
@@ -172,19 +174,26 @@ const Navbar = () => {
                 )}
               </div>
 
-              <Link to="/profile" className="p-2 rounded-full hover:bg-gray-100">
-                <Settings className="h-6 w-6 text-gray-500" />
-              </Link>
-              <Button
+              <Link
+                to="/profile"
                 className="p-2 rounded-full hover:bg-gray-100"
-                onClick={handleClick}
+                aria-label="Settings"
               >
-                <Bug className="h-6 w-6 text-red-500" />
+                <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
+              </Link>
+              
+              <Button
+                className="p-1 sm:p-2 rounded-full hover:bg-gray-100 min-w-0"
+                onClick={handleClick}
+                aria-label="Report Bug"
+              >
+                <Bug className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
               </Button>
             </div>
           </div>
         </div>
       </nav>
+
       {/* Add top padding to avoid content being hidden behind the fixed navbar */}
       <div className="pt-16">
         <BugReportModal isOpen={open} onClose={handleClose} />
