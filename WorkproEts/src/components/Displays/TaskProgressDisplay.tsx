@@ -1,35 +1,36 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Check, RefreshCw } from "lucide-react";
 import Confetti from "react-confetti";
+import { Check, RefreshCw } from "lucide-react";
 
 interface TaskProgressDisplayProps {
   managerTaskId: string;
+  type: string; // Type of submission (e.g., "afterFlight")
 }
 
-export const TaskProgressDisplay = ({ managerTaskId }: TaskProgressDisplayProps) => {
-  const [status, setStatus] = useState<"Completed" | "Not Completed" | null>(null);
+export const TaskProgressDisplay = ({ managerTaskId, type }: TaskProgressDisplayProps) => {
+  const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchTaskStatus = async () => {
+    const fetchTaskProgress = async () => {
       try {
         setIsLoading(true);
 
-        // Fetch task data from the server
+        // Fetch submission data using the provided API
         const response = await axios.get("http://localhost:5001/api/submissions", {
-          params: { type: "Submission_task_final", managerTaskId },
+          params: { type, managerTaskId },
         });
 
-        const submissions = response.data.data; // Accessing the `data` property
+        if (response.data && response.data.data && response.data.data.length > 0) {
+          // Assuming the status is part of the first submission object
+          const submission = response.data.data[0];
 
-        if (submissions && submissions.length > 0) {
-          const taskData = submissions[0]; // Assuming the first submission contains the relevant data
-          setStatus(taskData.status);
+          setStatus(submission.status || "In Progress");
 
-          if (taskData.status === "Completed") {
+          if (submission.status === "Completed") {
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 5000);
           }
@@ -37,18 +38,18 @@ export const TaskProgressDisplay = ({ managerTaskId }: TaskProgressDisplayProps)
           setError("No submissions found.");
         }
       } catch (err) {
-        console.error("Error fetching task status:", err);
-        setError("Failed to fetch task status.");
+        console.error("Error fetching submission data:", err);
+        setError("Failed to fetch task progress.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchTaskStatus();
-  }, [managerTaskId]);
+    fetchTaskProgress();
+  }, [managerTaskId, type]);
 
   if (isLoading) {
-    return <p>Loading task status...</p>;
+    return <p>Loading task progress...</p>;
   }
 
   if (error) {
@@ -56,15 +57,16 @@ export const TaskProgressDisplay = ({ managerTaskId }: TaskProgressDisplayProps)
   }
 
   if (!status) {
-    return <p>No task status available.</p>;
+    return <p>No progress data available.</p>;
   }
 
   return (
     <div className="space-y-6 relative">
       {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} />}
 
-      <div className="mt-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-4">Task Status</h3>
+      <h2 className="text-lg font-bold text-gray-800">Task Progress</h2>
+
+      <div className="flex items-center space-x-4">
         <div
           className={`flex items-center px-4 py-2 rounded-md border text-sm font-medium ${
             status === "Completed"
@@ -80,7 +82,7 @@ export const TaskProgressDisplay = ({ managerTaskId }: TaskProgressDisplayProps)
           ) : (
             <>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Not Completed
+              In Progress
             </>
           )}
         </div>
