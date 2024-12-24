@@ -53,6 +53,8 @@ export const fetchActivityLogs = async () => {
 };
 
 export interface Task {
+  name: ReactNode;
+  description: ReactNode;
   _id: string;
   title: string;
   assignee: {

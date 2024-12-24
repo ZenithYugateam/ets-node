@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Check, RefreshCw } from 'lucide-react';
 import Confetti from 'react-confetti';
+import { Task } from '../../api/admin';
 
 interface TaskProgressDisplayProps {
   managerTaskId: string;
