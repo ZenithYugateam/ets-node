@@ -1834,8 +1834,7 @@ app.post('/api/getPrivateVehiclesByName', async (req, res) => {
   }
 });
 
-<<<<<<< Updated upstream
-=======
+
 
 //code added by me
 app.get('/api/get/latest-active-step/:managerTaskId', async (req, res) => {
@@ -2123,10 +2122,7 @@ app.get('/api/get/submissions', async (req, res) => {
 
 
 
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+
 const PORT = 5001;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
