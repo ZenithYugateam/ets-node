@@ -23,7 +23,7 @@ export const TaskProgressForm = ({ currentStep, task }: TaskProgressFormProps) =
         managerTaskId,
       };
   
-      const response = await axios.post('http://localhost:5001/api/submission', payload);
+      const response = await axios.post('https://ets-node-dpa9.onrender.com/api/submission', payload);
       console.log('Submission successful:', response.data);
     } catch (error) {
       console.error('Error submitting task progress:', error);
@@ -34,7 +34,7 @@ export const TaskProgressForm = ({ currentStep, task }: TaskProgressFormProps) =
   const handleStatusChange = async (newStatus: Status) => {
     setStatus(newStatus);
     try {
-      const response = await axios.put(`http://localhost:5001/api/manager-tasks/update-status`, {
+      const response = await axios.put(`https://ets-node-dpa9.onrender.com/api/manager-tasks/update-status`, {
         id: task._id, 
         status: newStatus,
       });

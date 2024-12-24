@@ -132,7 +132,7 @@ const DepartmentModal: React.FC<DepartmentModalProps> = ({
       if (!validateForm()) return;
 
       const response = await axios.post(
-        "http://localhost:5001/api/departments/add",
+        "https://ets-node-dpa9.onrender.com/api/departments/add",
         formData
       );
 

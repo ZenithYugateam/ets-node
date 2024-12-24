@@ -20,7 +20,7 @@ export const TaskProgressDisplay = ({ managerTaskId, type }: TaskProgressDisplay
         setIsLoading(true);
 
         // Fetch submission data using the provided API
-        const response = await axios.get("http://localhost:5001/api/submissions", {
+        const response = await axios.get("https://ets-node-dpa9.onrender.com/api/submissions", {
           params: { type, managerTaskId },
         });
 

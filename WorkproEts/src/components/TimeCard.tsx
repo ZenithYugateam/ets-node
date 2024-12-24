@@ -30,7 +30,7 @@ const TimeCard = ({ userId }: { userId: string }) => {
     const now = new Date();
 
     try {
-      const response = await fetch('http://localhost:5001/api/timelog/checkin', {
+      const response = await fetch('https://ets-node-dpa9.onrender.com/api/timelog/checkin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,7 +52,7 @@ const TimeCard = ({ userId }: { userId: string }) => {
 
   const handleCheckOut = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/timelog/checkout', {
+      const response = await fetch('https://ets-node-dpa9.onrender.com/api/timelog/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ const TimeCard = ({ userId }: { userId: string }) => {
     const now = new Date();
 
     try {
-      const response = await fetch('http://localhost:5001/api/timelog/start-break', {
+      const response = await fetch('https://ets-node-dpa9.onrender.com/api/timelog/start-break', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ const TimeCard = ({ userId }: { userId: string }) => {
     const now = new Date();
 
     try {
-      const response = await fetch('http://localhost:5001/api/timelog/end-break', {
+      const response = await fetch('https://ets-node-dpa9.onrender.com/api/timelog/end-break', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

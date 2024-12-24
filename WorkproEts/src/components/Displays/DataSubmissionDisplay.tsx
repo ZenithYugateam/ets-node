@@ -28,7 +28,7 @@ export const DataSubmissionDisplay = ({ managerTaskId }: DataSubmissionDisplayPr
         setIsLoading(true);
 
         // Fetch data submission details using the updated API
-        const response = await axios.get('http://localhost:5001/api/submissions', {
+        const response = await axios.get('https://ets-node-dpa9.onrender.com/api/submissions', {
           params: { type: 'DataSubmission', managerTaskId },
         });
 
