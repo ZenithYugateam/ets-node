@@ -6,6 +6,7 @@ import ProjectManagement from '../components/admin/ProjectManagement';
 import LeaveApprovals from '../components/shared/LeaveApprovals';
 import { fetchDashboardStats, fetchUsers, fetchDepartments } from '../api/admin';
 import { toast } from 'react-toastify';
+import TaskDisplay from '../components/admin/TaskDisplay';
 
 interface User {
   _id: string;
@@ -159,6 +160,7 @@ const AdminDashboard = () => {
       {/* Admin components */}
       <UserManagement adminId={localStorage.getItem('userId')} />
       <ProjectManagement />
+      <TaskDisplay />
     </div>
   );
 };
