@@ -1,4 +1,4 @@
-import { Fragment, useState , useEffect} from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Calendar, X } from 'lucide-react';
 import type { Task } from './types/index';
@@ -11,7 +11,6 @@ interface TaskDrawerProps {
   task: Task;
 }
 
-
 export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -19,8 +18,8 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
     const fetchCurrentStep = async () => {
       if (isOpen) {
         try {
-          const response = await axios.post(`http://localhost:5001/api/latest-active-step`,{
-            managerTaskId : task._id
+          const response = await axios.post(`http://localhost:5001/api/latest-active-step`, {
+            managerTaskId: task._id,
           });
           const latestStep = response.data.latestActiveStep;
           setCurrentStep(latestStep + 1);
@@ -49,6 +48,7 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
             <Dialog.Panel className="pointer-events-auto fixed inset-y-0 right-0 flex max-w-full pl-10">
               <div className="pointer-events-auto w-screen max-w-2xl">
                 <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
+                  {/* Header Section */}
                   <div className="px-4 py-6 sm:px-6">
                     <div className="flex items-start justify-between">
                       <Dialog.Title className="text-lg font-medium text-gray-900">
@@ -63,8 +63,11 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
                       </button>
                     </div>
                   </div>
+
+                  {/* Content Section */}
                   <div className="border-t border-gray-200">
-                    <div className="px-4 py-6 sm:px-6">
+                    <div className="px-4 py-6 sm:px-6 relative">
+                      {/* Project Details */}
                       <div className="mb-8">
                         <h3 className="text-lg font-medium text-gray-900">Project Details</h3>
                         <dl className="mt-4 grid grid-cols-2 gap-4">
@@ -85,9 +88,30 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
                           </div>
                         </dl>
                       </div>
-                      <TaskStepper currentStep={currentStep} setCurrentStep={setCurrentStep} task={task}  onClose={onClose}/>
+
+                      {/* Task Stepper */}
+                      <TaskStepper
+                        currentStep={currentStep}
+                        setCurrentStep={setCurrentStep}
+                        task={task}
+                        onClose={onClose}
+                      />
+
+                      {/* Resized Close Button */}
+                      <div className="mt-6 flex justify-end">
+                        <button
+                          type="button"
+                          className="inline-flex items-center rounded-md border border-transparent bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                          onClick={onClose}
+                        >
+                          Close
+                        </button>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Optional Footer Section */}
+                  {/* If you have additional footer content, you can place it here */}
                 </div>
               </div>
             </Dialog.Panel>
