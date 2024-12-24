@@ -1834,6 +1834,296 @@ app.post('/api/getPrivateVehiclesByName', async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
+=======
+
+//code added by me
+app.get('/api/get/latest-active-step/:managerTaskId', async (req, res) => {
+  try {
+    const { managerTaskId } = req.params;
+
+    const submission = await SubmissionSchema.findOne(
+      { managerTaskId },
+      { currentStep: 1, _id: 0 }
+    ).sort({ currentStep: -1 });
+
+    if (!submission) {
+      return res.status(404).json({ message: 'No submission found for the given managerTaskId' });
+    }
+
+    return res.status(200).json({ latestActiveStep: submission.currentStep });
+  } catch (error) {
+    console.error('Error fetching latest active step:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+app.get('/api/get/submissions/selected-vehicles/:managerTaskId', async (req, res) => {
+  try {
+    const { managerTaskId } = req.params;
+
+    const submission = await SubmissionSchema.findOne({
+      managerTaskId,
+      currentStep: 1,
+    });
+
+    if (!submission) {
+      return res.status(404).json({
+        message: 'Submission not found for the given managerTaskId and currentStep=1',
+      });
+    }
+
+    res.json({ selectedVehicles: submission.selectedVehicles || [] });
+  } catch (error) {
+    console.error('Error fetching submission:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+app.get('/api/droneDetailsList/:managerTaskId', async (req, res) => {
+  const { managerTaskId } = req.params;
+
+  if (!managerTaskId) {
+    return res.status(400).json({ error: 'managerTaskId is required' });
+  }
+
+  try {
+    const submissions = await SubmissionSchema.find({
+      managerTaskId,
+      currentStep: 0
+    });
+
+    if (submissions.length === 0) {
+      return res.status(404).json({ message: 'No submissions found for the given managerTaskId with currentStep = 0' });
+    }
+
+    return res.json(submissions);
+  } catch (error) {
+    console.error('Error fetching drone details:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+//get api for vehicles
+app.get('/api/submissions/selected-vehicles/:managerTaskId', async (req, res) => {
+  try {
+    const { managerTaskId } = req.params;
+
+    // Fetch submission based on managerTaskId and currentStep=1
+    const submission = await SubmissionSchema.findOne({
+      managerTaskId,
+      currentStep: 1,
+    });
+
+    if (!submission) {
+      return res.status(404).json({
+        message: 'Submission not found for the given managerTaskId and currentStep=1',
+      });
+    }
+
+    res.json({
+      selectedVehicles: submission.selectedVehicles || [],
+      date: submission.date || null,
+      time: submission.time || null,
+      readings: submission.readings || null,
+      images: submission.images || [],
+      publicTransportDetails: submission.submissions.publicTransportDetails || null,
+      privateVehicleDetails: submission.submissions.privateVehicleDetails || null,
+      privateVehicleNumber: submission.submissions.privateVehicleNumber || null,
+    });
+  } catch (error) {
+    console.error('Error fetching submission:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+app.get('/api/get/submissions/:managerTaskId/:type', async (req, res) => {
+  try {
+    const { managerTaskId, type } = req.params;
+
+    const submission = await SubmissionSchema.findOne({
+      managerTaskId,
+      type,
+    });
+
+    if (!submission) {
+      return res.status(404).json({
+        message: `Submission not found for managerTaskId: ${managerTaskId} and type: ${type}`,
+      });
+    }
+
+    res.json(submission);
+  } catch (error) {
+    console.error('Error fetching submission:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+app.get('/api/get/private-vehicles/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+
+    const privateVehicles = await Vehicle.find({ type: 'Private', name });
+
+    if (privateVehicles.length === 0) {
+      return res.status(404).json({
+        message: `No private vehicles found for the name: ${name}`,
+      });
+    }
+
+    res.status(200).json(privateVehicles);
+  } catch (error) {
+    console.error('Error fetching private vehicles:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+app.get("/api/task/:managerTaskId/drone-details", async (req, res) => {
+  const { managerTaskId } = req.params;
+
+  try {
+    // Query the Submission collection to find the specific drone details
+    const droneDetails = await Submission.findOne({
+      managerTaskId,
+      type: "DroneDetails", // Filter by type to ensure we get the correct submission
+    });
+
+    if (!droneDetails) {
+      return res
+        .status(404)
+        .json({ message: "Drone details not found for the given managerTaskId." });
+    }
+
+    res.status(200).json(droneDetails);
+  } catch (error) {
+    console.error("Error fetching drone details:", error);
+    res.status(500).json({ message: "Error fetching drone details." });
+  }
+});
+
+app.get('/api/submissions', async (req, res) => {
+  try {
+    const { type, managerTaskId, currentStep } = req.query;
+
+    if (!type) {
+      return res.status(400).json({ error: 'Type field is required to fetch submissions.' });
+    }
+
+    // Build the query dynamically based on the provided parameters
+    const query = { type };
+    if (managerTaskId) query.managerTaskId = managerTaskId;
+    if (currentStep) query.currentStep = parseInt(currentStep, 10);
+
+    // Fetch the submissions matching the query
+    const submissions = await SubmissionSchema.find(query);
+
+    if (!submissions || submissions.length === 0) {
+      return res.status(404).json({ message: 'No submissions found for the given criteria.' });
+    }
+
+    res.status(200).json({
+      message: 'Submissions fetched successfully!',
+      data: submissions,
+    });
+  } catch (error) {
+    console.error('Error fetching submissions:', error);
+    res.status(500).json({ error: 'Failed to fetch submissions.' });
+  }
+});
+app.get("/api/manager-tasks", async (req, res) => {
+  try {
+    const tasks = await ManagerTask.find(); // Fetch all tasks from the database
+
+    if (!tasks || tasks.length === 0) {
+      return res.status(404).json({ message: "No tasks found" });
+    }
+
+    res.status(200).json({ message: "Tasks fetched successfully", tasks });
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    res.status(500).json({ message: "Internal Server Error", error });
+  }
+});
+app.get('/api/private-vehicles/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    if (!name) {
+      return res.status(400).json({ error: 'Name parameter is required' });
+    }
+
+    const privateVehicles = await Vehicle.find({ type: 'Private', name: name });
+
+    if (privateVehicles.length === 0) {
+      return res.status(404).json({ message: 'No private vehicles found for the given name' });
+    }
+
+    res.status(200).json(privateVehicles);
+  } catch (error) {
+    console.error('Error fetching private vehicles:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+app.get('/api/selected-vehicles/:managerTaskId', async (req, res) => {
+  try {
+    const { managerTaskId } = req.params;
+
+    const submission = await SubmissionSchema.findOne({
+      managerTaskId: managerTaskId,
+      currentStep: 1,
+    });
+
+    if (!submission) {
+      return res.status(404).json({
+        message: 'Submission not found for the given managerTaskId and currentStep=1',
+      });
+    }
+
+    res.json({ selectedVehicles: submission.selectedVehicles || [] });
+  } catch (error) {
+    console.error('Error fetching submission:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+app.get('/api/vehicles', async (req, res) => {
+  try {
+    const vehicles = await Vehicle.find();
+
+    if (vehicles.length === 0) {
+      return res.status(404).json({ message: 'No vehicles found' });
+    }
+
+    res.status(200).json(vehicles);
+  } catch (error) {
+    console.error('Error fetching vehicles:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+app.get('/api/get/submissions', async (req, res) => {
+  try {
+    const { type, managerTaskId, currentStep } = req.query; // Retrieve query parameters
+
+    // Build a dynamic filter based on the provided query parameters
+    const filter = {};
+    if (type) filter.type = type;
+    if (managerTaskId) filter.managerTaskId = managerTaskId;
+    if (currentStep) filter.currentStep = parseInt(currentStep, 10);
+
+    const submissions = await SubmissionSchema.find(filter); // Fetch submissions based on the filter
+
+    if (!submissions || submissions.length === 0) {
+      return res.status(404).json({ message: 'No submissions found for the given criteria.' });
+    }
+
+    res.status(200).json({
+      message: 'Submissions retrieved successfully!',
+      data: submissions,
+    });
+  } catch (error) {
+    console.error('Error retrieving submissions:', error);
+    res.status(500).json({ error: 'Failed to retrieve submissions.' });
+  }
+});
+
+
+
+
+>>>>>>> Stashed changes
 const PORT = 5001;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
