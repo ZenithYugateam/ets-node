@@ -77,7 +77,7 @@ export const GettingOffFieldForm = ({ currentStep, task }: GettingOffFieldFormPr
     };
 
     try {
-      const response = await fetch('http://localhost:5001/api/submission', {
+      const response = await fetch('https://ets-node-dpa9.onrender.com/api/submission', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

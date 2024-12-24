@@ -157,7 +157,7 @@ const AddTaskManagements: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:5001/api/get-task-by-manager-name",
+        "https://ets-node-dpa9.onrender.com/api/get-task-by-manager-name",
         {
           managerName: sessionStorage.getItem("userName"),
         }
@@ -175,7 +175,7 @@ const AddTaskManagements: React.FC = () => {
     const fetchProjects = async () => {
       try {
         const response = await axios.post(
-          "http://localhost:5001/api/getAllProjectNamesForEmployee",
+          "https://ets-node-dpa9.onrender.com/api/getAllProjectNamesForEmployee",
           {
             userId: sessionStorage.getItem("userId"),
           }
@@ -195,7 +195,7 @@ const AddTaskManagements: React.FC = () => {
     const fetchEmployees = async () => {
       try {
         const response = await axios.post(
-          "http://localhost:5001/api/employees-by-manager",
+          "https://ets-node-dpa9.onrender.com/api/employees-by-manager",
           {
             managerName: sessionStorage.getItem("userName"),
           }
@@ -288,7 +288,7 @@ const AddTaskManagements: React.FC = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5001/api/store-form-data",
+        "https://ets-node-dpa9.onrender.com/api/store-form-data",
         updatedFormData
       );
       if (response.status === 201) {
