@@ -13,7 +13,10 @@ interface DroneSubmitFormDisplayProps {
   managerTaskId: string;
 }
 
-export const DroneSubmitFormDisplay = ({ managerTaskId }: DroneSubmitFormDisplayProps) => {
+
+export const DroneSubmissionDisplay = ({ managerTaskId }: DroneSubmitFormDisplayProps) => {
+
+
   const [submission, setSubmission] = useState<DroneSubmitFormSubmission | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
