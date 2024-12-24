@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "../../../ui/dialog";
 import { ScrollArea } from "../../../ui/scroll-area";
+import { TaskStepperDisplay } from "./TaskStepperDisplay"; // Ensure correct path for TaskStepperDisplay
 
 type Priority = "High" | "Medium" | "Low";
 type Status = "Completed" | "In Progress" | "Pending";
@@ -145,12 +146,9 @@ export function TaskViewModal({
   const handleSend = async () => {
     if (message.trim()) {
       try {
-        const response = await axios.put(
-          `http://localhost:5001/api/update-remarks/${taskId}`,
-          {
-            remarks: message,
-          }
-        );
+        await axios.put(`http://localhost:5001/api/update-remarks/${taskId}`, {
+          remarks: message,
+        });
         setRemarks((prevRemarks) => [...prevRemarks, message]);
       } catch (error) {
         console.error("Error updating remarks:", error);
@@ -189,7 +187,6 @@ export function TaskViewModal({
                 <TaskDetailItem label="Project Name" value={task.projectName} />
                 <TaskDetailItem label="Task Name" value={task.taskName} />
               </div>
-
               <div className="grid gap-4 md:grid-cols-2">
                 <TaskDetailItem
                   label="Employee Name"
@@ -224,7 +221,6 @@ export function TaskViewModal({
                   </div>
                 </div>
               </div>
-
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">
                   Description
@@ -233,7 +229,6 @@ export function TaskViewModal({
                   {task.description}
                 </p>
               </div>
-
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">
                   Remarks
@@ -252,16 +247,13 @@ export function TaskViewModal({
                   )}
                 </div>
               </div>
-
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">
                   Notes
                 </span>
                 <div className="space-y-2">
                   {notes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No notes yet
-                    </p>
+                    <p className="text-sm text-muted-foreground">No notes yet</p>
                   ) : (
                     notes.map((note, index) => (
                       <div key={index} className="p-2 bg-gray-100 rounded-md">
@@ -271,7 +263,6 @@ export function TaskViewModal({
                   )}
                 </div>
               </div>
-
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">
                   Add Remark *
@@ -284,30 +275,18 @@ export function TaskViewModal({
                   placeholder="Type your remarks here..."
                 />
               </div>
-
               <div className="flex justify-end space-x-4">
                 <Button
                   onClick={handleSend}
                   className="relative px-6 py-2 text-sm font-semibold text-white bg-blue-500 rounded-lg shadow-md hover:bg-blue-600 hover:scale-105 transition-all duration-200"
                 >
-                  <span className="inline-flex items-center space-x-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className="w-5 h-5"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3.75 12h16.5m0 0-6.75-6.75M20.25 12l-6.75 6.75"
-                      />
-                    </svg>
-                    <span>Send</span>
-                  </span>
+                  Send
                 </Button>
+              </div>
+              {/* Stepper Component */}
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold">Task Progress</h3>
+                <TaskStepperDisplay managerTaskId={taskId} />
               </div>
             </div>
           </ScrollArea>
