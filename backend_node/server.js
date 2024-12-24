@@ -15,10 +15,10 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '100mb' })); 
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
-
+require('dotenv').config()
 mongoose
   .connect(
-    "mongodb+srv://codeprabhas121:iZDnnBM35UmVGGNZ@etscluster.7ckqo.mongodb.net/",
+    process.env.MONGO_URL,
     {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -1033,7 +1033,7 @@ app.post("/api/auth/login", async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
-      "your_secret_key", // Replace with an environment variable in production
+      process.env.JWT_SECRET, // Replace with an environment variable in production
       { expiresIn: "1h" }
     );
 
@@ -2123,7 +2123,7 @@ app.get('/api/get/submissions', async (req, res) => {
 
 
 
-const PORT = 5001;
+const PORT = process.env.PORT;
 app.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
