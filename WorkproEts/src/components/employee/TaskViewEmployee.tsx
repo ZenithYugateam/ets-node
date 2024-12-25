@@ -760,27 +760,34 @@ const TaskViewEmployee: React.FC = () => {
       headerName: "View",
       flex: 1,
       minWidth: 120,
-      renderCell: (params) => (
-        <MuiButton
-          variant="outlined"
-          color="secondary"
-          onClick={() => {
-            setSelectedTask(params.row);
-            setIsDrawerOpen(true);
-          }}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "6px",
-            mt: 1,
-          }}
-        >
-          <Eye className="h-5 w-5" />
-          <span>View</span>
-        </MuiButton>
-      ),
+      renderCell: (params) => {
+        const isClickable = params.row.droneRequired === "Yes" || params.row.dgpsRequired === "Yes" ? "yes" : null; 
+        return (
+          <MuiButton
+            variant="outlined"
+            color="secondary"
+            onClick={() => {
+              if (isClickable) {
+                setSelectedTask(params.row);
+                setIsDrawerOpen(true);
+              }
+            }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              mt: 1,
+            }}
+            disabled={!isClickable} 
+          >
+            <Eye className="h-5 w-5" />
+            <span>View</span>
+          </MuiButton>
+        );
+      },
     },
+    
   ];
 
   // New state for mobile view
