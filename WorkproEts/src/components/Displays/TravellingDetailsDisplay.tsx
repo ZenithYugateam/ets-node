@@ -47,7 +47,7 @@ export const TravellingDetailsDisplay = ({
       try {
         // Fetch travelling details first to determine transport mode
         const travellingResponse = await axios.get(
-          `https://ets-node-dpa9.onrender.com/api/submissions/selected-vehicles/${managerTaskId}`
+          `http://localhost:5001/api/submissions/selected-vehicles/${managerTaskId}`
         );
 
         if (!travellingResponse.data) {
@@ -66,12 +66,12 @@ export const TravellingDetailsDisplay = ({
         } else if (details.transportMode === 'Private') {
           // Fetch private vehicles
           const privateResponse = await axios.get(
-            `https://ets-node-dpa9.onrender.com/api/private-vehicles/${userName}`
+            `http://localhost:5001/api/private-vehicles/${userName}`
           );
           setPrivateVehicles(privateResponse.data || []);
         } else if (details.transportMode === 'Company') {
           // Fetch all vehicles for company transport
-          const allVehiclesResponse = await axios.get(`https://ets-node-dpa9.onrender.com/api/vehicles`);
+          const allVehiclesResponse = await axios.get(`http://localhost:5001/api/vehicles`);
           setAllVehicles(allVehiclesResponse.data || []);
         }
 

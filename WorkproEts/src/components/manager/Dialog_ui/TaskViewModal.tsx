@@ -122,7 +122,7 @@ export function TaskViewModal({
   useEffect(() => {
     if (open && taskId) {
       axios
-        .get(`https://ets-node-dpa9.onrender.com/api/remarks/${taskId}`)
+        .get(`http://localhost:5001/api/remarks/${taskId}`)
         .then((response) => {
           setRemarks(response.data.remarks);
         })
@@ -131,7 +131,7 @@ export function TaskViewModal({
         });
 
       axios
-        .post(`https://ets-node-dpa9.onrender.com/api/employeeNotes`, {
+        .post(`http://localhost:5001/api/employeeNotes`, {
           id: taskId,
         })
         .then((response) => {
@@ -146,7 +146,7 @@ export function TaskViewModal({
   const handleSend = async () => {
     if (message.trim()) {
       try {
-        await axios.put(`https://ets-node-dpa9.onrender.com/api/update-remarks/${taskId}`, {
+        await axios.put(`http://localhost:5001/api/update-remarks/${taskId}`, {
           remarks: message,
         });
         setRemarks((prevRemarks) => [...prevRemarks, message]);
