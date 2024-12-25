@@ -2,7 +2,7 @@
 
 import { Button as MuiButton } from "@mui/material";
 import Box from "@mui/material/Box";
-import { AlertTriangle, Eye, ChevronDown } from "lucide-react";
+import { AlertTriangle, Eye, ChevronDown, Search } from "lucide-react";
 import CircularProgress from "@mui/material/CircularProgress";
 import { DataGrid, GridColDef, GridSelectionModel } from "@mui/x-data-grid";
 import axios from "axios";
@@ -27,6 +27,7 @@ import {
   UrgencyLevel,
 } from "../../utils/calculateTimeRemaining";
 import { NotificationContext } from "../context/NotificationContext";
+import { Clear } from "@mui/icons-material";
 
 // Types
 type Priority = "Low" | "Medium" | "High";
@@ -176,22 +177,19 @@ const TaskViewEmployee: React.FC = () => {
     useState<Task | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
+  const [searchTerm, setSearchTerm] = useState<string>(""); 
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]); 
+
   const { addNotification } = useContext(NotificationContext);
 
-  //
-  // 1) Accept Task => sets accepted = true, acceptedAt = now
-  //    NO check for 'Expired' so user can still accept after deadline
-  //
   const handleAcceptTask = async (task: Task) => {
     try {
       const now = new Date();
-      // Send request to mark accepted on server
       await axios.put(`http://localhost:5001/api/tasks/accept/${task._id}`, {
         accepted: true,
         acceptedAt: now,
       });
 
-      // Immediately update local state
       setTasks((prev) =>
         prev.map((t) => {
           if (t._id === task._id) {
@@ -523,7 +521,6 @@ const TaskViewEmployee: React.FC = () => {
     }
   };
 
-  // Remarks logic
   const fetchRemarks = async (taskId: string) => {
     try {
       const response = await axios.get(
@@ -578,9 +575,7 @@ const TaskViewEmployee: React.FC = () => {
     }
   };
 
-  //
-  // DataGrid columns
-  //
+
   const columns: GridColDef[] = [
     {
       field: "acceptTask",
@@ -790,10 +785,8 @@ const TaskViewEmployee: React.FC = () => {
     
   ];
 
-  // New state for mobile view
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
 
-  // Mobile card view component
   const TaskCard = ({ task }: { task: Task }) => {
     const isExpanded = expandedTask === task._id;
 
@@ -913,8 +906,49 @@ const TaskViewEmployee: React.FC = () => {
     );
   };
 
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      const lowerCaseTerm = searchTerm.toLowerCase();
+      const filtered = tasks.filter((task) =>
+        Object.values(task).some(
+          (value) =>
+            typeof value === "string" &&
+            value.toLowerCase().includes(lowerCaseTerm)
+        )
+      );
+      setFilteredTasks(filtered);
+    } else {
+      setFilteredTasks(tasks);
+    }
+  }, [searchTerm, tasks]);
+
   return (
     <div className="p-4">
+       <div className="relative mb-4 flex items-center justify-between">
+      {/* Search Icon */}
+      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <Search className="text-gray-500" />
+      </span>
+
+      {/* Input Field */}
+      <input
+        type="text"
+        placeholder="Search tasks..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className=" pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+
+      {/* Clear Button */}
+      {searchTerm && (
+        <button
+          onClick={() => setSearchTerm('')}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+        >
+          <Clear className="text-gray-500 hover:text-gray-700" />
+        </button>
+      )}
+    </div>
       {loading ? (
         <Box className="flex justify-center items-center h-[300px]">
           <CircularProgress />
@@ -925,7 +959,7 @@ const TaskViewEmployee: React.FC = () => {
           <div className="hidden lg:block overflow-x-auto">
             <div style={{ minWidth: "1700px" }}>
               <DataGrid
-                rows={tasks}
+                rows={filteredTasks}
                 columns={columns}
                 pageSize={5}
                 rowsPerPageOptions={[5, 10, 20]}
