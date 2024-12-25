@@ -1,7 +1,7 @@
 import { useQuery, useMutation, QueryKey } from 'react-query';
 import axios, { AxiosError } from 'axios';
 
-const API_URL = 'https://ets-node-dpa9.onrender.com/api';
+const API_URL = 'http://localhost:5001/api';
 
 interface ApiError {
   message: string;

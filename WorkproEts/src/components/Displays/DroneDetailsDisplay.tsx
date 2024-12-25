@@ -29,7 +29,7 @@ export const DroneDetailsDisplay: React.FC<DroneDetailsDisplayProps> = ({ manage
     const fetchDroneDetails = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`https://ets-node-dpa9.onrender.com/api/droneDetailsList/${managerTaskId}`);
+        const response = await axios.get(`http://localhost:5001/api/droneDetailsList/${managerTaskId}`);
         console.log('API Response:', response.data); // Debug
         setDroneDetails(Array.isArray(response.data) ? response.data : []); // Ensure it's an array
         setError(null); // Clear previous errors if successful

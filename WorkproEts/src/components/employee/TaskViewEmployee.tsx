@@ -186,7 +186,7 @@ const TaskViewEmployee: React.FC = () => {
     try {
       const now = new Date();
       // Send request to mark accepted on server
-      await axios.put(`https://ets-node-dpa9.onrender.com/api/tasks/accept/${task._id}`, {
+      await axios.put(`http://localhost:5001/api/tasks/accept/${task._id}`, {
         accepted: true,
         acceptedAt: now,
       });
@@ -236,7 +236,7 @@ const TaskViewEmployee: React.FC = () => {
     setLoading(true);
     try {
       const response = await axios.post<Task[]>(
-        "https://ets-node-dpa9.onrender.com/api/tasks/employee",
+        "http://localhost:5001/api/tasks/employee",
         { employeeName }
       );
       let allTasks = response.data;
@@ -527,7 +527,7 @@ const TaskViewEmployee: React.FC = () => {
   const fetchRemarks = async (taskId: string) => {
     try {
       const response = await axios.get(
-        `https://ets-node-dpa9.onrender.com/api/remarks/${taskId}`
+        `http://localhost:5001/api/remarks/${taskId}`
       );
       setRemarks(response.data.remarks);
     } catch (error) {
@@ -557,7 +557,7 @@ const TaskViewEmployee: React.FC = () => {
     if (newRemark.trim()) {
       try {
         if (selectedTask) {
-          await axios.put(`https://ets-node-dpa9.onrender.com/api/Employee/notes`, {
+          await axios.put(`http://localhost:5001/api/Employee/notes`, {
             id: selectedTask._id,
             note: newRemark,
           });
