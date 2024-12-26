@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { PlusCircle, Calendar, Clock } from 'lucide-react';
 import LeaveRequestForm, { LeaveFormData } from '../shared/LeaveRequestForm';
 import LeaveStatusBadge from '../shared/LeaveStatusBadge';
-import { useLeave } from '../context/LeaveContext';
 
 const CURRENT_USER = {
   name: 'John Doe',
@@ -11,12 +10,8 @@ const CURRENT_USER = {
 };
 
 const EmployeeLeaveManagement: React.FC = () => {
-  // const { addLeave, getLeavesByEmployee } = useLeave();
   const [showForm, setShowForm] = useState(false);
   const [editingLeave, setEditingLeave] = useState<any>(null);
-
-  // const leaves = getLeavesByEmployee(CURRENT_USER.name);
-
   const handleSubmit = (data: LeaveFormData) => {
     addLeave({
       ...data,

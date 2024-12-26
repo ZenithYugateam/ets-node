@@ -2,7 +2,7 @@
 
 import { Button as MuiButton } from "@mui/material";
 import Box from "@mui/material/Box";
-import { AlertTriangle, Eye } from "lucide-react";
+import { AlertTriangle, Eye, ChevronDown, Search } from "lucide-react";
 import CircularProgress from "@mui/material/CircularProgress";
 import { DataGrid, GridColDef, GridSelectionModel } from "@mui/x-data-grid";
 import axios from "axios";
@@ -27,6 +27,7 @@ import {
   UrgencyLevel,
 } from "../../utils/calculateTimeRemaining";
 import { NotificationContext } from "../context/NotificationContext";
+import { Clear } from "@mui/icons-material";
 
 // Types
 type Priority = "Low" | "Medium" | "High";
@@ -50,11 +51,11 @@ interface Task {
 
   // Timer logic fields
   estimatedDeadline?: number;
-  timeRemaining: string;          
-  urgencyLevel: UrgencyLevel;     
-  estimatedTimeRemaining: string; 
+  timeRemaining: string;
+  urgencyLevel: UrgencyLevel;
+  estimatedTimeRemaining: string;
   estimatedUrgencyLevel: UrgencyLevel;
-  displayTimeRemaining: string;  
+  displayTimeRemaining: string;
   displayUrgencyLevel: UrgencyLevel;
   notified12?: boolean;
   notified6?: boolean;
@@ -62,10 +63,10 @@ interface Task {
 
   // Accept/Complete fields
   accepted?: boolean;
-  acceptedAt?: string;  
-  completedAt?: string; 
-  timeUsed?: number;     // in hours
-  timeLeft?: number;     // leftover hours
+  acceptedAt?: string;
+  completedAt?: string;
+  timeUsed?: number; // in hours
+  timeLeft?: number; // leftover hours
 }
 
 // For small detail items
@@ -131,7 +132,11 @@ export function TaskPriorityBadge({
   return (
     <Badge
       variant="secondary"
-      className={cn("px-3 py-1 font-medium", priorityStyles[priority], className)}
+      className={cn(
+        "px-3 py-1 font-medium",
+        priorityStyles[priority],
+        className
+      )}
     >
       {priority}
     </Badge>
@@ -145,10 +150,11 @@ const getNotificationHash = (taskId: string, threshold: number): number => {
 
 // Convert hours => "HH:MM:SS"
 function formatHours(hours: number) {
-  const totalMinutes = Math.floor(hours * 60);
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
-  const s = Math.floor((hours * 3600) % 60);
+  const positiveHours = Math.abs(hours);
+  const totalSeconds = Math.floor(positiveHours * 3600);
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
 
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(
     s
@@ -171,22 +177,19 @@ const TaskViewEmployee: React.FC = () => {
     useState<Task | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
+  const [searchTerm, setSearchTerm] = useState<string>(""); 
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]); 
+
   const { addNotification } = useContext(NotificationContext);
 
-  //
-  // 1) Accept Task => sets accepted = true, acceptedAt = now
-  //    NO check for 'Expired' so user can still accept after deadline
-  //
   const handleAcceptTask = async (task: Task) => {
     try {
       const now = new Date();
-      // Send request to mark accepted on server
       await axios.put(`http://localhost:5001/api/tasks/accept/${task._id}`, {
         accepted: true,
         acceptedAt: now,
       });
 
-      // Immediately update local state
       setTasks((prev) =>
         prev.map((t) => {
           if (t._id === task._id) {
@@ -239,9 +242,39 @@ const TaskViewEmployee: React.FC = () => {
       // Sort descending by _id
       allTasks.sort((a, b) => b._id.localeCompare(a._id));
 
-      // Process each for time-remaining logic
+      // Process each task for time-remaining logic
       const tasksWithTime = allTasks.map((task) => {
         let updatedTask = { ...task };
+
+        // Console log for debugging
+        console.log(`Processing Task ID: ${task._id}`);
+        console.log(`Estimated Hours: ${task.estimatedHours}`);
+
+        // Ensure estimatedHours is set
+        if (!updatedTask.estimatedHours || updatedTask.estimatedHours <= 0) {
+          if (updatedTask.deadline && updatedTask.acceptedAt) {
+            const acceptedTime = new Date(updatedTask.acceptedAt).getTime();
+            const deadlineTime = new Date(updatedTask.deadline).getTime();
+            const totalHours = (deadlineTime - acceptedTime) / 3600000; // Convert ms to hours
+
+            if (totalHours > 0) {
+              updatedTask.estimatedHours = totalHours;
+              console.log(
+                `Task ID: ${task._id} - Derived estimatedHours from deadline: ${updatedTask.estimatedHours}`
+              );
+            } else {
+              updatedTask.estimatedHours = 1; // Fallback to 1 hour if deadline is past
+              console.warn(
+                `Task ID: ${task._id} has a past deadline. Defaulting estimatedHours to 1.`
+              );
+            }
+          } else {
+            updatedTask.estimatedHours = 1; // Default to 1 hour if no estimatedHours or deadline
+            console.warn(
+              `Task ID: ${task._id} has missing estimatedHours and no deadline. Defaulting estimatedHours to 1.`
+            );
+          }
+        }
 
         // If not accepted => skip timer
         if (!task.accepted) {
@@ -254,7 +287,42 @@ const TaskViewEmployee: React.FC = () => {
           return updatedTask;
         }
 
-        // If accepted => normal countdown logic
+        // If completed => calculate time used and time left
+        if (
+          task.status === "Completed" &&
+          task.acceptedAt &&
+          task.completedAt
+        ) {
+          const acceptedTime = new Date(task.acceptedAt).getTime();
+          const completedTime = new Date(task.completedAt).getTime();
+          const timeUsedHours = (completedTime - acceptedTime) / 3600000; // Convert ms to hours
+
+          updatedTask.timeUsed = timeUsedHours;
+
+          if (updatedTask.estimatedHours > 0) {
+            updatedTask.timeLeft = updatedTask.estimatedHours - timeUsedHours;
+          } else if (task.deadline) {
+            const deadlineDate = new Date(task.deadline);
+            const deadlineTime = deadlineDate.setHours(23, 59, 59, 999);
+            const timeLeftHours = (deadlineTime - completedTime) / 3600000;
+            updatedTask.timeLeft = timeLeftHours;
+          } else {
+            updatedTask.timeLeft = 0;
+          }
+
+          // Set display fields for completed tasks
+          updatedTask.displayTimeRemaining = "Completed";
+          updatedTask.displayUrgencyLevel = "low"; // No urgency after completion
+
+          // Logging for debugging
+          console.log(`Task ID: ${task._id}`);
+          console.log(`Time Used (hours): ${updatedTask.timeUsed}`);
+          console.log(`Time Left (hours): ${updatedTask.timeLeft}`);
+
+          return updatedTask;
+        }
+
+        // If accepted but not completed => normal countdown logic
         // 1) Deadline
         if (task.deadline) {
           const deadlineDate = new Date(task.deadline);
@@ -266,9 +334,8 @@ const TaskViewEmployee: React.FC = () => {
             updatedTask.timeRemaining = "Expired";
             updatedTask.urgencyLevel = "critical";
           } else {
-            const { time, urgencyLevel } = calculateTimeRemaining(
-              deadlineTimestamp
-            );
+            const { time, urgencyLevel } =
+              calculateTimeRemaining(deadlineTimestamp);
             updatedTask.timeRemaining = time;
             updatedTask.urgencyLevel = urgencyLevel;
           }
@@ -278,12 +345,16 @@ const TaskViewEmployee: React.FC = () => {
         }
 
         // 2) Estimated
-        if (task.estimatedHours && updatedTask.timeRemaining !== "Expired") {
+        if (
+          updatedTask.estimatedHours &&
+          updatedTask.timeRemaining !== "Expired"
+        ) {
           const estKey = `estimatedDeadline_${task._id}`;
           let estDeadline = parseInt(localStorage.getItem(estKey) || "0");
 
           if (!estDeadline) {
-            estDeadline = Date.now() + task.estimatedHours * 60 * 60 * 1000;
+            estDeadline =
+              Date.now() + updatedTask.estimatedHours * 60 * 60 * 1000;
             localStorage.setItem(estKey, estDeadline.toString());
           }
 
@@ -296,7 +367,10 @@ const TaskViewEmployee: React.FC = () => {
         }
 
         // 3) Decide which to display
-        if (task.estimatedHours && updatedTask.timeRemaining !== "Expired") {
+        if (
+          updatedTask.estimatedHours &&
+          updatedTask.timeRemaining !== "Expired"
+        ) {
           updatedTask.displayTimeRemaining = updatedTask.estimatedTimeRemaining;
           updatedTask.displayUrgencyLevel = updatedTask.estimatedUrgencyLevel;
         } else if (task.deadline) {
@@ -313,7 +387,10 @@ const TaskViewEmployee: React.FC = () => {
       setTasks(tasksWithTime);
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      addNotification("Failed to fetch tasks. Please try again later.", "error");
+      addNotification(
+        "Failed to fetch tasks. Please try again later.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -345,33 +422,9 @@ const TaskViewEmployee: React.FC = () => {
               };
             }
 
-            // If Completed => leftover or used time, no countdown
+            // If Completed => do not update timeUsed or timeLeft
             if (task.status === "Completed") {
-              if (task.acceptedAt && task.completedAt) {
-                const aTime = new Date(task.acceptedAt).getTime();
-                const cTime = new Date(task.completedAt).getTime();
-                const hoursUsed = (cTime - aTime) / 3600000;
-
-                const leftover = task.estimatedHours
-                  ? task.estimatedHours - hoursUsed
-                  : 0;
-
-                return {
-                  ...task,
-                  timeUsed: hoursUsed,
-                  timeLeft: leftover,
-                  timeRemaining: "Completed",
-                  displayTimeRemaining: "Completed",
-                  displayUrgencyLevel: "low",
-                };
-              }
-              // If no acceptedAt or completedAt => just say "Completed"
-              return {
-                ...task,
-                timeRemaining: "Completed",
-                displayTimeRemaining: "Completed",
-                displayUrgencyLevel: "low",
-              };
+              return task; // Keep as is
             }
 
             // If accepted but not completed => normal countdown
@@ -388,9 +441,8 @@ const TaskViewEmployee: React.FC = () => {
                 updated.timeRemaining = "Expired";
                 updated.urgencyLevel = "critical";
               } else {
-                const { time, urgencyLevel } = calculateTimeRemaining(
-                  deadlineTimestamp
-                );
+                const { time, urgencyLevel } =
+                  calculateTimeRemaining(deadlineTimestamp);
                 updated.timeRemaining = time;
                 updated.urgencyLevel = urgencyLevel;
               }
@@ -405,7 +457,8 @@ const TaskViewEmployee: React.FC = () => {
               let estDeadline = parseInt(localStorage.getItem(estKey) || "0");
 
               if (estDeadline) {
-                const { time, urgencyLevel } = calculateTimeRemaining(estDeadline);
+                const { time, urgencyLevel } =
+                  calculateTimeRemaining(estDeadline);
                 updated.estimatedTimeRemaining = time;
                 updated.estimatedUrgencyLevel = urgencyLevel;
               } else {
@@ -441,11 +494,19 @@ const TaskViewEmployee: React.FC = () => {
   // Notification logic
   const isNotificationDeleted = (hash: number): boolean => false;
   const markNotificationAsNotified = (taskId: string, threshold: number) => {
-    localStorage.setItem(`notification_${getNotificationHash(taskId, threshold)}`, "true");
+    localStorage.setItem(
+      `notification_${getNotificationHash(taskId, threshold)}`,
+      "true"
+    );
   };
-  const hasNotificationBeenNotified = (taskId: string, threshold: number): boolean => {
+  const hasNotificationBeenNotified = (
+    taskId: string,
+    threshold: number
+  ): boolean => {
     return (
-      localStorage.getItem(`notification_${getNotificationHash(taskId, threshold)}`) === "true"
+      localStorage.getItem(
+        `notification_${getNotificationHash(taskId, threshold)}`
+      ) === "true"
     );
   };
   const addUniqueNotification = (
@@ -460,14 +521,18 @@ const TaskViewEmployee: React.FC = () => {
     }
   };
 
-  // Remarks logic
   const fetchRemarks = async (taskId: string) => {
     try {
-      const response = await axios.get(`http://localhost:5001/api/remarks/${taskId}`);
+      const response = await axios.get(
+        `http://localhost:5001/api/remarks/${taskId}`
+      );
       setRemarks(response.data.remarks);
     } catch (error) {
       console.error("Error fetching remarks:", error);
-      addNotification("Failed to fetch remarks. Please try again later.", "error");
+      addNotification(
+        "Failed to fetch remarks. Please try again later.",
+        "error"
+      );
     }
   };
 
@@ -510,9 +575,7 @@ const TaskViewEmployee: React.FC = () => {
     }
   };
 
-  //
-  // DataGrid columns
-  //
+
   const columns: GridColDef[] = [
     {
       field: "acceptTask",
@@ -597,7 +660,7 @@ const TaskViewEmployee: React.FC = () => {
       flex: 1.5,
       minWidth: 150,
       renderCell: (params) =>
-        params.value ? `${params.value} hrs` : "Not Required",
+        params.value ? `${params.value.toFixed(2)} hrs` : "Not Required",
     },
     {
       field: "deadline",
@@ -692,79 +755,250 @@ const TaskViewEmployee: React.FC = () => {
       headerName: "View",
       flex: 1,
       minWidth: 120,
-      renderCell: (params) => (
-        <MuiButton
-          variant="outlined"
-          color="secondary"
-          onClick={() => {
-            setSelectedTask(params.row);
-            setIsDrawerOpen(true);
-          }}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "6px",
-            mt: 1,
-          }}
-        >
-          <Eye className="h-5 w-5" />
-          <span>View</span>
-        </MuiButton>
-      ),
-    },
-  ];
-
-  return (
-    <div className="overflow-hidden rounded-lg shadow-md p-4">
-      <div className="relative overflow-x-auto">
-        {loading ? (
-          <Box
+      renderCell: (params) => {
+        const isClickable = params.row.droneRequired === "Yes" || params.row.dgpsRequired === "Yes" ? "yes" : null; 
+        return (
+          <MuiButton
+            variant="outlined"
+            color="secondary"
+            onClick={() => {
+              if (isClickable) {
+                setSelectedTask(params.row);
+                setIsDrawerOpen(true);
+              }
+            }}
             sx={{
               display: "flex",
-              justifyContent: "center",
               alignItems: "center",
-              height: "300px",
+              justifyContent: "center",
+              gap: "6px",
+              mt: 1,
             }}
+            disabled={!isClickable} 
           >
-            <CircularProgress />
-          </Box>
-        ) : (
-          <div style={{ minWidth: "1700px" }}>
-            <DataGrid
-              rows={tasks}
-              columns={columns}
-              pageSize={5}
-              rowsPerPageOptions={[5, 10, 20]}
-              getRowId={(row) => row._id}
-              checkboxSelection
-              onSelectionModelChange={(newSelection) =>
-                setSelectedRows(newSelection as string[])
-              }
-              selectionModel={selectedRows}
-              autoHeight
-              sx={{
-                "& .MuiDataGrid-root": {
-                  overflowX: "auto",
-                },
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "#f0f4f8",
-                  color: "#333",
-                },
-                "& .MuiDataGrid-columnHeaderTitle": {
-                  fontWeight: "bold",
-                },
-                "& .MuiDataGrid-cell": {
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                },
-              }}
-            />
+            <Eye className="h-5 w-5" />
+            <span>View</span>
+          </MuiButton>
+        );
+      },
+    },
+    
+  ];
+
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+
+  const TaskCard = ({ task }: { task: Task }) => {
+    const isExpanded = expandedTask === task._id;
+
+    return (
+      <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+        <div
+          className="flex justify-between items-center cursor-pointer"
+          onClick={() => setExpandedTask(isExpanded ? null : task._id)}
+        >
+          <div>
+            <h3 className="font-semibold text-lg">{task.taskName}</h3>
+            <p className="text-sm text-gray-600">{task.projectName}</p>
+          </div>
+          <ChevronDown
+            className={`transform transition-transform ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+
+        {/* Always visible content */}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <TaskStatusBadge status={task.status} />
+          <TaskPriorityBadge priority={task.priority} />
+        </div>
+
+        {/* Expandable content */}
+        {isExpanded && (
+          <div className="mt-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Deadline</p>
+                <p className="font-medium">
+                  {task.deadline
+                    ? format(new Date(task.deadline), "MM/dd/yyyy")
+                    : "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Time Remaining</p>
+                <p
+                  className={cn(
+                    "font-medium",
+                    task.displayUrgencyLevel === "critical"
+                      ? "text-red-500"
+                      : task.displayUrgencyLevel === "high"
+                      ? "text-yellow-500"
+                      : "text-green-500"
+                  )}
+                >
+                  {task.displayTimeRemaining}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">Description</p>
+              <p className="text-sm">{task.description}</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {!task.accepted && task.status !== "Completed" && (
+                <MuiButton
+                  variant="contained"
+                  color="success"
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAcceptTask(task);
+                  }}
+                >
+                  Accept
+                </MuiButton>
+              )}
+
+              <MuiButton
+                variant="outlined"
+                color="primary"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenDialog(task);
+                }}
+              >
+                Add Note
+              </MuiButton>
+
+              <MuiButton
+                variant="outlined"
+                color="secondary"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStatusChange(task);
+                }}
+              >
+                Update Status
+              </MuiButton>
+
+              <MuiButton
+                variant="outlined"
+                color="info"
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedTask(task);
+                  setIsDrawerOpen(true);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                View
+              </MuiButton>
+            </div>
           </div>
         )}
       </div>
+    );
+  };
 
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      const lowerCaseTerm = searchTerm.toLowerCase();
+      const filtered = tasks.filter((task) =>
+        Object.values(task).some(
+          (value) =>
+            typeof value === "string" &&
+            value.toLowerCase().includes(lowerCaseTerm)
+        )
+      );
+      setFilteredTasks(filtered);
+    } else {
+      setFilteredTasks(tasks);
+    }
+  }, [searchTerm, tasks]);
+
+  return (
+    <div className="p-4">
+       <div className="relative mb-4 flex items-center justify-between">
+      {/* Search Icon */}
+      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <Search className="text-gray-500" />
+      </span>
+
+      {/* Input Field */}
+      <input
+        type="text"
+        placeholder="Search tasks..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className=" pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+
+      {/* Clear Button */}
+      {searchTerm && (
+        <button
+          onClick={() => setSearchTerm('')}
+          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+        >
+          <Clear className="text-gray-500 hover:text-gray-700" />
+        </button>
+      )}
+    </div>
+      {loading ? (
+        <Box className="flex justify-center items-center h-[300px]">
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {/* Desktop View */}
+          <div className="hidden lg:block overflow-x-auto">
+            <div style={{ minWidth: "1700px" }}>
+              <DataGrid
+                rows={filteredTasks}
+                columns={columns}
+                pageSize={5}
+                rowsPerPageOptions={[5, 10, 20]}
+                getRowId={(row) => row._id}
+                checkboxSelection
+                onSelectionModelChange={handleRowSelection}
+                selectionModel={selectedRows}
+                autoHeight
+                sx={{
+                  "& .MuiDataGrid-root": {
+                    overflowX: "auto",
+                  },
+                  "& .MuiDataGrid-columnHeaders": {
+                    backgroundColor: "#f0f4f8",
+                    color: "#333",
+                  },
+                  "& .MuiDataGrid-columnHeaderTitle": {
+                    fontWeight: "bold",
+                  },
+                  "& .MuiDataGrid-cell": {
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Mobile View */}
+          <div className="lg:hidden">
+            {tasks.map((task) => (
+              <TaskCard key={task._id} task={task} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Task Details Dialog */}
       {/* Task Details Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white">
@@ -805,6 +1039,12 @@ const TaskViewEmployee: React.FC = () => {
           <Separator className="my-4" />
           <ScrollArea className="px-6 pb-6 max-h-[calc(80vh-8rem)]">
             <div className="grid gap-6">
+              {/* Add a console log to verify selectedTask's estimatedHours */}
+              {selectedTask &&
+                console.log(
+                  `Dialog - Selected Task ID: ${selectedTask._id}, Estimated Hours: ${selectedTask.estimatedHours}`
+                )}
+
               {/* Basic fields */}
               <div className="grid gap-4 md:grid-cols-2">
                 <TaskDetailItem
@@ -833,9 +1073,9 @@ const TaskViewEmployee: React.FC = () => {
                 <TaskDetailItem
                   label="Estimated Hours"
                   value={
-                    selectedTask?.estimatedHours
-                      ? `${selectedTask.estimatedHours} hrs`
-                      : "N/A"
+                    selectedTask?.estimatedHours > 0
+                      ? `${selectedTask.estimatedHours.toFixed(3)} hrs`
+                      : "Not Required"
                   }
                 />
                 <TaskDetailItem
@@ -876,53 +1116,71 @@ const TaskViewEmployee: React.FC = () => {
 
               {/* Completed At */}
               {selectedTask?.status === "Completed" && (
-                <TaskDetailItem
-                  label="Completed At"
-                  value={
-                    selectedTask.completedAt
-                      ? format(new Date(selectedTask.completedAt), "MM/dd/yyyy HH:mm a")
-                      : "Not Recorded"
-                  }
-                />
-              )}
+                <>
+                  <TaskDetailItem
+                    label="Completed At"
+                    value={
+                      selectedTask.completedAt
+                        ? format(
+                            new Date(selectedTask.completedAt),
+                            "MM/dd/yyyy HH:mm a"
+                          )
+                        : "Not Recorded"
+                    }
+                  />
 
-              {/* If completed => leftover time */}
-              {selectedTask?.status === "Completed" && (
-                <div>
-                  {selectedTask?.timeUsed !== undefined &&
-                    selectedTask?.timeLeft !== undefined && (
-                      <div className="mt-2 p-2 rounded-md">
-                        <p className="font-semibold text-gray-700">
-                          Time Used:{" "}
-                          <span
-                            className={
-                              selectedTask.timeUsed > selectedTask.estimatedHours
-                                ? "text-red-500"
-                                : "text-green-600"
-                            }
-                          >
-                            {formatHours(selectedTask.timeUsed)}{" "}
-                          </span>
-                          / {formatHours(selectedTask.estimatedHours)}
-                        </p>
-                        <p className="font-semibold text-gray-700">
-                          Time Left:{" "}
-                          <span
-                            className={
-                              selectedTask.timeLeft >= 0
-                                ? "text-green-600"
-                                : "text-red-500"
-                            }
-                          >
-                            {formatHours(Math.abs(selectedTask.timeLeft))}{" "}
-                          </span>
-                          {selectedTask.timeLeft >= 0
-                            ? "remaining"
-                            : " over the estimate!"}
-                        </p>
-                      </div>
-                    )}
-                </div>
+                  {/* Time Used and Time Left */}
+                  <div className="mt-2 p-2 rounded-md">
+                    {/* Time Used */}
+                    <p className="font-semibold text-gray-700">
+                      Time Used:{" "}
+                      <span
+                        className={
+                          selectedTask.estimatedHours > 0 &&
+                          selectedTask.timeUsed
+                            ? selectedTask.timeUsed >
+                              selectedTask.estimatedHours
+                              ? "text-red-500"
+                              : "text-green-600"
+                            : "text-green-600"
+                        }
+                      >
+                        {selectedTask.timeUsed !== undefined
+                          ? formatHours(selectedTask.timeUsed)
+                          : "N/A"}{" "}
+                      </span>
+                      {selectedTask.estimatedHours > 0
+                        ? `/ ${formatHours(selectedTask.estimatedHours)}`
+                        : "/ N/A"}{" "}
+                      {/* Removed default to 1 hour */}
+                    </p>
+
+                    {/* Time Left */}
+                    <p className="font-semibold text-gray-700">
+                      Time Left:{" "}
+                      <span
+                        className={
+                          selectedTask.timeLeft !== undefined
+                            ? selectedTask.timeLeft >= 0
+                              ? "text-green-600"
+                              : "text-red-500"
+                            : "text-gray-500"
+                        }
+                      >
+                        {selectedTask.timeLeft !== undefined
+                          ? formatHours(Math.abs(selectedTask.timeLeft))
+                          : "N/A"}{" "}
+                      </span>
+                      {selectedTask.timeLeft !== undefined
+                        ? selectedTask.timeLeft >= 0
+                          ? "remaining"
+                          : selectedTask.estimatedHours > 0
+                          ? " over the estimate!"
+                          : " over the deadline!"
+                        : "N/A"}
+                    </p>
+                  </div>
+                </>
               )}
 
               {/* Description */}
@@ -942,7 +1200,9 @@ const TaskViewEmployee: React.FC = () => {
                 </span>
                 <div className="space-y-2">
                   {selectedTask?.notes && selectedTask.notes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No notes yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      No notes yet
+                    </p>
                   ) : (
                     selectedTask?.notes?.map((note, index) => (
                       <div key={index} className="p-2 bg-gray-100 rounded-md">

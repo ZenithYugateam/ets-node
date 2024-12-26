@@ -7,6 +7,7 @@ import {
   TextField,
   MenuItem,
   Typography,
+  Chip,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { ToastContainer, toast } from "react-toastify";
@@ -31,17 +32,6 @@ interface User {
   department: string;
   status: "active" | "inactive";
 }
-
-// interface FormData {
-//   adminId: string;
-//   name: string;
-//   email: string;
-//   password: string;
-//   role: string;
-//   department: string;
-//   subDepartment: string; // Add this field
-//   status: "active" | "inactive";
-// }
 
 interface FormData {
   adminId: string;
@@ -248,63 +238,6 @@ const UserManagement = () => {
     fetchDepartments();
   }, []);
 
-  // Save user
-  // const handleSave = async () => {
-  //   try {
-  //     // First, validate if all required fields are filled
-  //     if (
-  //       !formData.name ||
-  //       !formData.email ||
-  //       !formData.password ||
-  //       !formData.role ||
-  //       !formData.department
-  //     ) {
-  //       toast.error("Please fill all required fields");
-  //       return;
-  //     }
-
-  //     let url = "http://localhost:5001/api/users/add"; // Default URL for POST
-  //     let method = "POST"; // Default method
-
-  //     // Only change URL and method if we're updating an existing user
-  //     if (selectedUser && selectedUser._id) {
-  //       url = `http://localhost:5001/api/users/${selectedUser._id}`;
-  //       method = "PUT";
-  //     }
-
-  //     const response = await fetch(url, {
-  //       method,
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({
-  //         ...formData,
-  //         adminId: USER_ID, // Make sure adminId is included
-  //       }),
-  //     });
-
-  //     if (!response.ok) {
-  //       const errorData = await response.json();
-  //       throw new Error(errorData.message || "Failed to save user");
-  //     }
-
-  //     const data = await response.json();
-
-  //     // Update the users state based on whether we're editing or adding
-  //     if (selectedUser && selectedUser._id) {
-  //       setUsers((prevUsers) =>
-  //         prevUsers.map((user) => (user._id === data._id ? data : user))
-  //       );
-  //     } else {
-  //       setUsers((prevUsers) => [...prevUsers, data]);
-  //     }
-
-  //     toast.success(`User ${selectedUser ? "updated" : "added"} successfully`);
-  //     handleCloseModal();
-  //   } catch (error: any) {
-  //     console.error("Save error:", error);
-  //     toast.error(`Error saving user: ${error.message}`);
-  //   }
-  // };
-
   const handleSave = async () => {
     try {
       if (
@@ -472,17 +405,89 @@ const UserManagement = () => {
   };
 
   // Filter users based on search term
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter((user) =>
+    Object.values(user)
+      .join(" ")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   );
 
   const columns = [
-    { field: "name", headerName: "Name", flex: 1 },
-    { field: "email", headerName: "Email", flex: 1 },
-    { field: "role", headerName: "Role", flex: 1 },
-    { field: "department", headerName: "Department", flex: 1 },
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 1,
+      renderCell: (params: any) => (
+        <Typography
+          sx={{
+            fontWeight: 500,
+            color: "primary.main",
+            "&:hover": { cursor: "pointer" },
+          }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "email",
+      headerName: "Email",
+      flex: 1,
+      renderCell: (params: any) => (
+        <Typography
+          sx={{
+            color: "text.secondary",
+            fontSize: 14,
+            wordBreak: "break-word",
+          }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "role",
+      headerName: "Role",
+      flex: 1,
+      renderCell: (params: any) => (
+        <Chip
+          label={params.value}
+          sx={{
+            bgcolor:
+              params.value === "Manager"
+                ? "#D0E9FF" // Light Blue
+                : params.value === "Employee"
+                ? "#DFF2D8" // Light Green
+                : "#E0E0E0", // Light Grey for others
+            color:
+              params.value === "Manager"
+                ? "#0A74DA" // Dark Blue
+                : params.value === "Employee"
+                ? "#388E3C" // Dark Green
+                : "#616161", // Dark Grey for others
+            textTransform: "capitalize",
+            fontSize: 12,
+            fontWeight: "bold",
+          }}
+        />
+      ),
+    },        
+    {
+      field: "department",
+      headerName: "Department",
+      flex: 1,
+      renderCell: (params: any) => (
+        <Typography
+          sx={{
+            fontWeight: 400,
+            fontSize: 14,
+            color: "text.primary",
+          }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
     {
       field: "status",
       headerName: "Status",
@@ -492,9 +497,11 @@ const UserManagement = () => {
           sx={{
             bgcolor: params.value === "active" ? "green.100" : "red.100",
             color: params.value === "active" ? "green.800" : "red.800",
-            px: 1,
+            px: 1.5,
             py: 0.5,
             borderRadius: 1,
+            fontWeight: 500,
+            textAlign: "center",
           }}
         >
           {params.value}
@@ -506,27 +513,41 @@ const UserManagement = () => {
       headerName: "Actions",
       flex: 1,
       renderCell: (params: any) => (
-        <div style={{ display: "flex", gap: "8px" }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+          }}
+        >
           <Button
             size="small"
-            variant="outlined"
+            variant="contained"
             color="primary"
+            sx={{
+              textTransform: "none",
+              fontSize: 12,
+            }}
             onClick={() => handleOpenModal(params.row)}
           >
             Edit
           </Button>
           <Button
             size="small"
-            variant="outlined"
+            variant="contained"
             color="error"
+            sx={{
+              textTransform: "none",
+              fontSize: 12,
+            }}
             onClick={() => handleDelete(params.row._id)}
           >
             Delete
           </Button>
-        </div>
+        </Box>
       ),
     },
   ];
+  
 
   return (
     <Box sx={{ p: 3 }}>
@@ -534,39 +555,103 @@ const UserManagement = () => {
 
       {/* Search and Add Buttons */}
       <Box
-        sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        mb: 3,
+        p: 2,
+        borderRadius: 2,
+        boxShadow: 3,
+        bgcolor: "background.paper",
+      }}
+    >
+      <Typography variant="h6" gutterBottom>
+        User Management Filters
+      </Typography>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "2fr 1fr 1fr" },
+          gap: 2,
+          alignItems: "center",
+        }}
       >
+        {/* Search Field */}
         <TextField
-          placeholder="Search users..."
+          placeholder="Search by Name, Email, or Role..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           variant="outlined"
           size="small"
+          fullWidth
+          InputProps={{
+            startAdornment: (
+              <Box sx={{ display: "flex", alignItems: "center", pr: 1 }}>
+                <Typography sx={{ color: "text.secondary" }}>🔍</Typography>
+              </Box>
+            ),
+          }}
         />
+
+        {/* Add User Button */}
         <Button
           startIcon={<Plus />}
           variant="contained"
           color="primary"
+          size="medium"
+          sx={{
+            bgcolor: "primary.main",
+            color: "white",
+            "&:hover": { bgcolor: "primary.dark" },
+          }}
           onClick={handleOpenModal}
         >
           Add User
         </Button>
+
+        {/* Add Departments Button */}
         <Button
           startIcon={<Plus />}
-          variant="contained"
-          color="primary"
+          variant="outlined"
+          color="secondary"
+          size="medium"
+          sx={{
+            borderColor: "secondary.main",
+            color: "secondary.main",
+            "&:hover": {
+              borderColor: "secondary.dark",
+              color: "secondary.dark",
+            },
+          }}
           onClick={handleOpenDepartmentModal}
         >
           Add Departments
         </Button>
       </Box>
+    </Box>
+
 
       {/* User DataGrid */}
       <div style={{ height: 400, width: "100%" }}>
-        <DataGrid
+      <DataGrid
           rows={filteredUsers}
           columns={columns}
           getRowId={(row) => row._id}
+          sx={{
+            "& .MuiDataGrid-cell": {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center", 
+              padding: "8px", 
+            },
+            "& .MuiDataGrid-columnHeaders": {
+              backgroundColor: "#f5f5f5", 
+              textAlign: "center", 
+            },
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+          }}
         />
       </div>
 

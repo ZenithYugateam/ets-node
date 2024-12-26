@@ -1,4 +1,4 @@
-// src/App.tsx
+// src/App.tsx -->testing
 
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -28,7 +28,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Sidebar is included here, only within the Layout for private routes */}
       <Sidebar />
       {/* Main content with left margin to accommodate the fixed sidebar */}
-      <main className="ml-64 p-8">
+      <main className="p-4 lg:ml-64 lg:p-8">
         {children}
       </main>
     </>

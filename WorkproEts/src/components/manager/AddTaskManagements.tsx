@@ -12,10 +12,11 @@ import {
   Typography,
   Checkbox,
   Chip,
+  InputAdornment,
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import axios from "axios";
-import { Clock, Eye, Plus } from "lucide-react";
+import { Clock, Eye, Plus, SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -33,6 +34,8 @@ const AddTaskManagements: React.FC = () => {
   const [droneRequired, setDroneRequired] = useState<string>("No");
   const [dgpsRequired, setDgpsRequired] = useState<string>("No");
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<any[]>([]); // State for filtered tasks
+  const [searchTerm, setSearchTerm] = useState<string>(""); 
 
   const handleViewTask = (task: any) => {
     setSelectedTask(task);
@@ -163,6 +166,7 @@ const AddTaskManagements: React.FC = () => {
         }
       );
       setManagerTaskData(response.data);
+      setFilteredTasks(response.data);
     } catch (error) {
       console.error("Error fetching manager tasks:", error);
       toast.error("Failed to fetch tasks");
@@ -297,11 +301,25 @@ const AddTaskManagements: React.FC = () => {
         setIsModalOpen(false);
 
         fetchManagerTasks();
+        
       }
     } catch (error) {
       console.error("Error submitting form data:", error);
       toast.error("Failed to add task");
     }
+  };
+
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value.toLowerCase();
+    setSearchTerm(value);
+
+    // Filter tasks based on search term
+    const filtered = taskManagerData.filter((task) => {
+      const searchFields = `${task.projectName} ${task.taskName} ${task.employeeName} ${task.priority} ${task.description} ${task.status}`.toLowerCase();
+      return searchFields.includes(value);
+    });
+
+    setFilteredTasks(filtered);
   };
 
   return (
@@ -320,6 +338,22 @@ const AddTaskManagements: React.FC = () => {
           Add Task
         </Button>
       </div>
+      <Box sx={{ mb: 2 }}>
+      <TextField
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="Search projects,task , ..."
+        variant="outlined"
+        style={{ width: "400px" }} 
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon />
+            </InputAdornment>
+          ),
+        }}
+      />
+      </Box>
 
       <div style={{ height: 400, width: "100%" }}>
         <DataGrid

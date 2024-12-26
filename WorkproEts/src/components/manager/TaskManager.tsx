@@ -1,13 +1,13 @@
 // src/components/TaskManager.tsx
 
 import React, { useEffect, useState, useContext } from "react";
-import { AlertTriangle, Clock } from "lucide-react"; // Import icons
+import { AlertTriangle, Clock, SearchIcon } from "lucide-react"; // Import icons
 import axios from "axios";
 import { AuthContext } from "../../AuthContext";
 import { NotificationContext } from "../context/NotificationContext"; // Import NotificationContext
 import { format } from "date-fns";
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-import { Box, CircularProgress, Select, MenuItem } from "@mui/material";
+import { Box, CircularProgress, Select, MenuItem, TextField, InputAdornment } from "@mui/material";
 
 interface AuthContextType {
   userId: string;
@@ -51,7 +51,10 @@ const TaskManager: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const authContext = useContext<AuthContextType>(AuthContext);
   const managerId = authContext.userId;
-  const { addNotification } = useContext(NotificationContext); // Access addNotification
+  const { addNotification } = useContext(NotificationContext); 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  
 
   // Function to calculate time remaining
   const calculateTimeRemaining = (deadline: string) => {
@@ -67,19 +70,22 @@ const TaskManager: React.FC = () => {
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-    // Define urgency levels based on remaining time
     let urgencyLevel: UrgencyLevel = "low";
-    if (diff <= 24 * 60 * 60 * 1000) { // ≤ 24 hours
+    if (diff <= 24 * 60 * 60 * 1000) { 
       urgencyLevel = "high";
     }
-    if (diff <= 1 * 60 * 60 * 1000) { // ≤ 1 hour
+    if (diff <= 1 * 60 * 60 * 1000) { 
       urgencyLevel = "critical";
     }
 
     return { time: `${hours}h ${minutes}m ${seconds}s`, urgencyLevel };
   };
 
-  // Fetch tasks assigned to the manager
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value.toLowerCase());
+  };
+
+  
   useEffect(() => {
     const fetchTasks = async () => {
       setIsLoading(true);
@@ -104,7 +110,7 @@ const TaskManager: React.FC = () => {
     fetchTasks();
   }, [managerId, addNotification]);
 
-  // Process tasks to include timeRemaining and timeToComplete
+  
   useEffect(() => {
     if (tasks) {
       const processedTasks = tasks.map((task) => {
@@ -142,7 +148,7 @@ const TaskManager: React.FC = () => {
         return updatedTask;
       });
 
-      // Sort tasks by createdAt in descending order to have the latest tasks first
+      
       processedTasks.sort((a, b) => {
         const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -154,7 +160,7 @@ const TaskManager: React.FC = () => {
     }
   }, [tasks]);
 
-  // Update time remaining every second
+  
   useEffect(() => {
     const interval = setInterval(() => {
       setTasksWithTime((prevTasks) =>
@@ -174,7 +180,6 @@ const TaskManager: React.FC = () => {
     return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
-  // Function to handle status updates
   const handleStatusUpdate = async (_id: string, newStatus: string): Promise<void> => {
     // Find the current task
     const task = tasksWithTime.find((t) => t._id === _id);
@@ -247,14 +252,19 @@ const TaskManager: React.FC = () => {
     }
   };
 
-  // Filter tasks based on selected filter
-  const filteredTasks = tasksWithTime.filter((task) =>
-    filter === "All Tasks" || task.status === filter
-  );
+  const filteredTasks = tasksWithTime.filter((task) => {
+    const searchString = `
+      ${task.title.toLowerCase()} 
+      ${task.assignee?.name?.toLowerCase()} 
+      ${task.priority.toLowerCase()} 
+      ${task.department.toLowerCase()} 
+      ${task.description.toLowerCase()} 
+      ${task.status.toLowerCase()}
+    `;
+    return searchString.includes(searchTerm) && (filter === "All Tasks" || task.status === filter);
+  });
 
-  // **Notification Logic**
   useEffect(() => {
-    // This effect runs whenever tasks are fetched or updated
     filteredTasks.forEach((task) => {
       if (
         task.timeRemaining &&
@@ -297,7 +307,6 @@ const TaskManager: React.FC = () => {
     });
   }, [filteredTasks, addNotification]);
 
-  // Define columns for DataGrid
   const columns: GridColDef[] = [
     {
       field: "department",
@@ -446,7 +455,6 @@ const TaskManager: React.FC = () => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-medium text-gray-900">Task Overview</h2>
         <div className="flex items-center space-x-2">
@@ -464,7 +472,31 @@ const TaskManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Projects DataGrid */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: "16px",
+        }}
+      >
+       <div className="mb-6">
+      <TextField
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="Search projects,task , ..."
+        variant="outlined"
+        style={{ width: "400px" }} 
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon />
+            </InputAdornment>
+          ),
+        }}
+      />
+      </div>
+      </Box>
+
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Box
