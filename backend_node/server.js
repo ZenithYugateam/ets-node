@@ -1192,18 +1192,18 @@ app.post('/api/employees-by-manager', async (req, res) => {
       return acc;
     }, {});
 
-    // Step 4: Check each group for pending/in-progress tasks
+    // Step 4: Count pending/in-progress tasks for each employee
     const result = employees.map(emp => {
       const employeeTasks = tasksGroupedByEmployee[emp.name] || [];
-      const hasWork = employeeTasks.some(
+      const pendingTasksCount = employeeTasks.filter(
         task => task.status === 'pending' || task.status === 'In Progress' || task.status === 'Pending'
-      );
+      ).length;
 
       return {
         name: emp.name,
         email: emp.email,
         department: emp.department,
-        status: hasWork ? 'have work' : 'free to work',
+        status: pendingTasksCount > 0 ? `${pendingTasksCount} pending tasks` : '0 pending tasks',
       };
     });
 
@@ -1213,6 +1213,7 @@ app.post('/api/employees-by-manager', async (req, res) => {
     res.status(500).json({ message: 'Error fetching employees work status', error: err.message });
   }
 });
+
 
 app.post("/api/store-form-data", async (req, res) => {
   try {
@@ -1836,7 +1837,7 @@ app.post('/api/getPrivateVehiclesByName', async (req, res) => {
 
 
 
-//code added by me
+
 app.get('/api/get/latest-active-step/:managerTaskId', async (req, res) => {
   try {
     const { managerTaskId } = req.params;

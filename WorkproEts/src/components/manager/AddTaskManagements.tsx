@@ -196,6 +196,7 @@ const AddTaskManagements: React.FC = () => {
         toast.error("Failed to fetch projects");
       }
     };
+    
     const fetchEmployees = async () => {
       try {
         const response = await axios.post(
@@ -204,24 +205,36 @@ const AddTaskManagements: React.FC = () => {
             managerName: sessionStorage.getItem("userName"),
           }
         );
-    
+
         const uniqueEmployees = Array.from(
           new Set(
-            response.data
-              .filter((employee: any) => employee.status === "free to work")
-              .map((employee: any) => employee.name) 
+            response.data.map((employee: any) => employee.name)
           )
         ).map((uniqueName) => {
           const employee = response.data.find(
             (emp: any) => emp.name === uniqueName
           );
+        
+          const count = parseInt(employee.status.split(' ')[0]);
+          
+          // Determine color based on count
+          let color;
+          if (count === 0) {
+            color = 'green';
+          } else if (count <= 2) {
+            color = 'orange';
+          } else {
+            color = 'red';
+          }
+
           return {
             id: employee._id,
             name: employee.name,
-            status: employee.status,
+            count: count,
+            color: color
           };
         });
-    
+
         setEmployees(uniqueEmployees);
       } catch (error) {
         console.error("Error fetching employees:", error);
@@ -429,20 +442,52 @@ const AddTaskManagements: React.FC = () => {
                 displayEmpty
               >
                 {employees.map((employee) => (
-                  <MenuItem
-                    key={employee.id}
-                    value={employee.name}
-                    disabled={employee.status !== "free to work"} // Only disable those with "have work"
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span>{employee.name}</span>
-                      <Chip
-                        label={employee.status === "free to work" ? "Free to Work" : "Have Work"}
-                        color={employee.status === "free to work" ? "success" : "default"}
-                      />
-                    </div>
-                  </MenuItem>
-                ))}
+                <MenuItem
+                  key={employee.id}
+                  value={employee.name}
+                  disabled={employee.count > 0}
+                  style={{
+                    padding: "12px 16px",
+                    borderBottom: "1px solid #eee",
+                    minWidth: "200px"
+                  }}
+                >
+                  <div style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "space-between",
+                    width: "100%",
+                    gap: "16px"
+                  }}>
+                    <span style={{ 
+                      fontSize: "15px",
+                      fontWeight: 500
+                    }}>
+                      {employee.name}
+                    </span>
+                    <span style={{ 
+                      color: employee.count === 0 
+                        ? "#2e7d32"  
+                        : employee.count <= 2 
+                          ? "#ed6c02"  
+                          : "#d32f2f", 
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      backgroundColor: employee.count === 0 
+                        ? "#e8f5e9" 
+                        : employee.count <= 2 
+                          ? "#fff3e0"  
+                          : "#ffebee", 
+                      padding: "4px 10px",
+                      borderRadius: "12px",
+                      minWidth: "30px",
+                      textAlign: "center"
+                    }}>
+                      {employee.count}
+                    </span>
+                  </div>
+                </MenuItem>
+              ))}
               </Select>
             </FormControl>
 
@@ -454,6 +499,7 @@ const AddTaskManagements: React.FC = () => {
             </RadioGroup>
             {droneRequired === "Yes" && (
               <FormControl fullWidth sx={{ mb: 1 }}>
+                <Typography>Crew</Typography>
                 <Select
                   multiple
                   value={selectedEmployees}
