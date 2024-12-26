@@ -1,7 +1,7 @@
 // src/components/ProjectManagement.tsx
 
 import React, { useState, useContext, useEffect } from "react";
-import { Plus, X, AlertTriangle, Clock } from "lucide-react";
+import { Plus, X, AlertTriangle, Clock, SearchIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { createTask, getTasks, updateTask, deleteTask } from "../../api/admin";
 import { toast } from "react-toastify";
@@ -15,7 +15,7 @@ import { Separator } from "../../ui/Separator";
 import { ScrollArea } from "../../ui/scroll-area";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { Box, CircularProgress } from "@mui/material";
+import { Box, CircularProgress, InputAdornment, TextField } from "@mui/material";
 
 const ProjectManagement: React.FC = () => {
   const queryClient = useQueryClient();
@@ -23,6 +23,7 @@ const ProjectManagement: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     assignee: {
@@ -53,6 +54,18 @@ const ProjectManagement: React.FC = () => {
       toast.error(`Failed to fetch projects: ${error.message}`);
       return [];
     }
+  });
+
+  const filteredTasks = tasks?.filter((task) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      task.title.toLowerCase().includes(term) ||
+      task.assignee?.name.toLowerCase().includes(term) ||
+      task.priority.toLowerCase().includes(term) ||
+      task.status.toLowerCase().includes(term) ||
+      task.department.toLowerCase().includes(term) ||
+      task.description.toLowerCase().includes(term)
+    );
   });
 
   // Fetch departments
@@ -535,6 +548,23 @@ const ProjectManagement: React.FC = () => {
         </Button>
       </div>
 
+      <div className="mb-6">
+      <TextField
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      placeholder="Search projects,department , ..."
+      variant="outlined"
+      style={{ width: "400px" }} 
+      InputProps={{
+        startAdornment: (
+          <InputAdornment position="start">
+            <SearchIcon />
+          </InputAdornment>
+        ),
+      }}
+    />
+      </div>
+
       {/* Projects DataGrid */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
@@ -554,7 +584,7 @@ const ProjectManagement: React.FC = () => {
       ) : (
         <div style={{ height: 600, width: "100%" }}>
           <DataGrid
-            rows={tasksWithTime}
+            rows={filteredTasks || []}
             columns={columns}
             pageSize={10}
             rowsPerPageOptions={[5, 10, 20]}
