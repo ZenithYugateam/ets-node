@@ -1,80 +1,45 @@
-import { LogOut } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AddTaskManagements from '../components/manager/AddTaskManagements';
-import TaskManager from '../components/manager/TaskManager';
-import TimeCard from '../components/TimeCard';
+import { LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import AddTaskManagements from "../components/manager/AddTaskManagements";
+import TaskManager from "../components/manager/TaskManager";
+import TimeCard from "../components/TimeCard";
+import ProjectManagement from "../components/manager/ProjectManagement";
 
 const ManagerDashboard = () => {
-  const [managerName, setManagerName] = useState<string | null>('Manager');
+  const [managerName, setManagerName] = useState<string | null>("Manager");
   const [userId, setUserId] = useState<string | null>(null);
-  const [role, setRole] = useState<string | null>(''); // State to handle user role
+  const [role, setRole] = useState<string | null>(""); // Role
+  const [department, setDepartment] = useState<string | null>(""); // Department
   const navigate = useNavigate();
 
   const getData = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/users/${sessionStorage.getItem('userId') || ''}`
+        `http://localhost:5001/api/users/${sessionStorage.getItem("userId") || ""}`
       );
       if (!response.ok) {
-        throw new Error('Failed to fetch user data');
+        throw new Error("Failed to fetch user data");
       }
       const userData = await response.json();
-      setManagerName(userData.name);
-      setRole(userData.role); 
+
+      setManagerName(userData.name || "Manager");
+      setRole(userData.role || ""); // Separate role
+      setUserId(userData._id); // Manager ID
+      setDepartment(userData.department || "Unknown"); // Fetch department explicitly
     } catch (error) {
-      console.error('Error fetching user data:', error.message);
+      console.error("Error fetching user data:", error.message);
     }
   };
 
-  // Fetch user data when component mounts
   useEffect(() => {
     getData();
   }, []);
 
-  // Fetch Manager Details from session or API
-  useEffect(() => {
-    const fetchManagerDetails = async () => {
-      const storedUserId = sessionStorage.getItem('userId');
-      const storedUserName = sessionStorage.getItem('userName');
-
-      if (!storedUserId) {
-        console.error('No userId found in sessionStorage. Redirecting to login.');
-        navigate('/'); // Redirect to login if no `userId`
-        return;
-      }
-
-      setUserId(storedUserId);
-
-      if (storedUserName) {
-        setManagerName(storedUserName);
-      } else {
-        try {
-          console.log(`Fetching manager details for userId: ${storedUserId}`);
-          const response = await fetch(`http://localhost:5001/api/users/${storedUserId}`);
-
-          if (!response.ok) {
-            throw new Error('Failed to fetch manager details');
-          }
-
-          const data = await response.json();
-          setManagerName(data.name);
-          sessionStorage.setItem('userName', data.name); // Cache the name in sessionStorage
-        } catch (error) {
-          console.error('Error fetching manager details:', error);
-          setManagerName('Manager');
-        }
-      }
-    };
-
-    fetchManagerDetails();
-  }, [navigate]);
-
-  // Handle logout
   const handleLogout = () => {
     sessionStorage.clear();
-    console.log('Session cleared. Redirecting to login...');
-    navigate('/');
+    console.log("Session cleared. Redirecting to login...");
+    navigate("/");
   };
 
   return (
@@ -99,12 +64,21 @@ const ManagerDashboard = () => {
       </div>
 
       <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TimeCard userId={sessionStorage.getItem('userId')} />
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TimeCard userId={sessionStorage.getItem("userId")} />
+        </div>
+
+        {/* Project Management Component */}
+        <ProjectManagement
+          managerId={userId || ""}
+          managerName={managerName || ""}
+          department={department || ""} // Pass the correct department
+        />
+
+        {/* Task Overview Component */}
         <TaskManager />
+
         <AddTaskManagements />
-        
       </div>
     </div>
   );
