@@ -1,25 +1,21 @@
-import  { useState } from 'react';
-import Confetti from 'react-confetti';
 import { motion } from 'framer-motion';
+import { ToastContainer } from 'react-toastify';
 import { DroneDetailsForm } from './Forms/DroneDetailsForm';
 import { TravellingDetailsForm } from './Forms/TravellingDetailsForm';
 import { OnFieldDetailsForm } from './Forms/OnFieldDetailsForm';
-import { BeforeFlightForm } from './Forms/BeforeFlightForm';
-import { AfterFlightForm } from './Forms/AfterFlightForm';
+import { FlightNotesForm } from './Forms/FlightNotesForm'; // Combined form
 import { GettingOffFieldForm } from './Forms/GettingOffFieldForm';
 import { ReturnToOfficeForm } from './Forms/ReturnToOfficeForm';
 import { DroneSubmissionForm } from './Forms/DroneSubmissionForm';
 import { DataSubmissionForm } from './Forms/DataSubmissionForm';
 import { TaskProgressForm } from './Forms/TaskProgressForm';
 import type { Task } from './types/index';
-import { ToastContainer } from 'react-toastify';
 
 const steps = [
   'Drone Details',
   'Travelling Details',
   'On-Field Details',
-  'Before Flight Notes',
-  'After Flight Notes',
+  'Flight Notes', // Updated combined step
   'Getting OFF Field',
   'Return to Office',
   'Drone Submission',
@@ -31,7 +27,7 @@ interface TaskStepperProps {
   currentStep: number;
   setCurrentStep: (step: number) => void;
   task: Task;
-  onClose : () => void;
+  onClose: () => void;
 }
 
 export const TaskStepper = ({ currentStep, setCurrentStep, task, onClose }: TaskStepperProps) => {
@@ -39,8 +35,7 @@ export const TaskStepper = ({ currentStep, setCurrentStep, task, onClose }: Task
     <DroneDetailsForm currentStep={currentStep} task={task} />,
     <TravellingDetailsForm currentStep={currentStep} task={task} />,
     <OnFieldDetailsForm currentStep={currentStep} task={task} />,
-    <BeforeFlightForm currentStep={currentStep} task={task} />,
-    <AfterFlightForm currentStep={currentStep} task={task} />,
+    <FlightNotesForm currentStep={currentStep} task={task} />, // Combined form
     <GettingOffFieldForm currentStep={currentStep} task={task} />,
     <ReturnToOfficeForm currentStep={currentStep} task={task} />,
     <DroneSubmissionForm currentStep={currentStep} task={task} />,
@@ -49,19 +44,22 @@ export const TaskStepper = ({ currentStep, setCurrentStep, task, onClose }: Task
   ];
 
   const handleFinish = () => {
-    setTimeout(()=> onClose());
+    setTimeout(() => onClose(), 500); // Delay to give time for any animations
   };
 
   return (
     <div>
       <ToastContainer />
       <div className="mb-8">
+        {/* Step progress bar */}
         <div className="overflow-hidden rounded-full bg-gray-200">
           <div
             className="h-2 rounded-full bg-indigo-600 transition-all duration-500"
             style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
           />
         </div>
+
+        {/* Step buttons */}
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-5">
           {steps.map((step, index) => (
             <button
@@ -85,6 +83,8 @@ export const TaskStepper = ({ currentStep, setCurrentStep, task, onClose }: Task
           ))}
         </div>
       </div>
+
+      {/* Form display */}
       <motion.div
         key={currentStep}
         initial={{ opacity: 0, x: 20 }}
@@ -94,6 +94,8 @@ export const TaskStepper = ({ currentStep, setCurrentStep, task, onClose }: Task
       >
         {forms[currentStep]}
       </motion.div>
+
+      {/* Navigation buttons */}
       <div className="mt-8 flex justify-between">
         <button
           onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
