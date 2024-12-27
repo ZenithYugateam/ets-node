@@ -1698,14 +1698,36 @@ app.post('/api/droneDetailsList', async (req, res) => {
 app.post('/api/submission', async (req, res) => {
   try {
     const { type, onFieldDetails, ...data } = req.body;
-    
+
     if (!type) {
       return res.status(400).json({ error: 'Type field is required to differentiate the submission.' });
     }
 
     let formattedData = {};
 
-    if (type === "onFieldDetails") {
+    if (type === "combinedFlightForm") {
+      // Combined form handling for "beforeFlight" and "afterFlight"
+      if (!data.crew || !data.method || !data.sightName || !data.flights) {
+        return res.status(400).json({ error: 'Required fields for combinedFlightForm are missing.' });
+      }
+
+      formattedData = {
+        type,
+        crew: data.crew,
+        method: data.method,
+        sightName: data.sightName,
+        date: data.date,
+        flights: data.flights.map((flight) => ({
+          flightNo: flight.flightNo,
+          takeoffTime: flight.takeoffTime,
+          landingTime: flight.landingTime || null, // Handle optional fields
+        })),
+        images: data.images,
+        currentStep: data.currentStep,
+        managerTaskId: data.managerTaskId,
+      };
+    } else if (type === "onFieldDetails") {
+      // Handling onFieldDetails type
       if (!onFieldDetails || !onFieldDetails.location) {
         return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
       }
@@ -1721,33 +1743,7 @@ app.post('/api/submission', async (req, res) => {
         },
         isReporting: isReporting || false,
       };
-    } else if (type === "beforeFlight") {
-      formattedData = {
-        type,
-        crew: data.crew,
-        method: data.method,
-        sightName: data.sightName,
-        date: data.date,
-        flights: data.flights,
-        images: data.images,
-        currentStep: data.currentStep,
-        managerTaskId: data.managerTaskId,
-      };
-    }
-    else if (type === "afterFlight") {
-      formattedData = {
-        type,
-        crew: data.crew,
-        method: data.method,
-        sightName: data.sightName,
-        date: data.date,
-        flights: data.flights,
-        images: data.images,
-        currentStep: data.currentStep,
-        managerTaskId: data.managerTaskId,
-      };
-    } 
-    else if (type === "gettingOffField") {
+    } else if (type === "gettingOffField") {
       if (!onFieldDetails || !onFieldDetails.location) {
         return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
       }
@@ -1764,19 +1760,17 @@ app.post('/api/submission', async (req, res) => {
         departingTime: departingTime || null,
         currentStep: currentStep || null,
       };
-    } 
-    else if (type === "returnToOffice") {
+    } else if (type === "returnToOffice") {
       formattedData = {
         type,
-        selectedVehicles: data.selectedVehicles,  
-        timeReached: data.timeReached,            
-        endReading: data.endReading,              
-        images: data.images,                     
-        currentStep: data.currentStep,            
-        managerTaskId: data.managerTaskId,        
+        selectedVehicles: data.selectedVehicles,
+        timeReached: data.timeReached,
+        endReading: data.endReading,
+        images: data.images,
+        currentStep: data.currentStep,
+        managerTaskId: data.managerTaskId,
       };
-    }
-    else if (type === "DroneSubmitForm") {
+    } else if (type === "DroneSubmitForm") {
       if (!data.checkedItems) {
         return res.status(400).json({ error: 'checkedItems are required for DroneSubmitForm.' });
       }
@@ -1786,24 +1780,24 @@ app.post('/api/submission', async (req, res) => {
         managerTaskId: data.managerTaskId,
         currentStep: data.currentStep,
       };
-    }
-    else if(type === "Submission_task_final"){
+    } else if (type === "Submission_task_final") {
       formattedData = {
         type,
         managerTaskId: data.managerTaskId,
         currentStep: data.currentStep,
         status: data.status,
       };
-    }
-   else {
+    } else {
       formattedData = {
         type,
         ...data,
       };
     }
 
-    const submission = new SubmissionSchema(formattedData); 
+    // Save submission
+    const submission = new SubmissionSchema(formattedData);
     const savedSubmission = await submission.save();
+
     res.status(201).json({
       message: 'Submission stored successfully!',
       data: savedSubmission,
@@ -1813,6 +1807,7 @@ app.post('/api/submission', async (req, res) => {
     res.status(500).json({ error: 'Failed to store submission.' });
   }
 });
+
 
 app.post('/api/getPrivateVehiclesByName', async (req, res) => {
   try {
