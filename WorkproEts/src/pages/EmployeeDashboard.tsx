@@ -5,7 +5,7 @@ import TaskViewEmployee from '../components/employee/TaskViewEmployee';
 import { LogOut } from 'lucide-react';
 
 const EmployeeDashboard = () => {
-  const [username, setUserName] = useState<string>(''); 
+  const [username, setUserName] = useState<string | null>(null); // Set initial state to null to differentiate between loading and no data.
 
   const getData = async () => {
     try {
@@ -23,6 +23,7 @@ const EmployeeDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching user data:', error.message);
+      setUserName('User'); // Fallback to a default name if data fetch fails.
     }
   };
 
@@ -32,9 +33,10 @@ const EmployeeDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">
-          Welcome, {username || 'User'}!
+          {username === null ? 'Loading...' : `Welcome, ${username}!`}
         </h1>
         <button
           className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
