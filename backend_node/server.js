@@ -1192,18 +1192,18 @@ app.post('/api/employees-by-manager', async (req, res) => {
       return acc;
     }, {});
 
-    // Step 4: Check each group for pending/in-progress tasks
+    // Step 4: Count pending/in-progress tasks for each employee
     const result = employees.map(emp => {
       const employeeTasks = tasksGroupedByEmployee[emp.name] || [];
-      const hasWork = employeeTasks.some(
+      const pendingTasksCount = employeeTasks.filter(
         task => task.status === 'pending' || task.status === 'In Progress' || task.status === 'Pending'
-      );
+      ).length;
 
       return {
         name: emp.name,
         email: emp.email,
         department: emp.department,
-        status: hasWork ? 'have work' : 'free to work',
+        status: pendingTasksCount > 0 ? `${pendingTasksCount} pending tasks` : '0 pending tasks',
       };
     });
 
@@ -1213,6 +1213,7 @@ app.post('/api/employees-by-manager', async (req, res) => {
     res.status(500).json({ message: 'Error fetching employees work status', error: err.message });
   }
 });
+
 
 app.post("/api/store-form-data", async (req, res) => {
   try {
@@ -1698,14 +1699,36 @@ app.post('/api/droneDetailsList', async (req, res) => {
 app.post('/api/submission', async (req, res) => {
   try {
     const { type, onFieldDetails, ...data } = req.body;
-    
+
     if (!type) {
       return res.status(400).json({ error: 'Type field is required to differentiate the submission.' });
     }
 
     let formattedData = {};
 
-    if (type === "onFieldDetails") {
+    if (type === "combinedFlightForm") {
+      // Combined form handling for "beforeFlight" and "afterFlight"
+      if (!data.crew || !data.method || !data.sightName || !data.flights) {
+        return res.status(400).json({ error: 'Required fields for combinedFlightForm are missing.' });
+      }
+
+      formattedData = {
+        type,
+        crew: data.crew,
+        method: data.method,
+        sightName: data.sightName,
+        date: data.date,
+        flights: data.flights.map((flight) => ({
+          flightNo: flight.flightNo,
+          takeoffTime: flight.takeoffTime,
+          landingTime: flight.landingTime || null, // Handle optional fields
+        })),
+        images: data.images,
+        currentStep: data.currentStep,
+        managerTaskId: data.managerTaskId,
+      };
+    } else if (type === "onFieldDetails") {
+      // Handling onFieldDetails type
       if (!onFieldDetails || !onFieldDetails.location) {
         return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
       }
@@ -1721,33 +1744,7 @@ app.post('/api/submission', async (req, res) => {
         },
         isReporting: isReporting || false,
       };
-    } else if (type === "beforeFlight") {
-      formattedData = {
-        type,
-        crew: data.crew,
-        method: data.method,
-        sightName: data.sightName,
-        date: data.date,
-        flights: data.flights,
-        images: data.images,
-        currentStep: data.currentStep,
-        managerTaskId: data.managerTaskId,
-      };
-    }
-    else if (type === "afterFlight") {
-      formattedData = {
-        type,
-        crew: data.crew,
-        method: data.method,
-        sightName: data.sightName,
-        date: data.date,
-        flights: data.flights,
-        images: data.images,
-        currentStep: data.currentStep,
-        managerTaskId: data.managerTaskId,
-      };
-    } 
-    else if (type === "gettingOffField") {
+    } else if (type === "gettingOffField") {
       if (!onFieldDetails || !onFieldDetails.location) {
         return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
       }
@@ -1764,19 +1761,17 @@ app.post('/api/submission', async (req, res) => {
         departingTime: departingTime || null,
         currentStep: currentStep || null,
       };
-    } 
-    else if (type === "returnToOffice") {
+    } else if (type === "returnToOffice") {
       formattedData = {
         type,
-        selectedVehicles: data.selectedVehicles,  
-        timeReached: data.timeReached,            
-        endReading: data.endReading,              
-        images: data.images,                     
-        currentStep: data.currentStep,            
-        managerTaskId: data.managerTaskId,        
+        selectedVehicles: data.selectedVehicles,
+        timeReached: data.timeReached,
+        endReading: data.endReading,
+        images: data.images,
+        currentStep: data.currentStep,
+        managerTaskId: data.managerTaskId,
       };
-    }
-    else if (type === "DroneSubmitForm") {
+    } else if (type === "DroneSubmitForm") {
       if (!data.checkedItems) {
         return res.status(400).json({ error: 'checkedItems are required for DroneSubmitForm.' });
       }
@@ -1786,24 +1781,24 @@ app.post('/api/submission', async (req, res) => {
         managerTaskId: data.managerTaskId,
         currentStep: data.currentStep,
       };
-    }
-    else if(type === "Submission_task_final"){
+    } else if (type === "Submission_task_final") {
       formattedData = {
         type,
         managerTaskId: data.managerTaskId,
         currentStep: data.currentStep,
         status: data.status,
       };
-    }
-   else {
+    } else {
       formattedData = {
         type,
         ...data,
       };
     }
 
-    const submission = new SubmissionSchema(formattedData); 
+    // Save submission
+    const submission = new SubmissionSchema(formattedData);
     const savedSubmission = await submission.save();
+
     res.status(201).json({
       message: 'Submission stored successfully!',
       data: savedSubmission,
@@ -1813,6 +1808,7 @@ app.post('/api/submission', async (req, res) => {
     res.status(500).json({ error: 'Failed to store submission.' });
   }
 });
+
 
 app.post('/api/getPrivateVehiclesByName', async (req, res) => {
   try {
@@ -1836,7 +1832,7 @@ app.post('/api/getPrivateVehiclesByName', async (req, res) => {
 
 
 
-//code added by me
+
 app.get('/api/get/latest-active-step/:managerTaskId', async (req, res) => {
   try {
     const { managerTaskId } = req.params;

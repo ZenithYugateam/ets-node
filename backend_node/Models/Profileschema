@@ -1,0 +1,41 @@
+const mongoose = require("mongoose");
+
+// Education Schema
+const EducationSchema = new mongoose.Schema({
+  degree: { type: String, required: true },
+  stream: { type: String, required: true },
+  graduatedYear: { type: Number, required: true },
+  certificate: { type: String }, // File path for the uploaded certificate
+});
+
+// Bank Details Schema
+const BankDetailsSchema = new mongoose.Schema({
+  accountNumber: { type: String, required: false },
+  ifscCode: { type: String, required: false },
+  bankName: { type: String, required: false },
+});
+
+// Profile Schema
+const ProfileSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // Reference to User collection for fetching name, role, department, manager
+    required: true,
+  },
+  name: { type: String, required: true },
+  role: { type: String, required: true },
+  department: { type: String, required: true },
+  manager: { type: String, required: true },
+  fatherName: { type: String, required: false },
+  motherName: { type: String, required: false },
+  address: { type: String, required: false },
+  aadharCard: { type: String }, // File path for the uploaded Aadhar Card
+  panCard: { type: String }, // File path for the uploaded PAN Card
+  bankDetails: { type: BankDetailsSchema, required: false },
+  educations: { type: [EducationSchema], required: false }, // Array of education entries
+  profileImage: { type: String }, // File path for the uploaded profile image
+  password: { type: String, required: true },
+  progress: { type: Number, default: 0 }, // Profile completion percentage
+});
+
+module.exports = mongoose.model("Profile", ProfileSchema);
