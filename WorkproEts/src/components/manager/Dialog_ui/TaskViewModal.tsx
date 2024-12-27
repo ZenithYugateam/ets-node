@@ -167,10 +167,18 @@ export function TaskViewModal({
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="px-6 pt-6">
             <div className="flex items-start justify-between">
-              <div className="space-y-1">
+              {/* Title and Status Side by Side */}
+              <div className="flex items-center space-x-4">
                 <DialogTitle className="text-2xl font-semibold tracking-tight">
                   Task Details
                 </DialogTitle>
+                {/* Status Badge */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Status:
+                  </span>
+                  <TaskStatusBadge status={task.status} />
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -212,14 +220,6 @@ export function TaskViewModal({
                     <TaskPriorityBadge priority={task.priority} />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Status
-                  </span>
-                  <div className="pt-1">
-                    <TaskStatusBadge status={task.status} />
-                  </div>
-                </div>
               </div>
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">
@@ -253,7 +253,9 @@ export function TaskViewModal({
                 </span>
                 <div className="space-y-2">
                   {notes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No notes yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      No notes yet
+                    </p>
                   ) : (
                     notes.map((note, index) => (
                       <div key={index} className="p-2 bg-gray-100 rounded-md">

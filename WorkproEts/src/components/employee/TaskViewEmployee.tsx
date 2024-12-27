@@ -177,8 +177,8 @@ const TaskViewEmployee: React.FC = () => {
     useState<Task | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
-  const [searchTerm, setSearchTerm] = useState<string>(""); 
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]); 
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
 
   const { addNotification } = useContext(NotificationContext);
 
@@ -575,7 +575,6 @@ const TaskViewEmployee: React.FC = () => {
     }
   };
 
-
   const columns: GridColDef[] = [
     {
       field: "acceptTask",
@@ -756,7 +755,11 @@ const TaskViewEmployee: React.FC = () => {
       flex: 1,
       minWidth: 120,
       renderCell: (params) => {
-        const isClickable = params.row.droneRequired === "Yes" || params.row.dgpsRequired === "Yes" ? "yes" : null; 
+        const isClickable =
+          params.row.droneRequired === "Yes" ||
+          params.row.dgpsRequired === "Yes"
+            ? "yes"
+            : null;
         return (
           <MuiButton
             variant="outlined"
@@ -774,7 +777,7 @@ const TaskViewEmployee: React.FC = () => {
               gap: "6px",
               mt: 1,
             }}
-            disabled={!isClickable} 
+            disabled={!isClickable}
           >
             <Eye className="h-5 w-5" />
             <span>View</span>
@@ -782,7 +785,6 @@ const TaskViewEmployee: React.FC = () => {
         );
       },
     },
-    
   ];
 
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
@@ -924,31 +926,31 @@ const TaskViewEmployee: React.FC = () => {
 
   return (
     <div className="p-4">
-       <div className="relative mb-4 flex items-center justify-between">
-      {/* Search Icon */}
-      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <Search className="text-gray-500" />
-      </span>
+      <div className="relative mb-4 flex items-center justify-between">
+        {/* Search Icon */}
+        <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="text-gray-500" />
+        </span>
 
-      {/* Input Field */}
-      <input
-        type="text"
-        placeholder="Search tasks..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className=" pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
+        {/* Input Field */}
+        <input
+          type="text"
+          placeholder="Search tasks..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className=" pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
 
-      {/* Clear Button */}
-      {searchTerm && (
-        <button
-          onClick={() => setSearchTerm('')}
-          className="absolute inset-y-0 right-0 pr-3 flex items-center"
-        >
-          <Clear className="text-gray-500 hover:text-gray-700" />
-        </button>
-      )}
-    </div>
+        {/* Clear Button */}
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm("")}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+          >
+            <Clear className="text-gray-500 hover:text-gray-700" />
+          </button>
+        )}
+      </div>
       {loading ? (
         <Box className="flex justify-center items-center h-[300px]">
           <CircularProgress />
@@ -1004,10 +1006,18 @@ const TaskViewEmployee: React.FC = () => {
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white">
           <DialogHeader className="px-6 pt-6">
             <div className="flex items-start justify-between">
-              <div className="space-y-1">
+              {/* Title and Status Side by Side */}
+              <div className="flex items-center space-x-4">
                 <DialogTitle className="text-2xl font-semibold tracking-tight">
                   Task Details
                 </DialogTitle>
+                {/* Status Display */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Status:
+                  </span>
+                  <TaskStatusBadge status={selectedTask?.status || "Pending"} />
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -1039,13 +1049,13 @@ const TaskViewEmployee: React.FC = () => {
           <Separator className="my-4" />
           <ScrollArea className="px-6 pb-6 max-h-[calc(80vh-8rem)]">
             <div className="grid gap-6">
-              {/* Add a console log to verify selectedTask's estimatedHours */}
+              {/* Console log for debugging */}
               {selectedTask &&
                 console.log(
                   `Dialog - Selected Task ID: ${selectedTask._id}, Estimated Hours: ${selectedTask.estimatedHours}`
                 )}
 
-              {/* Basic fields */}
+              {/* Task Details */}
               <div className="grid gap-4 md:grid-cols-2">
                 <TaskDetailItem
                   label="Project Name"
@@ -1091,6 +1101,7 @@ const TaskViewEmployee: React.FC = () => {
                 />
               </div>
 
+              {/* Priority */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-1">
                   <span className="text-sm font-medium text-muted-foreground">
@@ -1099,16 +1110,6 @@ const TaskViewEmployee: React.FC = () => {
                   <div className="pt-1">
                     <TaskPriorityBadge
                       priority={selectedTask?.priority || "Low"}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Status
-                  </span>
-                  <div className="pt-1">
-                    <TaskStatusBadge
-                      status={selectedTask?.status || "Pending"}
                     />
                   </div>
                 </div>
@@ -1128,58 +1129,6 @@ const TaskViewEmployee: React.FC = () => {
                         : "Not Recorded"
                     }
                   />
-
-                  {/* Time Used and Time Left */}
-                  <div className="mt-2 p-2 rounded-md">
-                    {/* Time Used */}
-                    <p className="font-semibold text-gray-700">
-                      Time Used:{" "}
-                      <span
-                        className={
-                          selectedTask.estimatedHours > 0 &&
-                          selectedTask.timeUsed
-                            ? selectedTask.timeUsed >
-                              selectedTask.estimatedHours
-                              ? "text-red-500"
-                              : "text-green-600"
-                            : "text-green-600"
-                        }
-                      >
-                        {selectedTask.timeUsed !== undefined
-                          ? formatHours(selectedTask.timeUsed)
-                          : "N/A"}{" "}
-                      </span>
-                      {selectedTask.estimatedHours > 0
-                        ? `/ ${formatHours(selectedTask.estimatedHours)}`
-                        : "/ N/A"}{" "}
-                      {/* Removed default to 1 hour */}
-                    </p>
-
-                    {/* Time Left */}
-                    <p className="font-semibold text-gray-700">
-                      Time Left:{" "}
-                      <span
-                        className={
-                          selectedTask.timeLeft !== undefined
-                            ? selectedTask.timeLeft >= 0
-                              ? "text-green-600"
-                              : "text-red-500"
-                            : "text-gray-500"
-                        }
-                      >
-                        {selectedTask.timeLeft !== undefined
-                          ? formatHours(Math.abs(selectedTask.timeLeft))
-                          : "N/A"}{" "}
-                      </span>
-                      {selectedTask.timeLeft !== undefined
-                        ? selectedTask.timeLeft >= 0
-                          ? "remaining"
-                          : selectedTask.estimatedHours > 0
-                          ? " over the estimate!"
-                          : " over the deadline!"
-                        : "N/A"}
-                    </p>
-                  </div>
                 </>
               )}
 
@@ -1193,7 +1142,7 @@ const TaskViewEmployee: React.FC = () => {
                 </p>
               </div>
 
-              {/* If notes exist */}
+              {/* Notes */}
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">
                   Notes
@@ -1213,27 +1162,7 @@ const TaskViewEmployee: React.FC = () => {
                 </div>
               </div>
 
-              {/* Remarks */}
-              <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Remarks
-                </span>
-                <div className="space-y-2">
-                  {remarks.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No remarks yet
-                    </p>
-                  ) : (
-                    remarks.map((remark, index) => (
-                      <div key={index} className="p-2 bg-gray-100 rounded-md">
-                        <p>{remark}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Add notes */}
+              {/* Add Notes */}
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">
                   Add Notes *
@@ -1247,6 +1176,7 @@ const TaskViewEmployee: React.FC = () => {
                 />
               </div>
 
+              {/* Send Button */}
               <div className="flex justify-end space-x-4">
                 <Button
                   onClick={handleAddNotes}
