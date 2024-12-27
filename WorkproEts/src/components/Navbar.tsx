@@ -18,6 +18,7 @@ import { getUserData } from "../api/admin"; // Import getUserData function
 const Navbar = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [username, setUserName] = useState<string | null>(null); // State for employee name
+  const [userRole, setUserRole] = useState<string | null>(null); // State for employee role
   const {
     notifications,
     markAsRead,
@@ -37,7 +38,7 @@ const Navbar = () => {
 
   const unreadNotifications = notifications.filter((notif) => !notif.read).length;
 
-  const fetchEmployeeName = async () => {
+  const fetchEmployeeData = async () => {
     try {
       const userId = sessionStorage.getItem("userId");
       if (!userId) {
@@ -45,19 +46,21 @@ const Navbar = () => {
       }
 
       const response = await getUserData(userId);
-      if (response && response.name) {
-        setUserName(response.name);
+      if (response) {
+        setUserName(response.name || "User");
+        setUserRole(response.role || "Unknown Role"); // Update role state
       } else {
         throw new Error("Invalid user data received");
       }
     } catch (error) {
       console.error("Error fetching user data:", error.message);
       setUserName("User"); // Fallback if fetching fails
+      setUserRole("Unknown Role"); // Fallback if fetching fails
     }
   };
 
   useEffect(() => {
-    fetchEmployeeName();
+    fetchEmployeeData();
   }, []);
 
   useEffect(() => {
@@ -79,25 +82,17 @@ const Navbar = () => {
     <>
       <nav className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-16 items-center">
+            {/* Logo */}
             <div className="flex items-center">
-              {/* Logo and title */}
-              <div className="flex items-center ml-12 lg:ml-0">
-                <Users className="h-8 w-8 text-indigo-600" />
-                <span className="ml-2 text-xl font-semibold hidden sm:block">
-                  WorkForce Pro
-                </span>
-              </div>
+              <Users className="h-8 w-8 text-indigo-600" />
+              <span className="ml-2 text-xl font-semibold hidden sm:block">
+                WorkForce Pro
+              </span>
             </div>
 
+            {/* Right Section */}
             <div className="flex items-center space-x-4">
-              {/* Display Employee Name */}
-              <div className="hidden sm:block">
-                <span className="text-sm font-medium text-gray-700">
-                  {username === null ? "Loading..." : `Hello, ${username}`}
-                </span>
-              </div>
-
               {/* Bell Button with Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -213,7 +208,7 @@ const Navbar = () => {
               >
                 <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
               </Link>
-              
+
               <Button
                 className="p-1 sm:p-2 rounded-full hover:bg-gray-100 min-w-0"
                 onClick={handleClick}
@@ -221,6 +216,13 @@ const Navbar = () => {
               >
                 <Bug className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
               </Button>
+
+              {/* Username and Role (Aligned to Right) */}
+              <div className="hidden sm:block">
+                <span className="text-sm font-medium text-gray-700">
+                  {username === null ? "Loading..." : `${username} (${userRole})`}
+                </span>
+              </div>
             </div>
           </div>
         </div>
