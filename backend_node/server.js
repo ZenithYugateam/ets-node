@@ -1217,15 +1217,21 @@ app.post('/api/employees-by-manager', async (req, res) => {
 //modified by nithin 
 app.post("/api/store-form-data", async (req, res) => {
   try {
-    // Combine primary assigned employee and selected crew members
-    const allEmployees = new Set([req.body.employeeName, ...req.body.selectedEmployees]);
+    // Ensure `selectedEmployees` is an array
+    const selectedEmployees = Array.isArray(req.body.selectedEmployees) 
+      ? req.body.selectedEmployees 
+      : [];
 
-    // Prepare tasks for each unique employee
-    const tasks = Array.from(allEmployees).map((employee) => ({
+    // Combine primary assigned employee and selected crew members
+    const allEmployees = new Set([req.body.employeeName, ...selectedEmployees]);
+
+    // Create the task with all employees included
+    const task = {
       projectName: req.body.projectName,
       projectId: req.body.projectId,
       taskName: req.body.taskName,
-      employeeName: employee,
+      employeeName: req.body.employeeName, // Primary assigned employee
+      employees: Array.from(allEmployees), // Unified array of all employees
       priority: req.body.priority,
       deadline: req.body.deadline,
       description: req.body.description,
@@ -1234,20 +1240,23 @@ app.post("/api/store-form-data", async (req, res) => {
       droneRequired: req.body.droneRequired,
       dgpsRequired: req.body.dgpsRequired,
       estimatedHours: req.body.estimatedHours,
-    }));
+    };
 
-    // Insert all tasks into the database
-    const savedTasks = await ManagerTask.insertMany(tasks);
+    // Save the task into the database
+    const savedTask = await ManagerTask.create(task);
 
     res.status(201).json({
-      message: "Task saved successfully for all assigned employees",
-      data: savedTasks,
+      message: "Task saved successfully",
+      data: savedTask,
     });
   } catch (error) {
     console.error("Error saving task:", error.message);
     res.status(500).json({ message: "Error saving task", error: error.message });
   }
 });
+
+
+
 
 
 
@@ -1310,17 +1319,24 @@ app.get('/api/remarks/:id', async (req, res) => {
 
 app.post("/api/tasks/employee", async (req, res) => {
   const { employeeName } = req.body;
+
   try {
-    const tasks = await ManagerTask.find({ employeeName });
+    // Searching for tasks where the employee is part of the 'employees' array
+    const tasks = await ManagerTask.find({ employees: employeeName });
+
+    // Check if tasks were found
     if (!tasks || tasks.length === 0) {
       return res.status(404).json({ message: "No tasks found for this employee." });
     }
+
+    // Respond with the tasks
     res.status(200).json(tasks);
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching tasks:", error);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
 });
+
 
 app.put("/api/Employee/notes", async (req, res) => {
   try {
