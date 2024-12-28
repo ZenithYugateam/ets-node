@@ -288,19 +288,25 @@ const AddTaskManagements: React.FC = () => {
   ) => {
     setSelectedEmployees(event.target.value as string[]);
   };
-
+//modified by nithin handle submit 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
+    // Combine the assigned employee with the crew members
+    const allAssignedEmployees = new Set([
+      formData.employeeName, // Primary assigned employee
+      ...selectedEmployees,  // Additional crew members
+    ]);
+  
     const updatedFormData = {
       ...formData,
       managerName: sessionStorage.getItem("userName"),
       droneRequired,
       dgpsRequired,
-      selectedEmployees,
+      selectedEmployees: Array.from(allAssignedEmployees), // Ensure unique list
       estimatedHours: formData.estimatedHours,
     };
-
+  
     try {
       const response = await axios.post(
         "http://localhost:5001/api/store-form-data",
@@ -310,7 +316,7 @@ const AddTaskManagements: React.FC = () => {
         toast.success("Task successfully added!");
         resetForm();
         setIsModalOpen(false);
-
+  
         fetchManagerTasks();
       }
     } catch (error) {
@@ -318,6 +324,7 @@ const AddTaskManagements: React.FC = () => {
       toast.error("Failed to add task");
     }
   };
+  
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
