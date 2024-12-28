@@ -19,6 +19,7 @@ const Navbar = () => {
   const [open, setOpen] = useState<boolean>(false);
   const [username, setUserName] = useState<string | null>(null); // State for employee name
   const [userRole, setUserRole] = useState<string | null>(null); // State for employee role
+  const [userDepartment, setUserDepartment] = useState<string | null>(null); // State for employee department
   const {
     notifications,
     markAsRead,
@@ -49,6 +50,7 @@ const Navbar = () => {
       if (response) {
         setUserName(response.name || "User");
         setUserRole(response.role || "Unknown Role"); // Update role state
+        setUserDepartment(response.department || "Unknown Department"); // Update department state
       } else {
         throw new Error("Invalid user data received");
       }
@@ -56,6 +58,7 @@ const Navbar = () => {
       console.error("Error fetching user data:", error.message);
       setUserName("User"); // Fallback if fetching fails
       setUserRole("Unknown Role"); // Fallback if fetching fails
+      setUserDepartment("Unknown Department"); // Fallback if fetching fails
     }
   };
 
@@ -217,10 +220,12 @@ const Navbar = () => {
                 <Bug className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
               </Button>
 
-              {/* Username and Role (Aligned to Right) */}
+              {/* Username, Role, and Department */}
               <div className="hidden sm:block">
                 <span className="text-sm font-medium text-gray-700">
-                  {username === null ? "Loading..." : `${username} (${userRole})`}
+                  {username === null
+                    ? "Loading..."
+                    : `${username} (${userRole}, ${userDepartment})`}
                 </span>
               </div>
             </div>

@@ -35,7 +35,7 @@ const AddTaskManagements: React.FC = () => {
   const [dgpsRequired, setDgpsRequired] = useState<string>("No");
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<any[]>([]); // State for filtered tasks
-  const [searchTerm, setSearchTerm] = useState<string>(""); 
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const handleViewTask = (task: any) => {
     setSelectedTask(task);
@@ -65,9 +65,9 @@ const AddTaskManagements: React.FC = () => {
       renderCell: (params) => (
         <div
           onClick={() => {
-            handleViewTask(params.row); 
-            setIsViewModalOpen(true); 
-            setTaskId(params.row.id); 
+            handleViewTask(params.row);
+            setIsViewModalOpen(true);
+            setTaskId(params.row.id);
           }}
           style={{
             cursor: "pointer",
@@ -196,7 +196,7 @@ const AddTaskManagements: React.FC = () => {
         toast.error("Failed to fetch projects");
       }
     };
-    
+
     const fetchEmployees = async () => {
       try {
         const response = await axios.post(
@@ -207,31 +207,29 @@ const AddTaskManagements: React.FC = () => {
         );
 
         const uniqueEmployees = Array.from(
-          new Set(
-            response.data.map((employee: any) => employee.name)
-          )
+          new Set(response.data.map((employee: any) => employee.name))
         ).map((uniqueName) => {
           const employee = response.data.find(
             (emp: any) => emp.name === uniqueName
           );
-        
-          const count = parseInt(employee.status.split(' ')[0]);
-          
+
+          const count = parseInt(employee.status.split(" ")[0]);
+
           // Determine color based on count
           let color;
           if (count === 0) {
-            color = 'green';
+            color = "green";
           } else if (count <= 2) {
-            color = 'orange';
+            color = "orange";
           } else {
-            color = 'red';
+            color = "red";
           }
 
           return {
             id: employee._id,
             name: employee.name,
             count: count,
-            color: color
+            color: color,
           };
         });
 
@@ -241,7 +239,7 @@ const AddTaskManagements: React.FC = () => {
         toast.error("Failed to fetch employees");
       }
     };
-  
+
     fetchManagerTasks();
     fetchProjects();
     fetchEmployees();
@@ -252,7 +250,7 @@ const AddTaskManagements: React.FC = () => {
     setDroneRequired("No");
     setDgpsRequired("No");
     setSelectedEmployees([]);
-  }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -281,7 +279,7 @@ const AddTaskManagements: React.FC = () => {
     setDroneRequired(event.target.value);
   };
 
-  const handleDgpsChange = (event: React.ChangeEvent<HTMLInputElement>) => { 
+  const handleDgpsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setDgpsRequired(event.target.value);
   };
 
@@ -298,7 +296,7 @@ const AddTaskManagements: React.FC = () => {
       ...formData,
       managerName: sessionStorage.getItem("userName"),
       droneRequired,
-      dgpsRequired, 
+      dgpsRequired,
       selectedEmployees,
       estimatedHours: formData.estimatedHours,
     };
@@ -314,7 +312,6 @@ const AddTaskManagements: React.FC = () => {
         setIsModalOpen(false);
 
         fetchManagerTasks();
-        
       }
     } catch (error) {
       console.error("Error submitting form data:", error);
@@ -328,7 +325,8 @@ const AddTaskManagements: React.FC = () => {
 
     // Filter tasks based on search term
     const filtered = taskManagerData.filter((task) => {
-      const searchFields = `${task.projectName} ${task.taskName} ${task.employeeName} ${task.priority} ${task.description} ${task.status}`.toLowerCase();
+      const searchFields =
+        `${task.projectName} ${task.taskName} ${task.employeeName} ${task.priority} ${task.description} ${task.status}`.toLowerCase();
       return searchFields.includes(value);
     });
 
@@ -352,20 +350,20 @@ const AddTaskManagements: React.FC = () => {
         </Button>
       </div>
       <Box sx={{ mb: 2 }}>
-      <TextField
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        placeholder="Search projects,task , ..."
-        variant="outlined"
-        style={{ width: "400px" }} 
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-        }}
-      />
+        <TextField
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search projects,task , ..."
+          variant="outlined"
+          style={{ width: "400px" }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
       </Box>
 
       <div style={{ height: 400, width: "100%" }}>
@@ -442,55 +440,61 @@ const AddTaskManagements: React.FC = () => {
                 displayEmpty
               >
                 {employees.map((employee) => (
-                <MenuItem
-                  key={employee.id}
-                  value={employee.name}
-                  disabled={employee.count > 0}
-                  style={{
-                    padding: "12px 16px",
-                    borderBottom: "1px solid #eee",
-                    minWidth: "200px"
-                  }}
-                >
-                  <div style={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    justifyContent: "space-between",
-                    width: "100%",
-                    gap: "16px"
-                  }}>
-                    <span style={{ 
-                      fontSize: "15px",
-                      fontWeight: 500
-                    }}>
-                      {employee.name}
-                    </span>
-                    <span style={{ 
-                      color: employee.count === 0 
-                        ? "#2e7d32"  
-                        : employee.count <= 2 
-                          ? "#ed6c02"  
-                          : "#d32f2f", 
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      backgroundColor: employee.count === 0 
-                        ? "#e8f5e9" 
-                        : employee.count <= 2 
-                          ? "#fff3e0"  
-                          : "#ffebee", 
-                      padding: "4px 10px",
-                      borderRadius: "12px",
-                      minWidth: "30px",
-                      textAlign: "center"
-                    }}>
-                      {employee.count}
-                    </span>
-                  </div>
-                </MenuItem>
-              ))}
+                  <MenuItem
+                    key={employee.id}
+                    value={employee.name}
+                    style={{
+                      padding: "12px 16px",
+                      borderBottom: "1px solid #eee",
+                      minWidth: "200px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        width: "100%",
+                        gap: "16px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {employee.name}
+                      </span>
+                      <span
+                        style={{
+                          color:
+                            employee.count === 0
+                              ? "#2e7d32"
+                              : employee.count <= 5
+                              ? "#ed6c02"
+                              : "#d32f2f",
+                          fontSize: "14px",
+                          fontWeight: "bold",
+                          backgroundColor:
+                            employee.count === 0
+                              ? "#e8f5e9"
+                              : employee.count <= 5
+                              ? "#fff3e0"
+                              : "#ffebee",
+                          padding: "4px 10px",
+                          borderRadius: "12px",
+                          minWidth: "30px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {employee.count}
+                      </span>
+                    </div>
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
-
 
             <Typography>Drone Required</Typography>
             <RadioGroup row value={droneRequired} onChange={handleDroneChange}>
@@ -518,7 +522,7 @@ const AddTaskManagements: React.FC = () => {
               </FormControl>
             )}
 
-           <Typography>DGPS Required</Typography>
+            <Typography>DGPS Required</Typography>
             <RadioGroup row value={dgpsRequired} onChange={handleDgpsChange}>
               <FormControlLabel value="Yes" control={<Radio />} label="Yes" />
               <FormControlLabel value="No" control={<Radio />} label="No" />
