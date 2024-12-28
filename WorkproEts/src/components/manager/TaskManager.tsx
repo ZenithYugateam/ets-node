@@ -331,11 +331,6 @@ const TaskManager: React.FC = () => {
 
         return (
           <div className="flex items-center space-x-2">
-            <img
-              src={assignee.avatar}
-              alt={assignee.name}
-              className="h-8 w-8 rounded-full"
-            />
             <span>{assignee.name}</span>
           </div>
         );

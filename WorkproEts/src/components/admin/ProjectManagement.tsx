@@ -166,8 +166,7 @@ const ProjectManagement: React.FC = () => {
       assignee: {
         userId: "",
         name: "",
-        avatar:
-          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+      
       },
       priority: "Medium",
       deadline: "",
@@ -381,11 +380,7 @@ const ProjectManagement: React.FC = () => {
 
         return (
           <div className="flex items-center space-x-2">
-            <img
-              src={assignee.avatar}
-              alt={assignee.name}
-              className="h-8 w-8 rounded-full"
-            />
+            
             <span>{assignee.name}</span>
           </div>
         );

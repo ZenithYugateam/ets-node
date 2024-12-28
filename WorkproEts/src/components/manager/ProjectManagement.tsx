@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useMutation, useQueryClient } from "react-query";
-import { createTask } from "../../api/admin";
+import { createTask, Task } from "../../api/admin";
 import { toast } from "react-toastify";
 import { Button } from "../../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog";
 import { Separator } from "../../ui/Separator";
 import { ScrollArea } from "../../ui/scroll-area";
-import { Task } from "../../types/task";
 
 const ProjectManagement: React.FC<{
   managerId: string;
