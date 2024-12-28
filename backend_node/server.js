@@ -96,20 +96,33 @@ const departmentSchema = new mongoose.Schema({
 
 const Department = mongoose.model("Department", departmentSchema);
 
-const userSchema = new mongoose.Schema({
-  adminId: { type: String },
-  name: String,
-  password: String,
-  email: String,
-  role: String,
-  department: String,
-  manager: { type: String, default: "" },
-  status: String,
-  delete: Boolean,
-  subDepartment: { type: String, default: "" },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-});
+
+const userSchema = new mongoose.Schema(
+  {
+    adminId: { type: String, }, // ID of the admin creating the user
+    name: { type: String, required: true, trim: true }, // User's name with trimming to remove excess spaces
+    password: { type: String, required: true }, // Hashed password should be stored (consider bcrypt for hashing)
+    email: { type: String, required: true, unique: true, lowercase: true }, // Ensure email is unique and case-insensitive
+    role: { type: String, required: true, enum: ["Admin", "Manager", "Employee"] }, // Ensure role is limited to valid options
+    departments: [{ type: String, required: true }], // Array of department names
+    subDepartments: [{ type: String }], // Array of sub-department names
+    managers: [
+      {
+        name: { type: String, required: true }, // Manager's name
+        id: { type: String, required: true }, // Manager's unique ID
+      },
+    ], // Array of manager objects (with validation for name and id)
+    status: { type: String, required: true, enum: ["active", "inactive"] }, // User status with only valid options
+    deleted: { type: Boolean, default: false }, // Logical deletion flag
+    createdAt: { type: Date, default: Date.now }, // Auto-set on creation
+    updatedAt: { type: Date, default: Date.now }, // Auto-set on update
+  },
+  {
+    timestamps: true, // Automatically manages createdAt and updatedAt fields
+  }
+);
+
+module.exports = mongoose.model("User", userSchema);
 
 
 const taskSchema = new mongoose.Schema(
@@ -459,21 +472,28 @@ app.put("/api/tasks/:taskId", async (req, res) => {
   }
 });
 
-app.get("/users/managers/:departmentName", async (req, res) => {
+app.get("/users/managers", async (req, res) => {
   try {
-    const { departmentName } = req.params;
+    const { departments } = req.query;
 
-    // Find all users who are managers in the specified department
-    const managers = await User.find({
-      department: departmentName,
-      role: "Manager",
-    }).select("_id name email"); // Only select necessary fields
-
-    if (!managers || managers.length === 0) {
-      return res.status(200).json([]); // Return empty array if no managers found
+    if (!departments) {
+      console.log("No departments provided in the request."); // Debug
+      return res.status(400).json({
+        message: "Departments are required",
+      });
     }
 
-    res.status(200).json(managers);
+    const departmentList = departments.split(",");
+    console.log("Fetching managers for departments:", departmentList); // Debug
+
+    const managers = await User.find({
+      department: { $in: departmentList },
+      role: "Manager",
+    }).select("_id name email");
+
+    console.log("Managers found:", managers); // Debug
+
+    res.status(200).json(managers || []);
   } catch (error) {
     console.error("Error fetching managers:", error);
     res.status(500).json({
@@ -482,6 +502,9 @@ app.get("/users/managers/:departmentName", async (req, res) => {
     });
   }
 });
+
+
+
 
 app.get("/api/departments", async (req, res) => {
   try {
@@ -527,25 +550,109 @@ app.post("/api/departments/add", async (req, res) => {
 
 app.post("/api/users/add", async (req, res) => {
   try {
-    const user = new User(req.body);
-    const savedUser = await user.save();
+    const {
+      adminId,
+      name,
+      email,
+      password,
+      role,
+      departments,
+      subDepartments,
+      managers,
+      status,
+    } = req.body;
 
-    const department = await Department.findOne({
-      name: req.body.department,
-      "subDepartments.name": req.body.subDepartment,
+    // Validate required fields
+    if (!name || !email || !password || !role || !departments || departments.length === 0) {
+      return res.status(400).json({ message: "Required fields are missing" });
+    }
+
+    // Check for duplicate email
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    // Validate departments
+    const invalidDepartments = [];
+    for (const departmentName of departments) {
+      const departmentExists = await Department.findOne({ name: departmentName });
+      if (!departmentExists) {
+        invalidDepartments.push(departmentName);
+      }
+    }
+
+    if (invalidDepartments.length > 0) {
+      return res.status(400).json({
+        message: `The following departments do not exist: ${invalidDepartments.join(", ")}`,
+      });
+    }
+
+    // Validate sub-departments (only if role is not Manager)
+    if (role !== "Manager") {
+      const invalidSubDepartments = [];
+      for (const subDepartmentName of subDepartments || []) {
+        const subDepartmentExists = await Department.findOne({
+          "subDepartments.name": subDepartmentName,
+        });
+        if (!subDepartmentExists) {
+          invalidSubDepartments.push(subDepartmentName);
+        }
+      }
+
+      if (invalidSubDepartments.length > 0) {
+        return res.status(400).json({
+          message: `The following sub-departments do not exist: ${invalidSubDepartments.join(", ")}`,
+        });
+      }
+    }
+
+    // Validate managers (only if role is not Manager)
+    if (role !== "Manager") {
+      const invalidManagers = [];
+      for (const manager of managers || []) {
+        const managerExists = await User.findOne({ _id: manager.id, name: manager.name, role: "Manager" });
+        if (!managerExists) {
+          invalidManagers.push(manager.name);
+        }
+      }
+
+      if (invalidManagers.length > 0) {
+        return res.status(400).json({
+          message: `The following managers do not exist: ${invalidManagers.join(", ")}`,
+        });
+      }
+    }
+
+    // Create a new user
+    const newUser = new User({
+      adminId,
+      name,
+      email,
+      password,
+      role,
+      departments,
+      subDepartments: role === "Manager" ? [] : subDepartments || [], // Sub-departments only for non-managers
+      managers: role === "Manager" ? [] : managers || [], // Managers only for non-managers
+      status: status || "active", // Default to "active" if undefined
     });
 
-    if (!department) {
-      return res
-        .status(400)
-        .json({ message: "Department or Sub-Department not found" });
-    }
-    res.status(201).json(savedUser);
+    // Save the user in the database
+    const savedUser = await newUser.save();
+
+    // Respond with the saved user
+    res.status(201).json({
+      message: `${role} created successfully`,
+      user: savedUser,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error adding user:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 });
+
+
+
 
 
 app.post("/api/usersData", async (req, res) => {
@@ -1214,51 +1321,33 @@ app.post('/api/employees-by-manager', async (req, res) => {
   }
 });
 
-//modified by nithin 
+
 app.post("/api/store-form-data", async (req, res) => {
   try {
-    // Ensure `selectedEmployees` is an array
-    const selectedEmployees = Array.isArray(req.body.selectedEmployees) 
-      ? req.body.selectedEmployees 
-      : [];
-
-    // Combine primary assigned employee and selected crew members
-    const allEmployees = new Set([req.body.employeeName, ...selectedEmployees]);
-
-    // Create the task with all employees included
-    const task = {
+    const newTask = new ManagerTask({
       projectName: req.body.projectName,
       projectId: req.body.projectId,
       taskName: req.body.taskName,
-      employeeName: req.body.employeeName, // Primary assigned employee
-      employees: Array.from(allEmployees), // Unified array of all employees
+      employeeName: req.body.employeeName,
       priority: req.body.priority,
       deadline: req.body.deadline,
       description: req.body.description,
       managerName: req.body.managerName,
       status: req.body.status,
       droneRequired: req.body.droneRequired,
-      dgpsRequired: req.body.dgpsRequired,
+      dgpsRequired : req.body.dgpsRequired,
+      selectedEmployees: req.body.selectedEmployees,
       estimatedHours: req.body.estimatedHours,
-    };
-
-    // Save the task into the database
-    const savedTask = await ManagerTask.create(task);
-
-    res.status(201).json({
-      message: "Task saved successfully",
-      data: savedTask,
     });
+    
+    const savedTask = await newTask.save();
+
+    res.status(201).json({ message: "Task saved successfully", data: savedTask });
   } catch (error) {
     console.error("Error saving task:", error.message);
     res.status(500).json({ message: "Error saving task", error: error.message });
   }
 });
-
-
-
-
-
 
 app.post("/api/get-task-by-manager-name", async (req, res) => {
   const { managerName } = req.body;
@@ -1319,25 +1408,18 @@ app.get('/api/remarks/:id', async (req, res) => {
 
 app.post("/api/tasks/employee", async (req, res) => {
   const { employeeName } = req.body;
-
   try {
-    // Searching for tasks where the employee is part of the 'employees' array
-    const tasks = await ManagerTask.find({ employees: employeeName });
-
-    // Check if tasks were found
+    const tasks = await ManagerTask.find({ employeeName });
     if (!tasks || tasks.length === 0) {
       return res.status(404).json({ message: "No tasks found for this employee." });
     }
-
-    // Respond with the tasks
     res.status(200).json(tasks);
   } catch (error) {
-    console.error("Error fetching tasks:", error);
+    console.error(error);
     res.status(500).json({ message: "Server error. Please try again later." });
   }
 });
 
-  
 app.put("/api/Employee/notes", async (req, res) => {
   try {
     const {id,  note } = req.body;
@@ -1753,7 +1835,6 @@ app.post('/api/submission', async (req, res) => {
         managerTaskId: data.managerTaskId,
       };
     } else if (type === "onFieldDetails") {
-      console.log("Received Data:", req.body);
       // Handling onFieldDetails type
       if (!onFieldDetails || !onFieldDetails.location) {
         return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
@@ -1954,7 +2035,27 @@ app.get('/api/submissions/selected-vehicles/:managerTaskId', async (req, res) =>
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+app.get('/api/get/submissions/:managerTaskId/:type', async (req, res) => {
+  try {
+    const { managerTaskId, type } = req.params;
 
+    const submission = await SubmissionSchema.findOne({
+      managerTaskId,
+      type,
+    });
+
+    if (!submission) {
+      return res.status(404).json({
+        message: `Submission not found for managerTaskId: ${managerTaskId} and type: ${type}`,
+      });
+    }
+
+    res.json(submission);
+  } catch (error) {
+    console.error('Error fetching submission:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 app.get('/api/get/private-vehicles/:name', async (req, res) => {
   try {
     const { name } = req.params;
@@ -2000,38 +2101,31 @@ app.get('/api/submissions', async (req, res) => {
   try {
     const { type, managerTaskId, currentStep } = req.query;
 
-    // Build a filter object based on query parameters
-    let filter = {};
-
-    if (type) {
-      filter.type = type;
+    if (!type) {
+      return res.status(400).json({ error: 'Type field is required to fetch submissions.' });
     }
 
-    if (managerTaskId) {
-      filter.managerTaskId = managerTaskId;
-    }
+    // Build the query dynamically based on the provided parameters
+    const query = { type };
+    if (managerTaskId) query.managerTaskId = managerTaskId;
+    if (currentStep) query.currentStep = parseInt(currentStep, 10);
 
-    if (currentStep) {
-      filter.currentStep = currentStep;
-    }
+    // Fetch the submissions matching the query
+    const submissions = await SubmissionSchema.find(query);
 
-    // Fetch submissions from the database
-    const submissions = await SubmissionSchema.find(filter);
-
-    if (!submissions.length) {
-      return res.status(404).json({ message: 'No submissions found matching the criteria.' });
+    if (!submissions || submissions.length === 0) {
+      return res.status(404).json({ message: 'No submissions found for the given criteria.' });
     }
 
     res.status(200).json({
-      message: 'Submissions retrieved successfully!',
+      message: 'Submissions fetched successfully!',
       data: submissions,
     });
   } catch (error) {
     console.error('Error fetching submissions:', error);
-    res.status(500).json({ error: 'Failed to retrieve submissions.' });
+    res.status(500).json({ error: 'Failed to fetch submissions.' });
   }
 });
-
 app.get("/api/manager-tasks", async (req, res) => {
   try {
     const tasks = await ManagerTask.find(); // Fetch all tasks from the database
@@ -2102,26 +2196,31 @@ app.get('/api/vehicles', async (req, res) => {
 });
 
 
-app.get('/api/submissions', (req, res) => {
-  const { type, managerTaskId } = req.query;
+app.get('/api/get/submissions', async (req, res) => {
+  try {
+    const { type, managerTaskId, currentStep } = req.query; // Retrieve query parameters
 
-  // Validate query parameters
-  if (!type || !managerTaskId) {
-    return res.status(400).json({ error: 'Type and managerTaskId are required.' });
+    // Build a dynamic filter based on the provided query parameters
+    const filter = {};
+    if (type) filter.type = type;
+    if (managerTaskId) filter.managerTaskId = managerTaskId;
+    if (currentStep) filter.currentStep = parseInt(currentStep, 10);
+
+    const submissions = await SubmissionSchema.find(filter); // Fetch submissions based on the filter
+
+    if (!submissions || submissions.length === 0) {
+      return res.status(404).json({ message: 'No submissions found for the given criteria.' });
+    }
+
+    res.status(200).json({
+      message: 'Submissions retrieved successfully!',
+      data: submissions,
+    });
+  } catch (error) {
+    console.error('Error retrieving submissions:', error);
+    res.status(500).json({ error: 'Failed to retrieve submissions.' });
   }
-
-  // Find the relevant submission
-  const submission = submissions.find(
-    (item) => item.type === type && item.managerTaskId === managerTaskId
-  );
-
-  if (!submission) {
-    return res.status(404).json({ error: 'Submission not found.' });
-  }
-
-  res.json(submission);
 });
-
 
 
 
