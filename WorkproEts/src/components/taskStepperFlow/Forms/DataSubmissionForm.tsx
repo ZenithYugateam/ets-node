@@ -38,7 +38,7 @@ export const DataSubmissionForm = ({ currentStep, task }: TaskStepperProps) => {
   };
 
   // Handle system name changes
-  const handleSystemNameChange = (key: string, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSystemNameChange = (key: string, event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     setSubmissions((prev) => ({
       ...prev,
@@ -126,12 +126,21 @@ export const DataSubmissionForm = ({ currentStep, task }: TaskStepperProps) => {
       {submissions[key].submitted && (
         <div className="space-y-4">
           <FormField label="System Name">
-            <input
-              type="text"
+            <select
               value={submissions[key].systemName}
               onChange={(e) => handleSystemNameChange(key, e)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
+            >
+              <option value="" disabled>
+                Select System
+              </option>
+              {Array.from({ length: 16 }, (_, i) => (
+                <option key={`PC-${i + 1}`} value={`PC-${i + 1}`}>
+                  PC-{i + 1}
+                </option>
+              ))}
+              <option value="PC-MAC">PC-MAC</option>
+            </select>
           </FormField>
           <FormField label="Upload Images">
             <ImageUpload
