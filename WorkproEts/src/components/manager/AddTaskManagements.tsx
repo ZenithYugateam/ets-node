@@ -288,43 +288,51 @@ const AddTaskManagements: React.FC = () => {
   ) => {
     setSelectedEmployees(event.target.value as string[]);
   };
-//modified by nithin handle submit 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-
-  // Combine the assigned employee with the crew members
-  const allAssignedEmployees = new Set([
-    formData.employeeName, // Primary assigned employee
-    ...selectedEmployees,  // Additional crew members
-  ]);
-
-  const updatedFormData = {
-    ...formData,
-    managerName: sessionStorage.getItem("userName"),
-    droneRequired,
-    dgpsRequired,
-    selectedEmployees: Array.from(allAssignedEmployees), // Ensure unique list
-    estimatedHours: formData.estimatedHours,
-  };
-
-  try {
-    const response = await axios.post(
-      "http://localhost:5001/api/store-form-data",
-      updatedFormData
-    );
-    if (response.status === 201) {
-      toast.success("Task successfully added!");
-      resetForm();
-      setIsModalOpen(false);
-
-      fetchManagerTasks(); // Refresh tasks after successful submission
+  //modified by nithin handle submit
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+  
+    // Ensure selectedEmployees is an array
+    const validSelectedEmployees = Array.isArray(selectedEmployees)
+      ? selectedEmployees
+      : [];
+  
+    // Combine the assigned employee with the crew members into a unified array
+    const allAssignedEmployees = new Set([
+      formData.employeeName, // Primary assigned employee
+      ...validSelectedEmployees, // Additional crew members
+    ]);
+  
+    // Prepare the updated form data
+    const updatedFormData = {
+      ...formData,
+      managerName: sessionStorage.getItem("userName"),
+      droneRequired,
+      dgpsRequired,
+      selectedEmployees: validSelectedEmployees, // Ensure selectedEmployees is valid
+      employees: Array.from(allAssignedEmployees), // Unified array for all employees
+      estimatedHours: formData.estimatedHours || 0, // Default estimatedHours to 0 if undefined
+    };
+  
+    try {
+      const response = await axios.post(
+        "http://localhost:5001/api/store-form-data",
+        updatedFormData
+      );
+      if (response.status === 201) {
+        toast.success("Task successfully added!");
+        resetForm();
+        setIsModalOpen(false);
+        fetchManagerTasks(); // Refresh task list
+      }
+    } catch (error) {
+      console.error("Error submitting form data:", error);
+      toast.error("Failed to add task");
     }
-  } catch (error) {
-    console.error("Error submitting form data:", error);
-    toast.error("Failed to add task");
-  }
-};
-
+  };
+  
+  
+  
   
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -511,26 +519,29 @@ const handleSubmit = async (e: React.FormEvent) => {
             </RadioGroup>
             {droneRequired === "Yes" && (
               <FormControl fullWidth sx={{ mb: 1 }}>
-              <Typography>Crew</Typography>
-              <Select
-                multiple
-                value={selectedEmployees}
-                onChange={handleEmployeeSelect}
-                renderValue={(selected) => (selected as string[]).join(", ")}
-              >
-                {employees
-                  .filter((employee) => employee.name !== formData.employeeName) // Exclude primary employee
-                  .map((employee) => (
-                    <MenuItem key={employee.id} value={employee.name}>
-                      <Checkbox
-                        checked={selectedEmployees.indexOf(employee.name) > -1}
-                      />
-                      {employee.name}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-            
+                <Typography>Crew</Typography>
+                <Select
+                  multiple
+                  value={selectedEmployees}
+                  onChange={handleEmployeeSelect}
+                  renderValue={(selected) => (selected as string[]).join(", ")}
+                >
+                  {employees
+                    .filter(
+                      (employee) => employee.name !== formData.employeeName
+                    ) // Exclude primary employee
+                    .map((employee) => (
+                      <MenuItem key={employee.id} value={employee.name}>
+                        <Checkbox
+                          checked={
+                            selectedEmployees.indexOf(employee.name) > -1
+                          }
+                        />
+                        {employee.name}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
             )}
 
             <Typography>DGPS Required</Typography>
