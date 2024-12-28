@@ -1165,6 +1165,7 @@ app.post("/api/getAllProjectNamesForEmployee", async (req, res) => {
 
 app.post('/api/employees-by-manager', async (req, res) => {
   const { managerName } = req.body;
+
   try {
     // Step 1: Get employees managed by the manager
     const employees = await User.find({
@@ -1176,34 +1177,37 @@ app.post('/api/employees-by-manager', async (req, res) => {
       return res.status(404).json({ message: 'No employees found under this manager' });
     }
 
+    // Extract employee names
     const employeeNames = employees.map(emp => emp.name);
 
-    // Step 2: Get all tasks for these employees
+    // Step 2: Fetch tasks assigned to these employees
     const tasks = await ManagerTask.find({
-      employeeName: { $in: employeeNames },
+      employees: { $in: employeeNames },
     });
 
     // Step 3: Group tasks by employee name
     const tasksGroupedByEmployee = tasks.reduce((acc, task) => {
-      if (!acc[task.employeeName]) {
-        acc[task.employeeName] = [];
-      }
-      acc[task.employeeName].push(task);
+      task.employees.forEach(employeeName => {
+        if (!acc[employeeName]) {
+          acc[employeeName] = [];
+        }
+        acc[employeeName].push(task);
+      });
       return acc;
     }, {});
 
-    // Step 4: Count pending/in-progress tasks for each employee
+    // Step 4: Generate the result with task counts and status
     const result = employees.map(emp => {
       const employeeTasks = tasksGroupedByEmployee[emp.name] || [];
-      const pendingTasksCount = employeeTasks.filter(
-        task => task.status === 'pending' || task.status === 'In Progress' || task.status === 'Pending'
+      const pendingTasksCount = employeeTasks.filter(task =>
+        ['Pending', 'In Progress'].includes(task.status)
       ).length;
 
       return {
         name: emp.name,
         email: emp.email,
         department: emp.department,
-        status: pendingTasksCount > 0 ? `${pendingTasksCount} pending tasks` : '0 pending tasks',
+        status: pendingTasksCount > 0 ? `${pendingTasksCount}` : '0',
       };
     });
 
