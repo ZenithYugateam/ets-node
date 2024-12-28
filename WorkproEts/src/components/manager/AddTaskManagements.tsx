@@ -289,41 +289,42 @@ const AddTaskManagements: React.FC = () => {
     setSelectedEmployees(event.target.value as string[]);
   };
 //modified by nithin handle submit 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-  
-    // Combine the assigned employee with the crew members
-    const allAssignedEmployees = new Set([
-      formData.employeeName, // Primary assigned employee
-      ...selectedEmployees,  // Additional crew members
-    ]);
-  
-    const updatedFormData = {
-      ...formData,
-      managerName: sessionStorage.getItem("userName"),
-      droneRequired,
-      dgpsRequired,
-      selectedEmployees: Array.from(allAssignedEmployees), // Ensure unique list
-      estimatedHours: formData.estimatedHours,
-    };
-  
-    try {
-      const response = await axios.post(
-        "http://localhost:5001/api/store-form-data",
-        updatedFormData
-      );
-      if (response.status === 201) {
-        toast.success("Task successfully added!");
-        resetForm();
-        setIsModalOpen(false);
-  
-        fetchManagerTasks();
-      }
-    } catch (error) {
-      console.error("Error submitting form data:", error);
-      toast.error("Failed to add task");
-    }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // Combine the assigned employee with the crew members
+  const allAssignedEmployees = new Set([
+    formData.employeeName, // Primary assigned employee
+    ...selectedEmployees,  // Additional crew members
+  ]);
+
+  const updatedFormData = {
+    ...formData,
+    managerName: sessionStorage.getItem("userName"),
+    droneRequired,
+    dgpsRequired,
+    selectedEmployees: Array.from(allAssignedEmployees), // Ensure unique list
+    estimatedHours: formData.estimatedHours,
   };
+
+  try {
+    const response = await axios.post(
+      "http://localhost:5001/api/store-form-data",
+      updatedFormData
+    );
+    if (response.status === 201) {
+      toast.success("Task successfully added!");
+      resetForm();
+      setIsModalOpen(false);
+
+      fetchManagerTasks(); // Refresh tasks after successful submission
+    }
+  } catch (error) {
+    console.error("Error submitting form data:", error);
+    toast.error("Failed to add task");
+  }
+};
+
   
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -510,14 +511,16 @@ const AddTaskManagements: React.FC = () => {
             </RadioGroup>
             {droneRequired === "Yes" && (
               <FormControl fullWidth sx={{ mb: 1 }}>
-                <Typography>Crew</Typography>
-                <Select
-                  multiple
-                  value={selectedEmployees}
-                  onChange={handleEmployeeSelect}
-                  renderValue={(selected) => (selected as string[]).join(", ")}
-                >
-                  {employees.map((employee) => (
+              <Typography>Crew</Typography>
+              <Select
+                multiple
+                value={selectedEmployees}
+                onChange={handleEmployeeSelect}
+                renderValue={(selected) => (selected as string[]).join(", ")}
+              >
+                {employees
+                  .filter((employee) => employee.name !== formData.employeeName) // Exclude primary employee
+                  .map((employee) => (
                     <MenuItem key={employee.id} value={employee.name}>
                       <Checkbox
                         checked={selectedEmployees.indexOf(employee.name) > -1}
@@ -525,8 +528,9 @@ const AddTaskManagements: React.FC = () => {
                       {employee.name}
                     </MenuItem>
                   ))}
-                </Select>
-              </FormControl>
+              </Select>
+            </FormControl>
+            
             )}
 
             <Typography>DGPS Required</Typography>
