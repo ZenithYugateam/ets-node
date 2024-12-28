@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import { FaCamera, FaUpload } from "react-icons/fa";
 import { FormField } from "../ui/FormField";
-import { ImageUpload } from "../ui/ImageUpload";
 import Camera from "../ui/Camera";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -72,16 +71,16 @@ export const FlightNotesForm = ({ task, currentStep }: FlightNotesFormProps) => 
     }
     const file = new File([buffer], `captured-image-${Date.now()}.jpg`, { type: mimeString });
 
-    setNewFlight((prevFlight) => ({
-      ...prevFlight,
-      flightImages: [...prevFlight.flightImages, file],
+    setFormData((prevData) => ({
+      ...prevData,
+      images: [...prevData.images, file], // Update the images array in formData
     }));
   };
 
   const handleImageUpload = (files: File[]) => {
-    setNewFlight((prevFlight) => ({
-      ...prevFlight,
-      flightImages: [...prevFlight.flightImages, ...files],
+    setFormData((prevData) => ({
+      ...prevData,
+      images: [...prevData.images, ...files], // Add uploaded files to the images array in formData
     }));
   };
 
@@ -119,10 +118,12 @@ export const FlightNotesForm = ({ task, currentStep }: FlightNotesFormProps) => 
         sightName: formData.sightName,
         date: formData.date.toISOString(),
         flights: flightData,
-        images: await convertImagesToBase64(formData.images),
+        images: await convertImagesToBase64(formData.images), // Convert and include images
         currentStep: formData.currentStep,
         managerTaskId: formData.managerTaskId,
       };
+
+      console.log("Submitting data:", dataToSubmit);
 
       const response = await axios.post("http://localhost:5001/api/submission", dataToSubmit);
       toast.success("Form submitted successfully!");

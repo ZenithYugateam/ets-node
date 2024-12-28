@@ -1728,6 +1728,7 @@ app.post('/api/submission', async (req, res) => {
         managerTaskId: data.managerTaskId,
       };
     } else if (type === "onFieldDetails") {
+      console.log("Received Data:", req.body);
       // Handling onFieldDetails type
       if (!onFieldDetails || !onFieldDetails.location) {
         return res.status(400).json({ error: 'onFieldDetails with location data is required for this type.' });
@@ -1928,27 +1929,7 @@ app.get('/api/submissions/selected-vehicles/:managerTaskId', async (req, res) =>
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-app.get('/api/get/submissions/:managerTaskId/:type', async (req, res) => {
-  try {
-    const { managerTaskId, type } = req.params;
 
-    const submission = await SubmissionSchema.findOne({
-      managerTaskId,
-      type,
-    });
-
-    if (!submission) {
-      return res.status(404).json({
-        message: `Submission not found for managerTaskId: ${managerTaskId} and type: ${type}`,
-      });
-    }
-
-    res.json(submission);
-  } catch (error) {
-    console.error('Error fetching submission:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
 app.get('/api/get/private-vehicles/:name', async (req, res) => {
   try {
     const { name } = req.params;
@@ -1994,31 +1975,38 @@ app.get('/api/submissions', async (req, res) => {
   try {
     const { type, managerTaskId, currentStep } = req.query;
 
-    if (!type) {
-      return res.status(400).json({ error: 'Type field is required to fetch submissions.' });
+    // Build a filter object based on query parameters
+    let filter = {};
+
+    if (type) {
+      filter.type = type;
     }
 
-    // Build the query dynamically based on the provided parameters
-    const query = { type };
-    if (managerTaskId) query.managerTaskId = managerTaskId;
-    if (currentStep) query.currentStep = parseInt(currentStep, 10);
+    if (managerTaskId) {
+      filter.managerTaskId = managerTaskId;
+    }
 
-    // Fetch the submissions matching the query
-    const submissions = await SubmissionSchema.find(query);
+    if (currentStep) {
+      filter.currentStep = currentStep;
+    }
 
-    if (!submissions || submissions.length === 0) {
-      return res.status(404).json({ message: 'No submissions found for the given criteria.' });
+    // Fetch submissions from the database
+    const submissions = await SubmissionSchema.find(filter);
+
+    if (!submissions.length) {
+      return res.status(404).json({ message: 'No submissions found matching the criteria.' });
     }
 
     res.status(200).json({
-      message: 'Submissions fetched successfully!',
+      message: 'Submissions retrieved successfully!',
       data: submissions,
     });
   } catch (error) {
     console.error('Error fetching submissions:', error);
-    res.status(500).json({ error: 'Failed to fetch submissions.' });
+    res.status(500).json({ error: 'Failed to retrieve submissions.' });
   }
 });
+
 app.get("/api/manager-tasks", async (req, res) => {
   try {
     const tasks = await ManagerTask.find(); // Fetch all tasks from the database
@@ -2089,31 +2077,26 @@ app.get('/api/vehicles', async (req, res) => {
 });
 
 
-app.get('/api/get/submissions', async (req, res) => {
-  try {
-    const { type, managerTaskId, currentStep } = req.query; // Retrieve query parameters
+app.get('/api/submissions', (req, res) => {
+  const { type, managerTaskId } = req.query;
 
-    // Build a dynamic filter based on the provided query parameters
-    const filter = {};
-    if (type) filter.type = type;
-    if (managerTaskId) filter.managerTaskId = managerTaskId;
-    if (currentStep) filter.currentStep = parseInt(currentStep, 10);
-
-    const submissions = await SubmissionSchema.find(filter); // Fetch submissions based on the filter
-
-    if (!submissions || submissions.length === 0) {
-      return res.status(404).json({ message: 'No submissions found for the given criteria.' });
-    }
-
-    res.status(200).json({
-      message: 'Submissions retrieved successfully!',
-      data: submissions,
-    });
-  } catch (error) {
-    console.error('Error retrieving submissions:', error);
-    res.status(500).json({ error: 'Failed to retrieve submissions.' });
+  // Validate query parameters
+  if (!type || !managerTaskId) {
+    return res.status(400).json({ error: 'Type and managerTaskId are required.' });
   }
+
+  // Find the relevant submission
+  const submission = submissions.find(
+    (item) => item.type === type && item.managerTaskId === managerTaskId
+  );
+
+  if (!submission) {
+    return res.status(404).json({ error: 'Submission not found.' });
+  }
+
+  res.json(submission);
 });
+
 
 
 
