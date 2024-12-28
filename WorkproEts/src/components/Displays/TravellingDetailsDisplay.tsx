@@ -114,10 +114,10 @@ export const TravellingDetailsDisplay = ({
       <h2 className="text-lg font-bold text-gray-800">Travelling Details</h2>
 
       {/* Transport Mode */}
-      <div>
+      {/* <div>
         <h3 className="text-sm font-medium text-gray-700">Transport Mode</h3>
         <p className="text-sm text-gray-900">{transportMode || 'N/A'}</p>
-      </div>
+      </div> */}
 
       {/* Based on Transport Mode */}
       {transportMode === 'Public' && publicTransportDetails ? (
@@ -164,7 +164,7 @@ export const TravellingDetailsDisplay = ({
           )}
         </div>
       ) : (
-        <p className="text-sm text-gray-500">No transport mode selected.</p>
+        <p className="text-sm text-gray-500"></p>
       )}
 
       {/* Selected Vehicles */}

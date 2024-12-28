@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "../../../ui/dialog";
 import { ScrollArea } from "../../../ui/scroll-area";
-import { TaskStepperDisplay } from "./TaskStepperDisplay"; // Ensure correct path for TaskStepperDisplay
+import { ReportView } from "./ReportView"; // Ensure correct path for ReportView
 
 type Priority = "High" | "Medium" | "Low";
 type Status = "Completed" | "In Progress" | "Pending";
@@ -283,10 +283,10 @@ export function TaskViewModal({
                   Send
                 </Button>
               </div>
-              {/* Stepper Component */}
+              {/* Report View Component */}
               <div className="mt-6">
-                <h3 className="text-lg font-semibold">Task Progress</h3>
-                <TaskStepperDisplay managerTaskId={taskId} />
+                <h3 className="text-lg font-semibold">Task Report</h3>
+                <ReportView managerTaskId={taskId} type={""} />
               </div>
             </div>
           </ScrollArea>

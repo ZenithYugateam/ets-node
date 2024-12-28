@@ -76,14 +76,14 @@ export const DroneSubmissionDisplay = ({ managerTaskId }: DroneSubmitFormDisplay
       )}
 
       {/* Current Step */}
-      <p>
+      {/* <p>
         <strong>Current Step:</strong> {submission.currentStep}
-      </p>
+      </p> */}
 
       {/* Manager Task ID */}
-      <p>
+      {/* <p>
         <strong>Manager Task ID:</strong> {submission.managerTaskId}
-      </p>
+      </p> */}
     </div>
   );
 };

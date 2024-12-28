@@ -13,6 +13,7 @@ const LocationSchema = new mongoose.Schema({
 const FlightSchema = new mongoose.Schema({
   flightNo: { type: String, required: false },
   takeoffTime: { type: String, required: false },
+  landingTime: { type: String, required: false },
 });
 
 const SubmissionSchema = new mongoose.Schema({
