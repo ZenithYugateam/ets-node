@@ -1214,10 +1214,11 @@ app.post('/api/employees-by-manager', async (req, res) => {
   }
 });
 
-
+//modified by nithin 
 app.post("/api/store-form-data", async (req, res) => {
   try {
-    const newTask = new ManagerTask({
+    // Save the main task for the primary assigned employee
+    const mainTask = new ManagerTask({
       projectName: req.body.projectName,
       projectId: req.body.projectId,
       taskName: req.body.taskName,
@@ -1228,19 +1229,41 @@ app.post("/api/store-form-data", async (req, res) => {
       managerName: req.body.managerName,
       status: req.body.status,
       droneRequired: req.body.droneRequired,
-      dgpsRequired : req.body.dgpsRequired,
+      dgpsRequired: req.body.dgpsRequired,
       selectedEmployees: req.body.selectedEmployees,
       estimatedHours: req.body.estimatedHours,
     });
-    
-    const savedTask = await newTask.save();
 
-    res.status(201).json({ message: "Task saved successfully", data: savedTask });
+    const savedMainTask = await mainTask.save();
+
+    // Save tasks for each selected crew member
+    const crewTasks = req.body.selectedEmployees.map((employee) => ({
+      projectName: req.body.projectName,
+      projectId: req.body.projectId,
+      taskName: req.body.taskName,
+      employeeName: employee,
+      priority: req.body.priority,
+      deadline: req.body.deadline,
+      description: req.body.description,
+      managerName: req.body.managerName,
+      status: req.body.status,
+      droneRequired: req.body.droneRequired,
+      dgpsRequired: req.body.dgpsRequired,
+      estimatedHours: req.body.estimatedHours,
+    }));
+
+    await ManagerTask.insertMany(crewTasks);
+
+    res.status(201).json({
+      message: "Task saved successfully for assigned employee and crew members",
+      data: savedMainTask,
+    });
   } catch (error) {
     console.error("Error saving task:", error.message);
     res.status(500).json({ message: "Error saving task", error: error.message });
   }
 });
+
 
 app.post("/api/get-task-by-manager-name", async (req, res) => {
   const { managerName } = req.body;
