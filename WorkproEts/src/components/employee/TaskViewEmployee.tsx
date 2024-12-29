@@ -1,4 +1,3 @@
-// src/components/TaskViewEmployee.tsx
 
 import { Button as MuiButton } from "@mui/material";
 import Box from "@mui/material/Box";
@@ -235,7 +234,7 @@ const TaskViewEmployee: React.FC = () => {
     try {
       const response = await axios.post<Task[]>(
         "http://localhost:5001/api/tasks/employee",
-        { employeeName }
+        { employeeName , department : sessionStorage.getItem("department") }
       );
       let allTasks = response.data;
 
