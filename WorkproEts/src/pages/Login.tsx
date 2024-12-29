@@ -23,11 +23,13 @@ const LoginForm = () => {
       });
 
       const data = await response.json();
+   
 
       if (response.ok) {
         sessionStorage.setItem("userId", data.user.id);
         sessionStorage.setItem("role", JSON.stringify(data.user.role));
         sessionStorage.setItem("userName", data.user.name);
+        sessionStorage.setItem("department", data.user.department);
 
         navigate(`/${data.user.role.toLowerCase()}`);
       } else {

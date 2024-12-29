@@ -1328,11 +1328,24 @@ app.post('/api/employees-by-manager', async (req, res) => {
 
 app.post("/api/store-form-data", async (req, res) => {
   try {
-    const newTask = new ManagerTask({
+    // Ensure `selectedEmployees` is an array
+    const selectedEmployees = Array.isArray(req.body.selectedEmployees) 
+      ? req.body.selectedEmployees 
+      : [];
+
+    // Combine primary assigned employee and selected crew members
+    const allEmployees = new Set([req.body.employeeName, ...selectedEmployees]);
+
+    // Create the task with all employees included
+
+    console.log("employee name : " , req.body.employeeDepartment)
+    const newTask = {
       projectName: req.body.projectName,
       projectId: req.body.projectId,
       taskName: req.body.taskName,
+      employeeDepartment : req.body.employeeDepartment,
       employeeName: req.body.employeeName,
+      employees: Array.from(allEmployees), 
       priority: req.body.priority,
       deadline: req.body.deadline,
       description: req.body.description,
@@ -1342,7 +1355,7 @@ app.post("/api/store-form-data", async (req, res) => {
       dgpsRequired : req.body.dgpsRequired,
       selectedEmployees: req.body.selectedEmployees,
       estimatedHours: req.body.estimatedHours,
-    });
+    };
     
     const savedTask = await newTask.save();
 
@@ -1411,11 +1424,21 @@ app.get('/api/remarks/:id', async (req, res) => {
 });
 
 app.post("/api/tasks/employee", async (req, res) => {
-  const { employeeName } = req.body;
+  const { employeeName, department } = req.body;
+  
+  // Validate that employeeName and department are provided
+  if (!employeeName || typeof employeeName !== "string" || !department || typeof department !== "string") {
+    return res.status(400).json({ message: "Employee name and department are required and should be strings." });
+  }
+
   try {
-    const tasks = await ManagerTask.find({ employeeName });
+    const tasks = await ManagerTask.find({
+      employees: { $in: [employeeName] },
+      employeeDepartment: department, // Matches tasks for the specific department
+    });
+
     if (!tasks || tasks.length === 0) {
-      return res.status(404).json({ message: "No tasks found for this employee." });
+      return res.status(404).json({ message: "No tasks found for this employee and department." });
     }
     res.status(200).json(tasks);
   } catch (error) {

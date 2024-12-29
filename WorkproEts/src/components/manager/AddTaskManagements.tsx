@@ -1,3 +1,4 @@
+
 import {
   Box,
   Button,
@@ -11,7 +12,6 @@ import {
   TextField,
   Typography,
   Checkbox,
-  Chip,
   InputAdornment,
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
@@ -215,7 +215,6 @@ const AddTaskManagements: React.FC = () => {
 
           const count = parseInt(employee.status.split(" ")[0]);
 
-          // Determine color based on count
           let color;
           if (count === 0) {
             color = "green";
@@ -228,6 +227,7 @@ const AddTaskManagements: React.FC = () => {
           return {
             id: employee._id,
             name: employee.name,
+            department: employee.department,
             count: count,
             color: color,
           };
@@ -299,8 +299,8 @@ const AddTaskManagements: React.FC = () => {
   
     // Combine the assigned employee with the crew members into a unified array
     const allAssignedEmployees = new Set([
-      formData.employeeName, // Primary assigned employee
-      ...validSelectedEmployees, // Additional crew members
+      formData.employeeName, 
+      ...validSelectedEmployees, 
     ]);
   
     // Prepare the updated form data
@@ -441,76 +441,84 @@ const AddTaskManagements: React.FC = () => {
               margin="normal"
               required
             />
-            <Typography>Employee Name</Typography>
             <FormControl fullWidth sx={{ mb: 1 }}>
-              <Select
-                name="employeeName"
-                value={formData.employeeName}
-                onChange={(e) =>
-                  setFormData((prevData) => ({
-                    ...prevData,
-                    employeeName: e.target.value,
-                  }))
-                }
-                required
-                displayEmpty
-              >
-                {employees.map((employee) => (
-                  <MenuItem
-                    key={employee.id}
-                    value={employee.name}
-                    style={{
-                      padding: "12px 16px",
-                      borderBottom: "1px solid #eee",
-                      minWidth: "200px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        width: "100%",
-                        gap: "16px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "15px",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {employee.name}
-                      </span>
-                      <span
-                        style={{
-                          color:
-                            employee.count === 0
-                              ? "#2e7d32"
-                              : employee.count <= 5
-                              ? "#ed6c02"
-                              : "#d32f2f",
-                          fontSize: "14px",
-                          fontWeight: "bold",
-                          backgroundColor:
-                            employee.count === 0
-                              ? "#e8f5e9"
-                              : employee.count <= 5
-                              ? "#fff3e0"
-                              : "#ffebee",
-                          padding: "4px 10px",
-                          borderRadius: "12px",
-                          minWidth: "30px",
-                          textAlign: "center",
-                        }}
-                      >
-                        {employee.count}
-                      </span>
-                    </div>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+  <Typography>Employee Name</Typography>
+  <Select
+    name="employeeName"
+    value={formData.employeeName}
+    onChange={(e) => {
+      const selectedEmployee = employees.find(
+        (employee) => employee.name === e.target.value
+      );
+
+      if (selectedEmployee) {
+        setFormData((prevData) => ({
+          ...prevData,
+          employeeName: selectedEmployee.name,
+          employeeDepartment: selectedEmployee.department, 
+        }));
+      }
+    }}
+    required
+    displayEmpty
+  >
+    {employees.map((employee) => (
+      <MenuItem
+        key={employee.id}
+        value={employee.name}
+        style={{
+          padding: "12px 16px",
+          borderBottom: "1px solid #eee",
+          minWidth: "200px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            gap: "16px",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "15px",
+              fontWeight: 500,
+            }}
+          >
+            {employee.name}
+          </span>
+          <span
+            style={{
+              color:
+                employee.count === 0
+                  ? "#2e7d32"
+                  : employee.count <= 5
+                  ? "#ed6c02"
+                  : "#d32f2f",
+              fontSize: "14px",
+              fontWeight: "bold",
+              backgroundColor:
+                employee.count === 0
+                  ? "#e8f5e9"
+                  : employee.count <= 5
+                  ? "#fff3e0"
+                  : "#ffebee",
+              padding: "4px 10px",
+              borderRadius: "12px",
+              minWidth: "30px",
+              textAlign: "center",
+            }}
+          >
+            {employee.count}
+          </span>
+        </div>
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
 
             <Typography>Drone Required</Typography>
             <RadioGroup row value={droneRequired} onChange={handleDroneChange}>
