@@ -99,17 +99,23 @@ const Department = mongoose.model("Department", departmentSchema);
 
 const userSchema = new mongoose.Schema(
   {
-    adminId: { type: String, }, // ID of the admin creating the user
+    adminId: { type: String }, // ID of the admin creating the user
     name: { type: String, required: true, trim: true }, // User's name with trimming to remove excess spaces
     password: { type: String, required: true }, // Hashed password should be stored (consider bcrypt for hashing)
     email: { type: String, required: true, unique: true, lowercase: true }, // Ensure email is unique and case-insensitive
+    phone: { 
+      type: String, 
+      required: true, // Make phone number required
+      match: [/^\d{10}$/, "Please enter a valid 10-digit phone number"] // Add validation for 10-digit phone number
+    },
     role: { type: String, required: true, enum: ["Admin", "Manager", "Employee"] }, // Ensure role is limited to valid options
     departments: [{ type: String, required: true }], // Array of department names
     subDepartments: [{ type: String }], // Array of sub-department names
     managers: [
       {
-        name: { type: String, required: true }, // Manager's name
-        id: { type: String, required: true }, // Manager's unique ID
+        id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        name: { type: String, required: true },
+        _id: false, // Prevent creating new _id for each manager entry
       },
     ], // Array of manager objects (with validation for name and id)
     status: { type: String, required: true, enum: ["active", "inactive"] }, // User status with only valid options
@@ -476,35 +482,41 @@ app.get("/users/managers", async (req, res) => {
   try {
     const { departments } = req.query;
 
+    // Validate query parameter
     if (!departments) {
-      console.log("No departments provided in the request."); // Debug
-      return res.status(400).json({
-        message: "Departments are required",
-      });
+      console.log("No departments provided in the request.");
+      return res.status(400).json({ message: "Departments are required" });
     }
 
-    const departmentList = departments.split(",");
-    console.log("Fetching managers for departments:", departmentList); // Debug
+    // Parse and trim departments
+    const departmentList = departments.split(",").map((d) => d.trim());
+    console.log("Fetching managers for departments:", departmentList);
 
-    const managers = await User.find({
-      department: { $in: departmentList },
-      role: "Manager",
-    }).select("_id name email");
+    // Query to find managers in the specified departments
+    const query = {
+      role: "Manager", // Ensure only managers are fetched
+      departments: { $in: departmentList }, // Match any department in the list
+    };
 
-    console.log("Managers found:", managers); // Debug
+    // Execute query
+    const managers = await User.find(query).select("_id name email departments");
 
-    res.status(200).json(managers || []);
+    // Check if any managers were found
+    if (!managers || managers.length === 0) {
+      console.log("No managers found for departments:", departmentList);
+      return res.status(404).json({ message: "No managers found" });
+    }
+
+    console.log("Managers found:", managers);
+    res.status(200).json(managers);
   } catch (error) {
-    console.error("Error fetching managers:", error);
+    console.error("Error fetching managers:", error.message);
     res.status(500).json({
       message: "Error fetching managers",
       error: error.message,
     });
   }
 });
-
-
-
 
 app.get("/api/departments", async (req, res) => {
   try {
@@ -548,6 +560,9 @@ app.post("/api/departments/add", async (req, res) => {
   }
 });
 
+// Import necessary modules
+
+// Define the API
 app.post("/api/users/add", async (req, res) => {
   try {
     const {
@@ -555,6 +570,7 @@ app.post("/api/users/add", async (req, res) => {
       name,
       email,
       password,
+      phone,
       role,
       departments,
       subDepartments,
@@ -562,9 +578,24 @@ app.post("/api/users/add", async (req, res) => {
       status,
     } = req.body;
 
+    // Debugging logs
+    console.log("Request Body:", req.body);
+
     // Validate required fields
-    if (!name || !email || !password || !role || !departments || departments.length === 0) {
+    if (!name || !email || !password || !phone || !role || !departments || departments.length === 0) {
       return res.status(400).json({ message: "Required fields are missing" });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email address. Please provide a valid email." });
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ message: "Invalid phone number. Please provide a valid 10-digit phone number." });
     }
 
     // Check for duplicate email
@@ -573,55 +604,23 @@ app.post("/api/users/add", async (req, res) => {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    // Validate departments
-    const invalidDepartments = [];
-    for (const departmentName of departments) {
-      const departmentExists = await Department.findOne({ name: departmentName });
-      if (!departmentExists) {
-        invalidDepartments.push(departmentName);
-      }
-    }
-
-    if (invalidDepartments.length > 0) {
-      return res.status(400).json({
-        message: `The following departments do not exist: ${invalidDepartments.join(", ")}`,
+    let managerDetails = [];
+    if (role === "Employee" && managers) {
+      // Validate that each manager exists in the database
+      const validManagers = await User.find({
+        _id: { $in: managers.map((manager) => manager.id) },
+        role: "Manager",
       });
-    }
 
-    // Validate sub-departments (only if role is not Manager)
-    if (role !== "Manager") {
-      const invalidSubDepartments = [];
-      for (const subDepartmentName of subDepartments || []) {
-        const subDepartmentExists = await Department.findOne({
-          "subDepartments.name": subDepartmentName,
-        });
-        if (!subDepartmentExists) {
-          invalidSubDepartments.push(subDepartmentName);
-        }
+      if (validManagers.length !== managers.length) {
+        return res.status(400).json({ message: "Some managers are invalid or do not exist." });
       }
 
-      if (invalidSubDepartments.length > 0) {
-        return res.status(400).json({
-          message: `The following sub-departments do not exist: ${invalidSubDepartments.join(", ")}`,
-        });
-      }
-    }
-
-    // Validate managers (only if role is not Manager)
-    if (role !== "Manager") {
-      const invalidManagers = [];
-      for (const manager of managers || []) {
-        const managerExists = await User.findOne({ _id: manager.id, name: manager.name, role: "Manager" });
-        if (!managerExists) {
-          invalidManagers.push(manager.name);
-        }
-      }
-
-      if (invalidManagers.length > 0) {
-        return res.status(400).json({
-          message: `The following managers do not exist: ${invalidManagers.join(", ")}`,
-        });
-      }
+      // Map valid managers to store both ID and name
+      managerDetails = validManagers.map((manager) => ({
+        id: manager._id,
+        name: manager.name,
+      }));
     }
 
     // Create a new user
@@ -629,18 +628,17 @@ app.post("/api/users/add", async (req, res) => {
       adminId,
       name,
       email,
+      phone,
       password,
       role,
       departments,
-      subDepartments: role === "Manager" ? [] : subDepartments || [], // Sub-departments only for non-managers
-      managers: role === "Manager" ? [] : managers || [], // Managers only for non-managers
-      status: status || "active", // Default to "active" if undefined
+      subDepartments: subDepartments || [],
+      managers: role === "Employee" ? managerDetails : [], // Store both ID and name
+      status: status || "active",
     });
 
-    // Save the user in the database
     const savedUser = await newUser.save();
 
-    // Respond with the saved user
     res.status(201).json({
       message: `${role} created successfully`,
       user: savedUser,
@@ -650,6 +648,13 @@ app.post("/api/users/add", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 });
+
+
+
+
+
+
+  
 
 
 
