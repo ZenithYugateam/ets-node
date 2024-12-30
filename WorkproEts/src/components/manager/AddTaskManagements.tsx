@@ -17,7 +17,7 @@ import {
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import axios from "axios";
 import { Clock, Eye, Plus, SearchIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { TaskViewModal } from "./Dialog_ui/TaskViewModal";
@@ -79,7 +79,58 @@ const AddTaskManagements: React.FC = () => {
       ),
     },
     { field: "taskName", headerName: "Task Name", flex: 1 },
-    { field: "employeeName", headerName: "Employee Name", flex: 1 },
+    {
+      field: "employeeName",
+      headerName: "Employee Name",
+      flex: 1,
+      renderCell: (params) => {
+        const selectedEmployees = params.row.selectedEmployees; // Assuming the task row contains `selectedEmployees`
+    
+        if (!selectedEmployees || selectedEmployees.length === 0) {
+          return "No employees selected";
+        }
+    
+        return (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center", // Center horizontally
+              alignItems: "flex-start", // Start vertically at the top
+              flexWrap: "wrap",
+              gap: "8px", // Space between chips
+              height: "100%", // Match the height of the cell
+              alignContent: "center", // Center content inside the wrapping area
+              width: "100%", // Ensure the container takes the full cell width
+            }}
+          >
+            {selectedEmployees.map(
+              (
+                name:
+                  | string
+                  | number
+                  | boolean
+                  | ReactElement<any, string | JSXElementConstructor<any>>
+                  | Iterable<ReactNode>
+                  | ReactPortal
+                  | null
+                  | undefined,
+                index: Key | null | undefined
+              ) => (
+                <Chip
+                  key={index}
+                  label={name}
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                />
+              )
+            )}
+          </div>
+        );
+      },
+    },
+    
+    
     {
       field: "priority",
       headerName: "Priority",
