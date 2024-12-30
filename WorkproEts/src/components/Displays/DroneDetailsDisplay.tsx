@@ -34,7 +34,13 @@ export const DroneDetailsDisplay: React.FC<DroneDetailsDisplayProps> = ({ manage
         setDroneDetails(Array.isArray(response.data) ? response.data : []); // Ensure it's an array
         setError(null); // Clear previous errors if successful
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to fetch drone details');
+        // Do not show an error if no data is found, treat it as "No data submitted yet"
+        if (err.response?.status === 404) {
+          setDroneDetails([]);
+          setError(null);
+        } else {
+          setError(err.response?.data?.message || 'Failed to fetch drone details');
+        }
       } finally {
         setLoading(false);
       }
@@ -47,12 +53,8 @@ export const DroneDetailsDisplay: React.FC<DroneDetailsDisplayProps> = ({ manage
     return <p className="text-gray-500">Loading drone details...</p>;
   }
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
-  }
-
   if (!Array.isArray(droneDetails) || droneDetails.length === 0) {
-    return <p className="text-gray-500">No drone details available for the given task ID.</p>;
+    return <p className="text-gray-500">No data submitted yet for the given task ID.</p>;
   }
 
   return (

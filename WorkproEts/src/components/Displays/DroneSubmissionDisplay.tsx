@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
-
 interface DroneSubmitFormSubmission {
   type: string;
   checkedItems: string[];
@@ -13,10 +12,7 @@ interface DroneSubmitFormDisplayProps {
   managerTaskId: string;
 }
 
-
 export const DroneSubmissionDisplay = ({ managerTaskId }: DroneSubmitFormDisplayProps) => {
-
-
   const [submission, setSubmission] = useState<DroneSubmitFormSubmission | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +30,7 @@ export const DroneSubmissionDisplay = ({ managerTaskId }: DroneSubmitFormDisplay
         if (response.status === 200 && response.data.data.length > 0) {
           setSubmission(response.data.data[0]); // Assuming one submission per managerTaskId
         } else {
-          setError('No DroneSubmitForm submissions found for the given managerTaskId.');
+          setSubmission(null); // Ensure submission is null if no data is found
         }
       } catch (err) {
         console.error('Error fetching DroneSubmitForm submission:', err);
@@ -51,12 +47,12 @@ export const DroneSubmissionDisplay = ({ managerTaskId }: DroneSubmitFormDisplay
     return <p>Loading DroneSubmitForm submission...</p>;
   }
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
+  if (!submission) {
+    return <p className="text-gray-500">No Data Submitted Yet</p>;
   }
 
-  if (!submission) {
-    return <p>No DroneSubmitForm submission data available.</p>;
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
   }
 
   return (

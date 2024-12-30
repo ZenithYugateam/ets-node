@@ -34,13 +34,13 @@ export const DataSubmissionDisplay = ({ managerTaskId }: DataSubmissionDisplayPr
 
         if (response.data && response.data.data && response.data.data.length > 0) {
           // Assuming the first submission is relevant
-          const submission = response.data.data[0]; // Take the first matching submission
+          const submission = response.data.data[0];
           setDataSubmission({
             projectSubmitted: submission.projectSubmitted || false,
             submissions: submission.submissions || {},
           });
         } else {
-          setError("No data submission details found.");
+          setDataSubmission(null); // No data available
         }
       } catch (err) {
         console.error("Error fetching data submission details:", err);
@@ -57,12 +57,8 @@ export const DataSubmissionDisplay = ({ managerTaskId }: DataSubmissionDisplayPr
     return <p>Loading data submission details...</p>;
   }
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
-  }
-
-  if (!dataSubmission) {
-    return <p>No data submission details available.</p>;
+  if (!dataSubmission || Object.keys(dataSubmission.submissions).length === 0) {
+    return <p className="text-gray-500">No Data Submitted Yet</p>;
   }
 
   const { projectSubmitted, submissions } = dataSubmission;

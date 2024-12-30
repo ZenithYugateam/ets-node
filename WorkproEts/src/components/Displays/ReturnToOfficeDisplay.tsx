@@ -37,7 +37,7 @@ export const ReturnToOfficeDisplay = ({ managerTaskId }: ReturnToOfficeDisplayPr
             images: submission.images || [],
           });
         } else {
-          setError('No return-to-office details found.');
+          setReturnToOfficeDetails(null); // No data available
         }
       } catch (err) {
         console.error('Error fetching return-to-office details:', err);
@@ -54,12 +54,12 @@ export const ReturnToOfficeDisplay = ({ managerTaskId }: ReturnToOfficeDisplayPr
     return <p>Loading return-to-office details...</p>;
   }
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
+  if (!returnToOfficeDetails) {
+    return <p className="text-gray-500">No data is submitted yet</p>;
   }
 
-  if (!returnToOfficeDetails) {
-    return <p>No return-to-office details available.</p>;
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
   }
 
   const { selectedVehicles, timeReached, endReading, images } = returnToOfficeDetails;

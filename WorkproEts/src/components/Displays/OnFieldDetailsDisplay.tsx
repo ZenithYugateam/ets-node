@@ -40,7 +40,7 @@ export const OnFieldDetailsDisplay = ({ managerTaskId }: OnFieldDetailsDisplayPr
             isReporting: submission.isReporting || false,
           });
         } else {
-          setError('No on-field details found.');
+          setOnFieldDetails(null); // No data available
         }
       } catch (err) {
         console.error('Error fetching on-field details:', err);
@@ -57,12 +57,12 @@ export const OnFieldDetailsDisplay = ({ managerTaskId }: OnFieldDetailsDisplayPr
     return <p>Loading on-field details...</p>;
   }
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
+  if (!onFieldDetails) {
+    return <p className="text-gray-500">No data is submitted yet</p>;
   }
 
-  if (!onFieldDetails) {
-    return <p>No on-field details available.</p>;
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
   }
 
   const { location, isReporting } = onFieldDetails;
