@@ -44,9 +44,7 @@ interface FormData {
   subDepartments?: string[]; // Updated to support multiple sub-departments
   managers?: { name: string; id: string }[]; // Updated to support multiple managers
   status: "active" | "inactive";
-  phone?: string; // Added phone field
 }
-
 
 interface Department {
   _id: string;
@@ -185,18 +183,17 @@ if (!USER_ID) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ adminId: USER_ID }),
         });
-    
+
         if (!response.ok) {
           throw new Error("Failed to fetch users");
         }
-    
+
         const data = await response.json();
         setUsers(data);
       } catch (error: any) {
         toast.error(`Error fetching users: ${error.message}`);
       }
     };
-    
 
     fetchAllUsers();
   }, []);
@@ -244,94 +241,51 @@ if (!USER_ID) {
         return;
       }
   
-      // Join and encode the departments
-      const departmentsQuery = departments.map(encodeURIComponent).join(",");
-      console.debug(`Fetching managers for departments: ${departmentsQuery}`); // Debug
+      // Join the departments as a comma-separated string
+      const departmentsQuery = departments.join(",");
+      console.log("Departments query for API:", departmentsQuery); // Debug
   
-      // Fetch managers from the API
       const response = await axios.get(
         `http://localhost:5001/users/managers?departments=${departmentsQuery}`
       );
   
-      console.debug("Response status:", response.status); // Debug
-      console.debug("Response data:", response.data); // Debug
-  
       const managersData = response.data;
-  
-      if (!managersData || managersData.length === 0) {
-        console.warn("No managers found for the selected departments.");
-        setManagers([]);
-        return;
-      }
-  
-      console.debug("Fetched managers data:", managersData); // Debug
+      console.log("Fetched managers data:", managersData); // Debug
   
       // Remove duplicate managers by `_id`
       const uniqueManagers = managersData.filter(
         (manager, index, self) =>
-          manager._id && index === self.findIndex((m) => m._id === manager._id)
+          index === self.findIndex((m) => m._id === manager._id)
       );
   
       setManagers(uniqueManagers);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("Axios error fetching managers:", error.response?.data || error.message);
-        toast.error(`Failed to fetch managers: ${error.response?.data?.message || error.message}`);
-      } else {
-        console.error("Unexpected error fetching managers:", error);
-        toast.error("An unexpected error occurred while fetching managers.");
-      }
+      console.error("Error fetching managers:", error);
+      toast.error("Failed to fetch managers");
     }
   };
   
   
   
-  
-  
 // added by nithin
 const handleDepartmentsChange = async (selectedDepartments: string[]) => {
-  console.debug("Selected Departments:", selectedDepartments); // Debugging
+  console.log("Selected Departments:", selectedDepartments); // Debug
+  setFormData({ ...formData, departments: selectedDepartments });
 
-  if (!selectedDepartments || selectedDepartments.length === 0) {
-    console.warn("No departments selected.");
-    setFormData((prevFormData) => ({
-      ...prevFormData,
-      departments: [],
-      subDepartments: [],
-    }));
-    setSubDomains([]);
-    setManagers([]); // Clear managers if no departments are selected
-    return;
-  }
-
-  // Collect all sub-departments for the selected departments
-  const allSubDomains = new Set(
-    selectedDepartments.flatMap((department) => {
-      if (!departmentOptions[department]) {
-        console.warn(`Department "${department}" has no sub-domains defined.`);
-        return [];
-      }
-      return departmentOptions[department];
-    })
-  );
-
-  setSubDomains([...allSubDomains]);
-
-  // Update formData with new departments and subDepartments
-  setFormData((prevFormData) => ({
-    ...prevFormData,
-    departments: selectedDepartments,
-    subDepartments:
-      formData.role === "Manager" ? [...allSubDomains] : prevFormData.subDepartments,
-  }));
-
-  // Fetch managers only for Employee role
-  if (formData.role === "Employee" && selectedDepartments.length > 0) {
+  // Check if role is Employee before fetching managers
+  if (formData.role === "Employee") {
     await fetchManagersByDepartments(selectedDepartments);
   }
+
+  let allSubDomains: string[] = [];
+  selectedDepartments.forEach((department) => {
+    if (departmentOptions[department]) {
+      allSubDomains = [...allSubDomains, ...departmentOptions[department]];
+    }
+  });
+
+  setSubDomains([...new Set(allSubDomains)]);
 };
-
-
 
 //adedd by nithin
 
@@ -342,8 +296,6 @@ const handleSave = async () => {
     if (
       !formData.name ||
       !formData.email ||
-      !formData.password ||
-      !formData.phone ||
       !formData.role ||
       formData.departments.length === 0
     ) {
@@ -351,36 +303,20 @@ const handleSave = async () => {
       return;
     }
 
-    // Validate phone number format
-    const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(formData.phone)) {
-      toast.error("Invalid phone number. Please provide a valid 10-digit phone number.");
-      return;
-    }
-
-    // Ensure subDepartments are selected for Managers
-    if (formData.role === "Manager" && (!formData.subDepartments || formData.subDepartments.length === 0)) {
-      toast.error("Please select at least one sub-department for Manager role.");
-      return;
-    }
-
     // Prepare data to send to the API
     const dataToSend = {
-      adminId: USER_ID,
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      phone: formData.phone,
-      role: formData.role,
+      ...formData,
+      adminId: USER_ID, // Ensure adminId is included
       departments: formData.departments,
       subDepartments: formData.subDepartments || [],
-      managers: formData.managers?.map((manager) => ({
-        name: manager.name,
-        id: manager.id,
-      })) || [],
-      status: formData.status,
+      managers:
+        formData.managers?.map((manager) => ({
+          name: manager.name,
+          id: manager.id,
+        })) || [],
     };
 
+    // Determine if it's an add or edit operation
     const url = selectedUser?._id
       ? `http://localhost:5001/api/users/edit/${selectedUser._id}`
       : "http://localhost:5001/api/users/add";
@@ -393,20 +329,20 @@ const handleSave = async () => {
       body: JSON.stringify(dataToSend),
     });
 
+    // Check response status
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || "Failed to save user");
     }
 
-    const savedUser = await response.json();
-
-    // Update the user list immediately
+    // Update state with the new or updated user data
+    const data = await response.json();
     if (selectedUser) {
       setUsers((prevUsers) =>
-        prevUsers.map((user) => (user._id === savedUser._id ? savedUser : user))
+        prevUsers.map((user) => (user._id === data._id ? data : user))
       );
     } else {
-      setUsers((prevUsers) => [savedUser, ...prevUsers]);
+      setUsers((prevUsers) => [data, ...prevUsers]);
     }
 
     toast.success(`User ${selectedUser ? "updated" : "added"} successfully`);
@@ -414,11 +350,10 @@ const handleSave = async () => {
   } catch (error: any) {
     console.error("Save error:", error);
     toast.error(`Error saving user: ${error.message}`);
+  } finally {
+    setShowModal(false);
   }
 };
-
-
-
 
 
 
@@ -436,16 +371,16 @@ const handleSave = async () => {
         if (!response.ok) {
           throw new Error("Failed to delete user");
         }
-  
-        // Update the user list immediately
-        setUsers((prevUsers) => prevUsers.filter((user) => user._id !== userId));
+
+        setUsers((prevUsers) =>
+          prevUsers.filter((user) => user._id !== userId)
+        );
         toast.success("User deleted successfully");
       } catch (error: any) {
         toast.error(`Error deleting user: ${error.message}`);
       }
     }
   };
-  
 
   // Open modal for editing or adding user
   const handleOpenModal = (user: User | null = null) => {
@@ -611,8 +546,8 @@ const handleSave = async () => {
       ),
     },
     {
-      field: "departments",
-      headerName: "Departments",
+      field: "department",
+      headerName: "Department",
       flex: 1,
       renderCell: (params: any) => (
         <Typography
@@ -620,11 +555,9 @@ const handleSave = async () => {
             fontWeight: 400,
             fontSize: 14,
             color: "text.primary",
-            wordBreak: "break-word",
           }}
         >
-          {/* Join the department names with commas */}
-          {Array.isArray(params.value) ? params.value.join(", ") : ""}
+          {params.value}
         </Typography>
       ),
     },
@@ -794,182 +727,156 @@ const handleSave = async () => {
       </div>
 
       <Modal open={showModal} onClose={handleCloseModal}>
-  <Box
-    sx={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: 600,
-      maxHeight: "90vh", // Limit the modal height to 90% of the viewport
-      overflowY: "auto", // Enable vertical scrolling
-      bgcolor: "background.paper",
-      p: 3,
-      borderRadius: 2,
-      boxShadow: 24, // Add shadow for better visual effect
-    }}
-  >
-    <Typography variant="h6" mb={2}>
-      {selectedUser ? "Edit User" : "Add User"}
-    </Typography>
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {/* Name Field */}
-      <TextField
-        label="Name"
-        value={formData.name}
-        onChange={(e) =>
-          setFormData({ ...formData, name: e.target.value })
-        }
-        fullWidth
-      />
-
-      {/* Email Field */}
-      <TextField
-        label="Email"
-        value={formData.email}
-        onChange={(e) =>
-          setFormData({ ...formData, email: e.target.value })
-        }
-        fullWidth
-      />
-
-      {/* Phone Number Field */}
-      <TextField
-        label="Phone Number"
-        value={formData.phone || ""} // Default to empty string if not set
-        onChange={(e) =>
-          setFormData({ ...formData, phone: e.target.value })
-        }
-        fullWidth
-      />
-
-      {/* Password Field */}
-      <TextField
-        label="Password"
-        value={formData.password}
-        onChange={(e) =>
-          setFormData({ ...formData, password: e.target.value })
-        }
-        type="password"
-        fullWidth
-      />
-
-      {/* Role Field */}
-      <TextField
-        select
-        label="Role"
-        value={formData.role}
-        onChange={(e) => handleRoleChange(e.target.value)}
-        fullWidth
-      >
-        <MenuItem value="Manager">Manager</MenuItem>
-        <MenuItem value="Employee">Employee</MenuItem>
-      </TextField>
-
-      {/* Multi-Select for Departments */}
-      <Autocomplete
-        multiple
-        options={Object.keys(departmentOptions)}
-        value={formData.departments || []}
-        onChange={(e, value) => handleDepartmentsChange(value)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Departments"
-            placeholder="Select Departments"
-          />
-        )}
-        fullWidth
-      />
-
-      {/* Multi-Select for Sub-Departments */}
-      {/* Multi-Select for Sub-Departments */}
-{(formData.departments?.length || 0) > 0 && (
-  <Autocomplete
-    multiple
-    options={["Select All", ...subDomains]} // Add "Select All" as an option
-    value={formData.subDepartments || []}
-    onChange={(e, value) => {
-      if (value.includes("Select All")) {
-        // If "Select All" is selected, set all sub-domains
-        setFormData({ ...formData, subDepartments: subDomains });
-      } else if (value.length === subDomains.length - 1 && formData.subDepartments.includes("Select All")) {
-        // If all items are deselected, remove "Select All"
-        setFormData({ ...formData, subDepartments: value.filter((v) => v !== "Select All") });
-      } else {
-        // Otherwise, update selected sub-domains
-        setFormData({ ...formData, subDepartments: value });
-      }
-    }}
-    renderInput={(params) => (
-      <TextField
-        {...params}
-        label="Sub-Departments"
-        placeholder="Select Sub-Departments"
-      />
-    )}
-    fullWidth
-  />
-)}
-
-
-      {/* Multi-Select for Managers */}
-      {formData.role === "Employee" && (
-        <Autocomplete
-          multiple
-          options={managers?.map((manager) => manager.name) || []}
-          value={formData.managers?.map((manager) => manager.name) || []}
-          onChange={(e, value) =>
-            setFormData({
-              ...formData,
-              managers: value.map((name) => {
-                const manager = managers.find((m) => m.name === name);
-                return { name, id: manager?._id || "" };
-              }),
-            })
-          }
-          renderInput={(params) => (
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 600,
+            bgcolor: "background.paper",
+            p: 3,
+            borderRadius: 2,
+          }}
+        >
+          <Typography variant="h6" mb={2}>
+            {selectedUser ? "Edit User" : "Add User"}
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {/* Name Field */}
             <TextField
-              {...params}
-              label="Managers"
-              placeholder="Select Managers"
+              label="Name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              fullWidth
             />
-          )}
-          fullWidth
-        />
-      )}
 
-      {/* Status Field */}
-      <TextField
-        select
-        label="Status"
-        value={formData.status}
-        onChange={(e) =>
-          setFormData({
-            ...formData,
-            status: e.target.value as "active" | "inactive",
-          })
-        }
-        fullWidth
-      >
-        <MenuItem value="active">Active</MenuItem>
-        <MenuItem value="inactive">Inactive</MenuItem>
-      </TextField>
+            {/* Email Field */}
+            <TextField
+              label="Email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              fullWidth
+            />
 
-      {/* Action Buttons */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
-        <Button variant="outlined" onClick={handleCloseModal}>
-          Cancel
-        </Button>
-        <Button variant="contained" color="primary" onClick={handleSave}>
-          Save
-        </Button>
-      </Box>
-    </Box>
-  </Box>
-</Modal>
+            {/* Password Field */}
+            <TextField
+              label="Password"
+              value={formData.password}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
+              type="password"
+              fullWidth
+            />
 
+            {/* Role Field */}
+            <TextField
+              select
+              label="Role"
+              value={formData.role}
+              onChange={(e) => handleRoleChange(e.target.value)}
+              fullWidth
+            >
+              <MenuItem value="Manager">Manager</MenuItem>
+              <MenuItem value="Employee">Employee</MenuItem>
+            </TextField>
 
+            {/* Multi-Select for Departments */}
+            <Autocomplete
+              multiple
+              options={Object.keys(departmentOptions)}
+              value={formData.departments || []}
+              onChange={(e, value) => handleDepartmentsChange(value)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Departments"
+                  placeholder="Select Departments"
+                />
+              )}
+              fullWidth
+            />
+
+            {/* Multi-Select for Sub-Departments */}
+            {(formData.departments?.length || 0) > 0 && (
+              <Autocomplete
+                multiple
+                options={subDomains || []}
+                value={formData.subDepartments || []}
+                onChange={(e, value) =>
+                  setFormData({ ...formData, subDepartments: value })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Sub-Departments"
+                    placeholder="Select Sub-Departments"
+                  />
+                )}
+                fullWidth
+              />
+            )}
+
+            {/* Multi-Select for Managers */}
+            {formData.role === "Employee" && (
+              <Autocomplete
+                multiple
+                options={managers?.map((manager) => manager.name) || []}
+                value={formData.managers?.map((manager) => manager.name) || []}
+                onChange={(e, value) =>
+                  setFormData({
+                    ...formData,
+                    managers: value.map((name) => {
+                      const manager = managers.find((m) => m.name === name);
+                      return { name, id: manager?._id || "" };
+                    }),
+                  })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Managers"
+                    placeholder="Select Managers"
+                  />
+                )}
+                fullWidth
+              />
+            )}
+
+            {/* Status Field */}
+            <TextField
+              select
+              label="Status"
+              value={formData.status}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  status: e.target.value as "active" | "inactive",
+                })
+              }
+              fullWidth
+            >
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="inactive">Inactive</MenuItem>
+            </TextField>
+
+            {/* Action Buttons */}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+              <Button variant="outlined" onClick={handleCloseModal}>
+                Cancel
+              </Button>
+              <Button variant="contained" color="primary" onClick={handleSave}>
+                Save
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      </Modal>
 
       {/* Department Modal */}
       <DepartmentModel
