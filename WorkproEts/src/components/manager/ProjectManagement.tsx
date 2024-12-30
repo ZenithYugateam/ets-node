@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Plus, X } from "lucide-react";
-import { useMutation, useQueryClient } from "react-query";
+import { useMutation, useQuery } from "react-query";
+import { fetchManagedDepartments } from "./fetchManagedDepartments";
 import { createTask, Task } from "../../api/admin";
 import { toast } from "react-toastify";
 import { Button } from "../../ui/button";
@@ -11,11 +12,9 @@ import { ScrollArea } from "../../ui/scroll-area";
 const ProjectManagement: React.FC<{
   managerId: string;
   managerName: string;
-  department: string;
-}> = ({ managerId, managerName, department }) => {
-  const queryClient = useQueryClient();
+}> = ({ managerId, managerName }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [departments, setDepartments] = useState<string[]>([]);
   const [formData, setFormData] = useState<Omit<Task, "_id" | "createdBy" | "progress">>({
     title: "",
     assignee: {
@@ -26,14 +25,28 @@ const ProjectManagement: React.FC<{
     priority: "Medium",
     deadline: "",
     status: "Pending",
-    department, // Pre-fill department from props
+    department: "",
     description: "",
   });
 
-  // Mutation for creating a project
+  const { isLoading, isError } = useQuery(
+    ["managedDepartments", managerId],
+    () => fetchManagedDepartments(managerId),
+    {
+      onSuccess: (data) => {
+        setDepartments(data);
+        if (data.length > 0) {
+          setFormData((prev) => ({ ...prev, department: data[0] })); // Default to first department
+        }
+      },
+      onError: (error) => {
+        toast.error(`Failed to fetch departments: ${error.message}`);
+      },
+    }
+  );
+
   const createMutation = useMutation(createTask, {
     onSuccess: () => {
-      queryClient.invalidateQueries("tasks");
       toast.success("Project created successfully");
       setIsModalOpen(false);
       resetForm();
@@ -54,7 +67,7 @@ const ProjectManagement: React.FC<{
       priority: "Medium",
       deadline: "",
       status: "Pending",
-      department,
+      department: departments[0] || "",
       description: "",
     });
   };
@@ -70,6 +83,9 @@ const ProjectManagement: React.FC<{
     createMutation.mutate({ ...newTask, createdBy: managerId });
   };
 
+  if (isLoading) return <p>Loading departments...</p>;
+  if (isError) return <p>Failed to load departments.</p>;
+
   return (
     <div className="flex justify-end">
       <Button
@@ -77,7 +93,7 @@ const ProjectManagement: React.FC<{
           resetForm();
           setIsModalOpen(true);
         }}
-        style={{ backgroundColor: "#007BFF", color: "#FFFFFF" }} // Blue button styling
+        style={{ backgroundColor: "#007BFF", color: "#FFFFFF" }}
         className="hover:bg-blue-700 transition ease-in-out duration-200"
         startIcon={<Plus />}
       >
@@ -86,7 +102,7 @@ const ProjectManagement: React.FC<{
 
       {isModalOpen && (
         <Dialog open={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white">
+          <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white rounded-lg shadow-lg">
             <DialogHeader className="px-6 pt-6">
               <div className="flex items-start justify-between">
                 <DialogTitle className="text-2xl font-semibold tracking-tight">
@@ -102,9 +118,9 @@ const ProjectManagement: React.FC<{
             </DialogHeader>
             <Separator className="my-4" />
             <ScrollArea className="px-6 pb-6 max-h-[calc(80vh-8rem)]">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-600">
                     Project Title
                   </label>
                   <input
@@ -113,37 +129,46 @@ const ProjectManagement: React.FC<{
                     onChange={(e) =>
                       setFormData({ ...formData, title: e.target.value })
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Enter project title"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-600">
                     Department
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.department}
-                    readOnly
-                    className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm"
-                  />
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, department: e.target.value }))
+                    }
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  >
+                    {departments.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-600">
                     Assigned To
                   </label>
                   <input
                     type="text"
                     value={formData.assignee.name}
                     readOnly
-                    className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-600">
                     Priority
                   </label>
                   <select
@@ -151,7 +176,7 @@ const ProjectManagement: React.FC<{
                     onChange={(e) =>
                       setFormData({ ...formData, priority: e.target.value })
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
@@ -160,7 +185,7 @@ const ProjectManagement: React.FC<{
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-600">
                     Status
                   </label>
                   <select
@@ -168,7 +193,7 @@ const ProjectManagement: React.FC<{
                     onChange={(e) =>
                       setFormData({ ...formData, status: e.target.value })
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   >
                     <option value="Pending">Pending</option>
                     <option value="In Progress">In Progress</option>
@@ -177,7 +202,7 @@ const ProjectManagement: React.FC<{
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-600">
                     Deadline
                   </label>
                   <input
@@ -186,13 +211,13 @@ const ProjectManagement: React.FC<{
                     onChange={(e) =>
                       setFormData({ ...formData, deadline: e.target.value })
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-600">
                     Description
                   </label>
                   <textarea
@@ -200,7 +225,8 @@ const ProjectManagement: React.FC<{
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    className="mt-1 block w-full h-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500"
+                    className="mt-2 block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 h-32"
+                    placeholder="Enter project description"
                   />
                 </div>
 
@@ -209,15 +235,13 @@ const ProjectManagement: React.FC<{
                     type="button"
                     onClick={() => setIsModalOpen(false)}
                     variant="outlined"
-                    color="secondary"
+                    className="px-5 py-2 text-sm font-medium rounded-lg bg-gray-200 hover:bg-gray-300"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    style={{ backgroundColor: "#007BFF", color: "#FFFFFF" }} // Blue submit button
-                    className="hover:bg-blue-700 transition ease-in-out duration-200"
-                    startIcon={<Plus />}
+                    className="px-5 py-2 text-sm font-medium rounded-lg bg-blue-500 text-white hover:bg-blue-600"
                   >
                     Create Project
                   </Button>
