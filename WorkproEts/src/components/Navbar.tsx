@@ -13,13 +13,13 @@ import { Button } from "@mui/material";
 import { useState, useContext, useEffect, useRef } from "react";
 import { BugReportModal } from "./shared/BugReportModal";
 import { NotificationContext } from "./context/NotificationContext";
-import { getUserData } from "../api/admin"; // Import getUserData function
+import { getUserData } from "../api/admin";
 
 const Navbar = () => {
   const [open, setOpen] = useState<boolean>(false);
-  const [username, setUserName] = useState<string | null>(null); // State for employee name
-  const [userRole, setUserRole] = useState<string | null>(null); // State for employee role
-  const [userDepartment, setUserDepartment] = useState<string | null>(null); // State for employee department
+  const [username, setUserName] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userDepartment, setUserDepartment] = useState<string | null>(null);
   const {
     notifications,
     markAsRead,
@@ -45,23 +45,28 @@ const Navbar = () => {
       if (!userId) {
         throw new Error("User ID not found in session storage");
       }
-
+  
       const response = await getUserData(userId);
       if (response) {
         setUserName(response.name || "User");
-        setUserRole(response.role || "Unknown Role"); // Update role state
-        setUserDepartment(response.department || "Unknown Department"); // Update department state
+        setUserRole(response.role || "Unknown Role");
+  
+        // Updated to handle departments
+        const departments = Array.isArray(response.departments) && response.departments.length > 0
+          ? response.departments.join(", ")
+          : "No Departments";
+        setUserDepartment(departments); // Set departments as a string
       } else {
         throw new Error("Invalid user data received");
       }
     } catch (error) {
       console.error("Error fetching user data:", error.message);
-      setUserName("User"); // Fallback if fetching fails
-      setUserRole("Unknown Role"); // Fallback if fetching fails
-      setUserDepartment("Unknown Department"); // Fallback if fetching fails
+      setUserName("User");
+      setUserRole("Unknown Role");
+      setUserDepartment("Unknown Department");
     }
   };
-
+  
   useEffect(() => {
     fetchEmployeeData();
   }, []);
@@ -85,12 +90,21 @@ const Navbar = () => {
     <>
       <nav className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
+          <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
               <Users className="h-8 w-8 text-indigo-600" />
               <span className="ml-2 text-xl font-semibold hidden sm:block">
                 WorkForce Pro
+              </span>
+            </div>
+
+            {/* User Info at the Top */}
+            <div className="hidden sm:block text-center">
+              <span className="text-sm font-medium text-gray-700">
+                {username === null
+                  ? "Loading..."
+                  : `${username} - ${userRole} - ${userDepartment}`}
               </span>
             </div>
 
@@ -219,15 +233,6 @@ const Navbar = () => {
               >
                 <Bug className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
               </Button>
-
-              {/* Username, Role, and Department */}
-              <div className="hidden sm:block">
-                <span className="text-sm font-medium text-gray-700">
-                  {username === null
-                    ? "Loading..."
-                    : `${username} (${userRole}, ${userDepartment})`}
-                </span>
-              </div>
             </div>
           </div>
         </div>

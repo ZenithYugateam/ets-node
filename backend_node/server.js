@@ -398,19 +398,24 @@ app.get("/api/user/:id", async (req, res) => {
   }
 
   try {
-    const user = await User.findById(id);
+    const user = await User.findById(id).select("name role departments"); // Explicitly select name, role, and departments
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    return res.status(200).json(user);
+    return res.status(200).json({
+      name: user.name,
+      role: user.role,
+      departments: user.departments || [], // Ensure departments is included as an array
+    });
   } catch (err) {
     return res
       .status(500)
       .json({ message: "Server error", error: err.message });
   }
 });
+
 
 app.post("/api/getProfileData", async (req, res) => {
   const { userId } = req.body;
@@ -1132,6 +1137,7 @@ app.get("/api/timelog/:userId", async (req, res) => {
 
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
+
   try {
     const user = await User.findOne({ email });
     if (!user) {
@@ -1143,11 +1149,18 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Generate a JWT token
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET, // Replace with an environment variable in production
       { expiresIn: "1h" }
     );
+
+    // Handle department field based on schema type
+    const department =
+      Array.isArray(user.departments) && user.departments.length > 0
+        ? user.departments
+        : user.department || []; // Fallback for single department
 
     // Respond with user info and token
     res.status(200).json({
@@ -1158,7 +1171,7 @@ app.post("/api/auth/login", async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        department: user.department,
+        departments: department, // Ensures array format for departments
       },
     });
   } catch (error) {
