@@ -39,10 +39,13 @@ export const FlightNotesDisplay = ({ managerTaskId }: FlightNotesDisplayProps) =
             return new Date(current.date) > new Date(latest.date) ? current : latest;
           }, submissions[0]);
           setLatestData(latestSubmission);
+        } else {
+          setLatestData(null); // Set to null if no data is found
         }
-        setLoading(false);
       } catch (err) {
-        setError("Failed to fetch data");
+        console.error("Failed to fetch data:", err);
+        setError(null); // Set error to null if no data is fetched
+      } finally {
         setLoading(false);
       }
     };
@@ -51,9 +54,8 @@ export const FlightNotesDisplay = ({ managerTaskId }: FlightNotesDisplayProps) =
   }, [managerTaskId]);
 
   if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
 
-  if (!latestData) return <p>No data available</p>;
+  if (!latestData) return <p className="text-gray-500">Data not yet submitted</p>;
 
   return (
     <div className="space-y-6">

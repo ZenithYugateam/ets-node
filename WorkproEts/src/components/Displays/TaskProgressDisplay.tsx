@@ -22,7 +22,7 @@ export const TaskProgressDisplay = ({ managerTaskId, type }: TaskProgressDisplay
 
         // Fetch submission data using the provided API
         const response = await axios.get("http://localhost:5001/api/submissions", {
-          params: { type:"Submission_task_final", managerTaskId },
+          params: { type: "Submission_task_final", managerTaskId },
         });
 
         console.log("API Response:", response.data);
@@ -43,10 +43,10 @@ export const TaskProgressDisplay = ({ managerTaskId, type }: TaskProgressDisplay
               setTimeout(() => setShowConfetti(false), 5000);
             }
           } else {
-            setError("Status is missing in the submission data.");
+            setStatus(null); // Status is missing
           }
         } else {
-          setError("No submissions found.");
+          setStatus(null); // No submissions found
         }
       } catch (err) {
         console.error("Error fetching submission data:", err);
@@ -63,12 +63,12 @@ export const TaskProgressDisplay = ({ managerTaskId, type }: TaskProgressDisplay
     return <p>Loading task progress...</p>;
   }
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
+  if (!status && !error) {
+    return <p className="text-gray-500">Data not yet submitted</p>;
   }
 
-  if (!status) {
-    return <p>No progress data available.</p>;
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
   }
 
   return (

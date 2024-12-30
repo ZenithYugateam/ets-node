@@ -40,7 +40,7 @@ export const GettingOffFieldDisplay = ({ managerTaskId }: GettingOffFieldDisplay
             departingTime: submission.departingTime || 'N/A',
           });
         } else {
-          setError('No getting-off-field details found.');
+          setGettingOffFieldDetails(null); // No data available
         }
       } catch (err) {
         console.error('Error fetching getting-off-field details:', err);
@@ -57,12 +57,12 @@ export const GettingOffFieldDisplay = ({ managerTaskId }: GettingOffFieldDisplay
     return <p>Loading getting-off-field details...</p>;
   }
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
+  if (!gettingOffFieldDetails) {
+    return <p className="text-gray-500">No data is submitted yet</p>;
   }
 
-  if (!gettingOffFieldDetails) {
-    return <p>No getting-off-field details available.</p>;
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
   }
 
   const { location, departingTime } = gettingOffFieldDetails;

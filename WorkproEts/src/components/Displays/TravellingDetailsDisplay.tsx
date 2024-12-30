@@ -51,7 +51,6 @@ export const TravellingDetailsDisplay = ({
         );
 
         if (!travellingResponse.data) {
-          setError('No travelling details found.');
           setTravellingDetails(null);
           return;
         }
@@ -61,7 +60,6 @@ export const TravellingDetailsDisplay = ({
 
         // Fetch additional data based on transport mode
         if (details.transportMode === 'Public') {
-          // No additional data fetch needed for Public mode
           setError(null);
         } else if (details.transportMode === 'Private') {
           // Fetch private vehicles
@@ -91,12 +89,12 @@ export const TravellingDetailsDisplay = ({
     return <p>Loading travelling details...</p>;
   }
 
-  if (error) {
-    return <p className="text-red-500">{error}</p>;
+  if (!travellingDetails) {
+    return <p className="text-gray-500">No data is submitted yet</p>;
   }
 
-  if (!travellingDetails) {
-    return <p>No travelling details available.</p>;
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
   }
 
   const {
