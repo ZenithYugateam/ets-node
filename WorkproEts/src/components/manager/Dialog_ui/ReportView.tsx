@@ -13,7 +13,7 @@ interface ReportViewProps {
   type: string;
 }
 
-export const ReportView = ({ managerTaskId, type }: ReportViewProps) => {
+export const ReportView = ({ managerTaskId }: ReportViewProps) => {
     console.log("Rendering ReportView for managerTaskId:", managerTaskId); // Debugging
   
     return (

@@ -5,7 +5,6 @@ import { Check, RefreshCw } from "lucide-react";
 
 interface TaskProgressDisplayProps {
   managerTaskId: string;
-  type: string; // Type of submission (e.g., "afterFlight")
 }
 
 export const TaskProgressDisplay = ({ managerTaskId, type }: TaskProgressDisplayProps) => {
@@ -19,27 +18,39 @@ export const TaskProgressDisplay = ({ managerTaskId, type }: TaskProgressDisplay
       try {
         setIsLoading(true);
 
+        console.log("Fetching task progress with type:", type);
+
         // Fetch submission data using the provided API
         const response = await axios.get("http://localhost:5001/api/submissions", {
-          params: { type, managerTaskId },
+          params: { type:"Submission_task_final", managerTaskId },
         });
 
-        if (response.data && response.data.data && response.data.data.length > 0) {
-          // Assuming the status is part of the first submission object
-          const submission = response.data.data[0];
+        console.log("API Response:", response.data);
 
-          setStatus(submission.status || "In Progress");
+        const submissions = response.data?.data;
 
-          if (submission.status === "Completed") {
-            setShowConfetti(true);
-            setTimeout(() => setShowConfetti(false), 5000);
+        if (submissions && submissions.length > 0) {
+          const submission = submissions[0];
+          console.log("Submission Object:", submission);
+
+          // Update the status
+          if (submission.status) {
+            setStatus(submission.status);
+
+            // Trigger confetti if the task is completed
+            if (submission.status === "Completed") {
+              setShowConfetti(true);
+              setTimeout(() => setShowConfetti(false), 5000);
+            }
+          } else {
+            setError("Status is missing in the submission data.");
           }
         } else {
           setError("No submissions found.");
         }
       } catch (err) {
         console.error("Error fetching submission data:", err);
-        setError("Failed to fetch task progress.");
+        setError("Failed to fetch task progress. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -82,7 +93,7 @@ export const TaskProgressDisplay = ({ managerTaskId, type }: TaskProgressDisplay
           ) : (
             <>
               <RefreshCw className="h-4 w-4 mr-2" />
-              In Progress
+              {status || "In Progress"}
             </>
           )}
         </div>
