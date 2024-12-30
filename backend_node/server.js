@@ -577,7 +577,7 @@ app.post("/api/users/add", async (req, res) => {
       managers,
       status,
     } = req.body;
-
+    // nithin
     // Debugging logs
     console.log("Request Body:", req.body);
 
