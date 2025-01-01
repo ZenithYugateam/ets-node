@@ -1,4 +1,3 @@
-
 import {
   Box,
   Button,
@@ -17,10 +16,19 @@ import {
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import axios from "axios";
 import { Clock, Eye, Plus, SearchIcon } from "lucide-react";
-import { JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
+import {
+  JSXElementConstructor,
+  Key,
+  ReactElement,
+  ReactNode,
+  ReactPortal,
+  useEffect,
+  useState,
+} from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { TaskViewModal } from "./Dialog_ui/TaskViewModal";
+import { fetchManagedDepartments } from "./fetchManagedDepartments";
 
 const AddTaskManagements: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -36,6 +44,8 @@ const AddTaskManagements: React.FC = () => {
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<any[]>([]); // State for filtered tasks
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>(""); // Track selected department
 
   const handleViewTask = (task: any) => {
     setSelectedTask(task);
@@ -85,11 +95,11 @@ const AddTaskManagements: React.FC = () => {
       flex: 1,
       renderCell: (params) => {
         const selectedEmployees = params.row.selectedEmployees; // Assuming the task row contains `selectedEmployees`
-    
+
         if (!selectedEmployees || selectedEmployees.length === 0) {
           return "No employees selected";
         }
-    
+
         return (
           <div
             style={{
@@ -129,8 +139,7 @@ const AddTaskManagements: React.FC = () => {
         );
       },
     },
-    
-    
+
     {
       field: "priority",
       headerName: "Priority",
@@ -290,6 +299,21 @@ const AddTaskManagements: React.FC = () => {
         toast.error("Failed to fetch employees");
       }
     };
+    const loadDepartments = async () => {
+      try {
+        const userId = sessionStorage.getItem("userId");
+        if (!userId) {
+          throw new Error("User ID not found in session storage");
+        }
+        const departments = await fetchManagedDepartments(userId);
+        setDepartments(departments);
+      } catch (error) {
+        console.error("Error fetching departments:", error);
+        toast.error("Failed to fetch departments");
+      }
+    };
+
+    loadDepartments();
 
     fetchManagerTasks();
     fetchProjects();
@@ -342,49 +366,51 @@ const AddTaskManagements: React.FC = () => {
   //modified by nithin handle submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     // Ensure selectedEmployees is an array
     const validSelectedEmployees = Array.isArray(selectedEmployees)
       ? selectedEmployees
       : [];
-  
+
     // Combine the assigned employee with the crew members into a unified array
     const allAssignedEmployees = new Set([
-      formData.employeeName, 
-      ...validSelectedEmployees, 
+      formData.employeeName,
+      ...validSelectedEmployees,
     ]);
-  
+
     // Prepare the updated form data
     const updatedFormData = {
       ...formData,
-      managerName: sessionStorage.getItem("userName"),
+      department: selectedDepartment,
+      managerName: sessionStorage.getItem("userName"), // Ensure sessionStorage key is correctly set
       droneRequired,
       dgpsRequired,
-      selectedEmployees: validSelectedEmployees, // Ensure selectedEmployees is valid
-      employees: Array.from(allAssignedEmployees), // Unified array for all employees
-      estimatedHours: formData.estimatedHours || 0, // Default estimatedHours to 0 if undefined
+      selectedEmployees: Array.isArray(validSelectedEmployees) ? validSelectedEmployees : [], // Validate `selectedEmployees` is an array
+      employees: Array.from(allAssignedEmployees || []), // Ensure `allAssignedEmployees` is iterable
+      estimatedHours: parseInt(formData.estimatedHours, 10) || 0, // Ensure `estimatedHours` is a number
     };
-  
+    
     try {
       const response = await axios.post(
         "http://localhost:5001/api/store-form-data",
         updatedFormData
       );
+    
       if (response.status === 201) {
         toast.success("Task successfully added!");
         resetForm();
         setIsModalOpen(false);
         fetchManagerTasks(); // Refresh task list
+      } else {
+        console.error("Unexpected response:", response);
+        toast.error("Failed to add task due to unexpected server response");
       }
     } catch (error) {
       console.error("Error submitting form data:", error);
-      toast.error("Failed to add task");
+      toast.error(error.response?.data?.message || "Failed to add task");
     }
+    
   };
-  
-  
-  
-  
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
@@ -469,6 +495,25 @@ const AddTaskManagements: React.FC = () => {
         >
           <h3 className="text-lg font-medium mb-4">Add Task</h3>
           <form onSubmit={handleSubmit}>
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <Typography>Department</Typography>
+              <Select
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                displayEmpty
+                required
+              >
+                <MenuItem value="" disabled>
+                  Select a department
+                </MenuItem>
+                {departments.map((department) => (
+                  <MenuItem key={department} value={department}>
+                    {department}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
             <Typography>Project Name</Typography>
             <FormControl fullWidth sx={{ mb: 1 }}>
               <Select
@@ -493,83 +538,82 @@ const AddTaskManagements: React.FC = () => {
               required
             />
             <FormControl fullWidth sx={{ mb: 1 }}>
-  <Typography>Employee Name</Typography>
-  <Select
-    name="employeeName"
-    value={formData.employeeName}
-    onChange={(e) => {
-      const selectedEmployee = employees.find(
-        (employee) => employee.name === e.target.value
-      );
+              <Typography>Employee Name</Typography>
+              <Select
+                name="employeeName"
+                value={formData.employeeName}
+                onChange={(e) => {
+                  const selectedEmployee = employees.find(
+                    (employee) => employee.name === e.target.value
+                  );
 
-      if (selectedEmployee) {
-        setFormData((prevData) => ({
-          ...prevData,
-          employeeName: selectedEmployee.name,
-          employeeDepartment: selectedEmployee.department, 
-        }));
-      }
-    }}
-    required
-    displayEmpty
-  >
-    {employees.map((employee) => (
-      <MenuItem
-        key={employee.id}
-        value={employee.name}
-        style={{
-          padding: "12px 16px",
-          borderBottom: "1px solid #eee",
-          minWidth: "200px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "100%",
-            gap: "16px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "15px",
-              fontWeight: 500,
-            }}
-          >
-            {employee.name}
-          </span>
-          <span
-            style={{
-              color:
-                employee.count === 0
-                  ? "#2e7d32"
-                  : employee.count <= 5
-                  ? "#ed6c02"
-                  : "#d32f2f",
-              fontSize: "14px",
-              fontWeight: "bold",
-              backgroundColor:
-                employee.count === 0
-                  ? "#e8f5e9"
-                  : employee.count <= 5
-                  ? "#fff3e0"
-                  : "#ffebee",
-              padding: "4px 10px",
-              borderRadius: "12px",
-              minWidth: "30px",
-              textAlign: "center",
-            }}
-          >
-            {employee.count}
-          </span>
-        </div>
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
-
+                  if (selectedEmployee) {
+                    setFormData((prevData) => ({
+                      ...prevData,
+                      employeeName: selectedEmployee.name,
+                      employeeDepartment: selectedEmployee.department,
+                    }));
+                  }
+                }}
+                required
+                displayEmpty
+              >
+                {employees.map((employee) => (
+                  <MenuItem
+                    key={employee.id}
+                    value={employee.name}
+                    style={{
+                      padding: "12px 16px",
+                      borderBottom: "1px solid #eee",
+                      minWidth: "200px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        width: "100%",
+                        gap: "16px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 500,
+                        }}
+                      >
+                        {employee.name}
+                      </span>
+                      <span
+                        style={{
+                          color:
+                            employee.count === 0
+                              ? "#2e7d32"
+                              : employee.count <= 5
+                              ? "#ed6c02"
+                              : "#d32f2f",
+                          fontSize: "14px",
+                          fontWeight: "bold",
+                          backgroundColor:
+                            employee.count === 0
+                              ? "#e8f5e9"
+                              : employee.count <= 5
+                              ? "#fff3e0"
+                              : "#ffebee",
+                          padding: "4px 10px",
+                          borderRadius: "12px",
+                          minWidth: "30px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {employee.count}
+                      </span>
+                    </div>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
             <Typography>Drone Required</Typography>
             <RadioGroup row value={droneRequired} onChange={handleDroneChange}>
