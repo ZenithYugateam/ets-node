@@ -1295,8 +1295,9 @@ app.post('/api/employees-by-manager', async (req, res) => {
     // Step 1: Get employees managed by the manager
     const employees = await User.find({
       role: 'Employee',
-      manager: managerName,
+      managers: { $elemMatch: { name: { $in: managerName } } }, // Match the `name` field in the `managers` array
     }).select('name email department');
+    
 
     if (!employees || employees.length === 0) {
       return res.status(404).json({ message: 'No employees found under this manager' });
@@ -1344,45 +1345,41 @@ app.post('/api/employees-by-manager', async (req, res) => {
 });
 
 
+// Adjust the path to your model
+
 app.post("/api/store-form-data", async (req, res) => {
   try {
-    // Ensure `selectedEmployees` is an array
-    const selectedEmployees = Array.isArray(req.body.selectedEmployees) 
-      ? req.body.selectedEmployees 
-      : [];
-
-    // Combine primary assigned employee and selected crew members
-    const allEmployees = new Set([req.body.employeeName, ...selectedEmployees]);
-
-    // Create the task with all employees included
-
-    console.log("employee name : " , req.body.employeeDepartment)
-    const newTask = {
+    // Create a new ManagerTask instance with the incoming payload
+    const newTask = new ManagerTask({
       projectName: req.body.projectName,
       projectId: req.body.projectId,
       taskName: req.body.taskName,
-      employeeDepartment : req.body.employeeDepartment,
       employeeName: req.body.employeeName,
-      employees: Array.from(allEmployees), 
+      employeeDepartment: req.body.selectedDepartment,
+      employees: req.body.employees,
       priority: req.body.priority,
       deadline: req.body.deadline,
       description: req.body.description,
       managerName: req.body.managerName,
       status: req.body.status,
       droneRequired: req.body.droneRequired,
-      dgpsRequired : req.body.dgpsRequired,
-      selectedEmployees: req.body.selectedEmployees,
+      dgpsRequired: req.body.dgpsRequired,
       estimatedHours: req.body.estimatedHours,
-    };
-    
+      remarks: req.body.remarks,
+      notes: req.body.notes,
+    });
+
+    // Save the task to the database
     const savedTask = await newTask.save();
 
+    // Respond with success
     res.status(201).json({ message: "Task saved successfully", data: savedTask });
   } catch (error) {
-    console.error("Error saving task:", error.message);
+    console.error("Error saving task:", error);
     res.status(500).json({ message: "Error saving task", error: error.message });
   }
 });
+
 
 app.post("/api/get-task-by-manager-name", async (req, res) => {
   const { managerName } = req.body;
