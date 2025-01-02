@@ -232,9 +232,13 @@ const TaskViewEmployee: React.FC = () => {
   const fetchTasks = async (employeeName: string) => {
     setLoading(true);
     try {
+      const userDepartments = JSON.parse(sessionStorage.getItem("department") || "[]");
       const response = await axios.post<Task[]>(
         "http://localhost:5001/api/tasks/employee",
-        { employeeName , department : sessionStorage.getItem("department") }
+        {
+          employeeName,
+          departments: userDepartments,
+        }
       );
       let allTasks = response.data;
 
