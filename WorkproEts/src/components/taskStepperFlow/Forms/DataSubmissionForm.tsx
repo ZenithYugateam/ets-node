@@ -14,10 +14,15 @@ interface Task {
 
 interface TaskStepperProps {
   currentStep: number;
+  setCurrentStep: (step: number) => void; // Add this to manage step transitions
   task: Task;
 }
 
-export const DataSubmissionForm = ({ currentStep, task }: TaskStepperProps) => {
+export const DataSubmissionForm = ({
+  currentStep,
+  setCurrentStep,
+  task,
+}: TaskStepperProps) => {
   const [projectSubmitted, setProjectSubmitted] = useState<boolean | null>(null);
   const [submissions, setSubmissions] = useState({
     droneSurveyData: { submitted: null, systemName: "", media: [] as File[], capturedImages: [] as string[] },
@@ -83,6 +88,9 @@ export const DataSubmissionForm = ({ currentStep, task }: TaskStepperProps) => {
 
       toast.success("Form submitted successfully!");
       console.log("Response:", response.data);
+
+      // Automatically proceed to the next step
+      setCurrentStep(currentStep + 1);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error submitting form. Please try again.");
@@ -185,7 +193,9 @@ export const DataSubmissionForm = ({ currentStep, task }: TaskStepperProps) => {
             type="button"
             onClick={() => setProjectSubmitted(true)}
             className={`flex items-center px-4 py-2 rounded-md ${
-              projectSubmitted === true ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-700 border-gray-200"
+              projectSubmitted === true
+                ? "bg-green-50 text-green-700 border-green-200"
+                : "bg-gray-50 text-gray-700 border-gray-200"
             } border`}
           >
             <Check className="h-4 w-4 mr-2" />
@@ -195,7 +205,9 @@ export const DataSubmissionForm = ({ currentStep, task }: TaskStepperProps) => {
             type="button"
             onClick={() => setProjectSubmitted(false)}
             className={`flex items-center px-4 py-2 rounded-md ${
-              projectSubmitted === false ? "bg-red-50 text-red-700 border-red-200" : "bg-gray-50 text-gray-700 border-gray-200"
+              projectSubmitted === false
+                ? "bg-red-50 text-red-700 border-red-200"
+                : "bg-gray-50 text-gray-700 border-gray-200"
             } border`}
           >
             <X className="h-4 w-4 mr-2" />

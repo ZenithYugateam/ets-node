@@ -45,10 +45,10 @@ const LoginForm = () => {
      
       <div className="absolute bottom-0 right-0 w-[150px] h-[50px] backdrop-blur-lg bg-transparent z-10 opacity-0" />
 
-        <Spline 
+       {/* <Spline 
           scene="https://prod.spline.design/ekowqXV5-POZ3l-G/scene.splinecode"
           className="w-full h-full"
-        />
+        />*/}
 
       <div className="absolute inset-0 flex justify-center items-center">
         <form

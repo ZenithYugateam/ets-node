@@ -111,13 +111,20 @@ const droneChecklistMapping: Record<string, { item: string; quantity?: number }[
   ],
 };
 
+
+
+
 interface DroneDetailsFormProps {
-  currentStep: number; 
+  currentStep: number;
+  setCurrentStep: (step: number) => void; // Add this to proceed to the next step
   task: Task;
 }
 
-
-export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) => {
+export const DroneDetailsForm = ({
+  currentStep,
+  setCurrentStep,
+  task,
+}: DroneDetailsFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<DroneDetails>({
     droneName: '',
@@ -154,7 +161,6 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
     }));
   };
 
-  
   const handleDroneSelection = (droneName: string) => {
     setFormData({
       droneName,
@@ -162,9 +168,6 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
       images: formData.images,
     });
   };
-  
-  
-  
 
   const convertToBase64 = (file: File) => {
     return new Promise<string>((resolve, reject) => {
@@ -223,14 +226,17 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
         images: [],
       });
       setCapturedImages([]);
+
       toast.success('Submission successful!');
+
+      // Proceed to the next step
+      setCurrentStep(currentStep + 1);
     } catch (err) {
       console.error('Error submitting form:', err);
       setError('Failed to submit the form. Please try again.');
       toast.error('Failed to submit the form. Please try again.');
     }
   };
-  
 
   return (
     <form className="space-y-6">
@@ -238,30 +244,21 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
       <FormField label="Drone Name">
-      <select
-        value={formData.droneName}
-        onChange={(e) => handleDroneSelection(e.target.value)}
-        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-      >
-        <option value="" disabled>Select a Drone</option>
-        {predefinedDroneNames
-          .filter((name) => {
-            console.log(name)
-            if (name === "Dgps" && task.dgpsRequired === "No") {
-              return false;
-            }else{
-              return true
-            }
-            
-          })
-          .map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-      </select>
-    </FormField>
-
+        <select
+          value={formData.droneName}
+          onChange={(e) => handleDroneSelection(e.target.value)}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        >
+          <option value="" disabled>Select a Drone</option>
+          {predefinedDroneNames
+            .filter((name) => !(name === "Dgps" && task.dgpsRequired === "No"))
+            .map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+        </select>
+      </FormField>
 
       <div>
         <h3 className="text-sm font-medium text-gray-700 mb-4">Pre-flight Checklist</h3>
