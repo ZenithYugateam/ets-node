@@ -72,7 +72,8 @@ const ManagerTasksDisplay = () => {
   };
 
   // Handle filtering logic
-  const filteredTasks = tasks.filter((task) => {
+  const filteredTasks = tasks
+  .filter((task) => {
     // Search filter
     const matchesSearch = Object.values(task).some((value) =>
       String(value).toLowerCase().includes(debouncedSearch.toLowerCase())
@@ -80,14 +81,27 @@ const ManagerTasksDisplay = () => {
 
     // Status filter
     const taskStatus = task.status?.toLowerCase() || "";
-    const matchesStatus = filters.status === "all" || taskStatus === filters.status.toLowerCase();
+    const matchesStatus =
+      filters.status === "all" || taskStatus === filters.status.toLowerCase();
 
     // Priority filter
     const taskPriority = task.priority?.toLowerCase() || "";
-    const matchesPriority = filters.priority === "all" || taskPriority === filters.priority.toLowerCase();
+    const matchesPriority =
+      filters.priority === "all" ||
+      taskPriority === filters.priority.toLowerCase();
 
     return matchesSearch && matchesStatus && matchesPriority;
+  })
+  .sort((a, b) => {
+    // Ensure valid `createdAt` timestamps, falling back to 0 if missing
+    const dateA = new Date(a.createdAt).getTime() || 0;
+    const dateB = new Date(b.createdAt).getTime() || 0;
+  
+    // Return descending order: latest createdAt first
+    return dateB - dateA;
   });
+  
+
 
   if (loading) {
     return (
@@ -172,6 +186,10 @@ const ManagerTasksDisplay = () => {
           {/* Tasks Table */}
           {filteredTasks.length > 0 ? (
             <div className="overflow-x-auto shadow-md rounded-lg bg-white">
+                            <div
+                  className="overflow-y-auto"
+                  style={{ maxHeight: "400px" }} // Set max height for the table container
+                >
               <table className="table-auto w-full text-sm text-left text-gray-500">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-100">
                   <tr>
@@ -217,11 +235,19 @@ const ManagerTasksDisplay = () => {
                       </td>
 
                       {/* Employee Name with Tooltip */}
-                      <td className="px-4 py-2">
-                        <Tooltip title={task.employeeName || "No Employee Name"} arrow>
-                          <span className="block truncate w-40">{task.employeeName || "N/A"}</span>
-                        </Tooltip>
-                      </td>
+                                          <td className="px-4 py-2">
+                      <Tooltip
+                        title={task.employees && task.employees.length > 0 ? task.employees.join(", ") : "No Employees"}
+                        arrow
+                      >
+                        <span className="block truncate w-40">
+                          {task.employees && task.employees.length > 0
+                            ? task.employees.join(", ") // Join array into a comma-separated string
+                            : "N/A"} 
+                        </span>
+                      </Tooltip>
+                    </td>
+
 
                       {/* Priority with Color Coding */}
                       <td className="px-4 py-2">
@@ -355,6 +381,7 @@ const ManagerTasksDisplay = () => {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           ) : (
             <p className="text-center text-lg text-gray-600">No tasks found.</p>
