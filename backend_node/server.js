@@ -1355,7 +1355,7 @@ app.post("/api/store-form-data", async (req, res) => {
       projectId: req.body.projectId,
       taskName: req.body.taskName,
       employeeName: req.body.employeeName,
-      employeeDepartment: req.body.selectedDepartment,
+      employeeDepartment: req.body.employeeDepartment,
       employees: req.body.employees,
       priority: req.body.priority,
       deadline: req.body.deadline,
@@ -1439,28 +1439,35 @@ app.get('/api/remarks/:id', async (req, res) => {
 });
 
 app.post("/api/tasks/employee", async (req, res) => {
-  const { employeeName, department } = req.body;
-  
-  // Validate that employeeName and department are provided
-  if (!employeeName || typeof employeeName !== "string" || !department || typeof department !== "string") {
-    return res.status(400).json({ message: "Employee name and department are required and should be strings." });
+  const { employeeName, departments } = req.body;
+
+  // Validate input
+  if (!employeeName || !Array.isArray(departments) || departments.length === 0) {
+      return res.status(400).json({ message: "Employee name and valid departments are required." });
   }
 
   try {
-    const tasks = await ManagerTask.find({
-      employees: { $in: [employeeName] },
-      employeeDepartment: department, // Matches tasks for the specific department
-    });
+      // Query tasks assigned to the employee and matching any of the departments
+      const tasks = await ManagerTask.find({
+          employees: { $in: [employeeName] }, // Matches tasks assigned to the employee
+          employeeDepartment: { $in: departments }, // Matches tasks in these departments
+      });
 
-    if (!tasks || tasks.length === 0) {
-      return res.status(404).json({ message: "No tasks found for this employee and department." });
-    }
-    res.status(200).json(tasks);
+      if (!tasks || tasks.length === 0) {
+          return res.status(404).json({ message: "No tasks found for the given employee and departments." });
+      }
+
+      res.status(200).json(tasks);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error. Please try again later." });
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ message: "Internal server error.", error: error.message });
   }
 });
+
+
+
+
+
 
 app.put("/api/Employee/notes", async (req, res) => {
   try {

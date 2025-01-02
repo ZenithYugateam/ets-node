@@ -381,7 +381,7 @@ const AddTaskManagements: React.FC = () => {
     // Prepare the updated form data
     const updatedFormData = {
       ...formData,
-      department: selectedDepartment,
+      employeeDepartment: selectedDepartment,
       managerName: sessionStorage.getItem("userName"), // Ensure sessionStorage key is correctly set
       droneRequired,
       dgpsRequired,
@@ -391,24 +391,36 @@ const AddTaskManagements: React.FC = () => {
     };
     
     try {
+      console.log("Submitting form data:", updatedFormData); // Debug log for payload
+    
       const response = await axios.post(
         "http://localhost:5001/api/store-form-data",
         updatedFormData
       );
     
+      // Handle successful response
       if (response.status === 201) {
         toast.success("Task successfully added!");
         resetForm();
         setIsModalOpen(false);
         fetchManagerTasks(); // Refresh task list
+        setSelectedDepartment("");
       } else {
-        console.error("Unexpected response:", response);
+        // Log unexpected responses for debugging
+        console.warn("Unexpected response from server:", response);
         toast.error("Failed to add task due to unexpected server response");
       }
     } catch (error) {
+      // Log error details for debugging
       console.error("Error submitting form data:", error);
-      toast.error(error.response?.data?.message || "Failed to add task");
+    
+      // Extract meaningful error message from server response
+      const errorMessage = error.response?.data?.message || "Failed to add task";
+    
+      // Display error to the user
+      toast.error(errorMessage);
     }
+    
     
   };
 
