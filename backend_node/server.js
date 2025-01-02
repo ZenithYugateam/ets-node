@@ -1571,32 +1571,42 @@ app.post('/api/worksheetsData', async (req, res) => {
 });
 
 app.post('/api/worksheets/manager', async (req, res) => {
-  let { assign_to, role } = req.body; 
-  console.log("role : ",role.trim());
+  const { assign_to, role } = req.body;
 
-  if (assign_to === "DEV") assign_to = "";
+  // Log inputs for debugging
+  console.log("Role received:", role);
+  console.log("Assign_to received:", assign_to);
 
   try {
-    const roleCriteria = role === "Manager" ? ["Employee", "Admin", "Manager"] : [role];
-    const worksheets = role === "Manager"
-  ? await Worksheet.find({
-      role: { $in: roleCriteria },
-    }).sort({ _id: -1 }) 
-  : await Worksheet.find({
-      assign_to: assign_to,
-      role: { $in: roleCriteria },
-    }).sort({ _id: -1 }); 
+    // Define role criteria based on the role
+    let query;
+    if (role === "Manager") {
+      // Manager sees worksheets submitted to them by employees
+      query = { assign_to, role: { $in: ["Employee"] } };
+    } else if (role === "Admin") {
+      // Admin sees all worksheets
+      query = {}; // No filtering; fetch all worksheets
+    } else {
+      // Other roles, e.g., Employee
+      query = { role: role.trim() };
+    }
 
-    if (worksheets.length === 0) {
+    // Fetch worksheets based on the query
+    const worksheets = await Worksheet.find(query).sort({ date: -1 }); // Sort by date in descending order
+
+    // No worksheets found
+    if (!worksheets || worksheets.length === 0) {
       return res.status(404).json({ message: 'No worksheets found for the given criteria.' });
     }
 
+    // Successful response
     return res.status(200).json(worksheets);
   } catch (err) {
     console.error('Error fetching worksheets:', err);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error occurred while fetching worksheets.' });
   }
 });
+
 
 app.put("/api/manager-tasks/update-status", async (req, res) => {
   const { status, id } = req.body;

@@ -64,7 +64,7 @@ const WorksheetManagement = () => {
     try {
       const response = await axios.post('http://localhost:5001/api/worksheets/manager', {
         assign_to: sessionStorage.getItem('userName'),
-        role: sessionStorage.getItem('role')?.slice(1, -1) === "Manager" ? "Employee" : "Manager"
+        role: sessionStorage.getItem('role')?.slice(1, -1) === "Manager" ? "Employee" : "Admin"
       });
       setWorksheetOverview(response.data);
     } catch (err) {
