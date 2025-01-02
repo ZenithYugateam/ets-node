@@ -12,6 +12,7 @@ import {
   Typography,
   Checkbox,
   InputAdornment,
+  Chip,
 } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import axios from "axios";
@@ -94,7 +95,7 @@ const AddTaskManagements: React.FC = () => {
       headerName: "Employee Name",
       flex: 1,
       renderCell: (params) => {
-        const selectedEmployees = params.row.selectedEmployees; // Assuming the task row contains `selectedEmployees`
+        const selectedEmployees = params.row.employees; // Assuming the task row contains `selectedEmployees`
 
         if (!selectedEmployees || selectedEmployees.length === 0) {
           return "No employees selected";
