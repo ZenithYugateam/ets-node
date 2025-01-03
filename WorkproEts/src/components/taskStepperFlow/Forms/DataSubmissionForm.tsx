@@ -82,8 +82,15 @@ export const DataSubmissionForm = ({ currentStep,setCurrentStep, task }: TaskSte
       // Send the data to the backend API
       const response = await axios.post("http://localhost:5001/api/submission", dataToSubmit);
 
-      toast.success("Form submitted successfully!");
+      
       console.log("Response:", response.data);
+      if (projectSubmitted === null) {
+        toast.error("Please indicate if the project is submitted.");
+        return;
+      }
+
+      toast.success("Form submitted successfully!");
+    
 
       if(currentStep < 10){
         setCurrentStep(currentStep + 1);

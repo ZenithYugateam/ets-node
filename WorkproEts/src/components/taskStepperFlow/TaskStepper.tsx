@@ -15,7 +15,7 @@ const steps = [
   'Drone Details',
   'Travelling Details',
   'On-Field Details',
-  'Flight Notes', // Updated combined step
+  'Flight Notes', 
   'Getting OFF Field',
   'Return to Office',
   'Drone Submission',

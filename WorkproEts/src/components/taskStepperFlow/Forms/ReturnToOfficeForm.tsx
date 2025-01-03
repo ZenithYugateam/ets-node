@@ -73,6 +73,28 @@ export const ReturnToOfficeForm = ({ currentStep,setCurrentStep, task }: ReturnT
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+  
+    // Validation
+    if (!formData.timeReached) {
+      toast.error('Please provide the time you reached the office.');
+      return;
+    }
+  
+    if (formData.endReading <= 0) {
+      toast.error('Please provide a valid end reading (greater than zero).');
+      return;
+    }
+  
+    if (formData.images.length === 0 && capturedImages.length === 0) {
+      toast.error('Please upload or capture at least one image.');
+      return;
+    }
+  
+    if (selectedVehicles.length === 0) {
+      toast.error('No vehicles selected. Please ensure vehicles are loaded.');
+      return;
+    }
+  
     const base64Images = await Promise.all(
       formData.images.map((image) => {
         return new Promise<string>((resolve, reject) => {
@@ -83,9 +105,9 @@ export const ReturnToOfficeForm = ({ currentStep,setCurrentStep, task }: ReturnT
         });
       })
     );
-
+  
     const submissionData = {
-      type: "returnToOffice",
+      type: 'returnToOffice',
       selectedVehicles: selectedVehicles,
       timeReached: formData.timeReached,
       endReading: formData.endReading,
@@ -93,7 +115,7 @@ export const ReturnToOfficeForm = ({ currentStep,setCurrentStep, task }: ReturnT
       currentStep: formData.currentStep,
       managerTaskId: task._id,
     };
-
+  
     try {
       const response = await fetch('http://localhost:5001/api/submission', {
         method: 'POST',
@@ -102,14 +124,14 @@ export const ReturnToOfficeForm = ({ currentStep,setCurrentStep, task }: ReturnT
         },
         body: JSON.stringify(submissionData),
       });
-
+  
       const result = await response.json();
-
+  
       if (!response.ok) {
         toast.error(`Error: ${result.error || 'Unknown error'}`);
       } else {
         toast.success('Submission successful!');
-        if(currentStep < 10){
+        if (currentStep < 10) {
           setCurrentStep(currentStep + 1);
         }
       }
@@ -118,6 +140,7 @@ export const ReturnToOfficeForm = ({ currentStep,setCurrentStep, task }: ReturnT
       toast.error('Failed to submit due to network error.');
     }
   };
+  
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>

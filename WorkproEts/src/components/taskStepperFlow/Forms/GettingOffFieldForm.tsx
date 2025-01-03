@@ -59,14 +59,20 @@ export const GettingOffFieldForm = ({ currentStep,setCurrentStep, task }: Gettin
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
+    // Validation
     if (!formData.location) {
       alert('Please fetch the location before submitting.');
       return;
     }
-
+  
+    if (!formData.departingTime) {
+      alert('Please provide a departing time before submitting.');
+      return;
+    }
+  
     setIsSubmitting(true);
-
+  
     const payload = {
       type: 'gettingOffField',
       onFieldDetails: {
@@ -74,9 +80,9 @@ export const GettingOffFieldForm = ({ currentStep,setCurrentStep, task }: Gettin
         departingTime: formData.departingTime,
         currentStep: formData.currentStep,
       },
-      managerTaskId : task._id,
+      managerTaskId: task._id,
     };
-
+  
     try {
       const response = await fetch('http://localhost:5001/api/submission', {
         method: 'POST',
@@ -85,7 +91,7 @@ export const GettingOffFieldForm = ({ currentStep,setCurrentStep, task }: Gettin
         },
         body: JSON.stringify(payload),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         alert(`Submission failed: ${errorData.error || 'Unknown error'}`);
@@ -98,8 +104,8 @@ export const GettingOffFieldForm = ({ currentStep,setCurrentStep, task }: Gettin
           departingTime: '',
           currentStep: currentStep,
         });
-
-        if(currentStep < 10){
+  
+        if (currentStep < 10) {
           setCurrentStep(currentStep + 1);
         }
       }
