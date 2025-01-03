@@ -11,9 +11,10 @@ import type { Task } from "../types/index";
 interface FlightNotesFormProps {
   task: Task;
   currentStep: number;
+  setCurrentStep: (step: number) => void;
 }
 
-export const FlightNotesForm = ({ task, currentStep }: FlightNotesFormProps) => {
+export const FlightNotesForm = ({ task,setCurrentStep ,  currentStep }: FlightNotesFormProps) => {
   const [formData, setFormData] = useState({
     crew: [],
     method: "",

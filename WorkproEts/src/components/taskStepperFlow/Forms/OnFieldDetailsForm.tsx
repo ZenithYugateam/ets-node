@@ -28,10 +28,11 @@ interface OnFieldDetails {
 interface OnFieldDetailsFormProps {
   currentStep: number;
   task: Task;
-  
+  setCurrentStep: (step: number) => void;
+
 }
 
-export const OnFieldDetailsForm = ({ currentStep , task }: OnFieldDetailsFormProps) => {
+export const OnFieldDetailsForm = ({ currentStep ,setCurrentStep , task }: OnFieldDetailsFormProps) => {
   const [formData, setFormData] = useState<OnFieldDetails>({
     location: null,
     isReporting: false,
@@ -85,6 +86,9 @@ const handleSubmit = async (event: React.FormEvent) => {
 
     console.log('Submission successful:', response.data);
     alert('On-field details submitted successfully!');
+    if(currentStep < 10){
+      setCurrentStep(currentStep + 1);
+    }
   } catch (error) {
     console.error('Error submitting on-field details:', error);
     alert('Failed to submit on-field details. Please try again.');

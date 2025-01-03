@@ -9,8 +9,9 @@ type Status = "Completed" | "In Progress"; // Restrict the status types
 interface TaskProgressFormProps {
   currentStep: number;
   task: Task;
+  setCurrentStep: (step: number) => void;
 } 
-export const TaskProgressForm = ({ currentStep, task }: TaskProgressFormProps) => {
+export const TaskProgressForm = ({ currentStep,setCurrentStep, task }: TaskProgressFormProps) => {
   const [status, setStatus] = useState<Status | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -25,6 +26,9 @@ export const TaskProgressForm = ({ currentStep, task }: TaskProgressFormProps) =
   
       const response = await axios.post('http://localhost:5001/api/submission', payload);
       console.log('Submission successful:', response.data);
+      if(currentStep < 10){
+        setCurrentStep(currentStep + 1);
+      }
     } catch (error) {
       console.error('Error submitting task progress:', error);
     }

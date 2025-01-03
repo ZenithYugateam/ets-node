@@ -92,6 +92,10 @@ export const BeforeFlightForm = ({ task, currentStep }: BeforeFlightForm) => {
       const response = await axios.post('http://localhost:5001/api/submission', dataToSubmit);
       console.log('Success:', response.data);
       toast.success('Form submitted successfully!');
+
+      if(currentStep < 10){
+        setCurrentStep(currentStep + 1);
+      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error submitting form. Please try again.');

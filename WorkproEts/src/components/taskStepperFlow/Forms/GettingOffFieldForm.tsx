@@ -23,9 +23,10 @@ interface GettingOffFieldData {
 interface GettingOffFieldFormProps {
   currentStep: number;
   task: Task;
+  setCurrentStep: (step: number) => void;
 }
 
-export const GettingOffFieldForm = ({ currentStep, task }: GettingOffFieldFormProps) => {
+export const GettingOffFieldForm = ({ currentStep,setCurrentStep, task }: GettingOffFieldFormProps) => {
   const [formData, setFormData] = useState<GettingOffFieldData>({
     location: null,
     departingTime: '',
@@ -97,6 +98,10 @@ export const GettingOffFieldForm = ({ currentStep, task }: GettingOffFieldFormPr
           departingTime: '',
           currentStep: currentStep,
         });
+
+        if(currentStep < 10){
+          setCurrentStep(currentStep + 1);
+        }
       }
     } catch (error: any) {
       console.error('Error during submission:', error);

@@ -34,9 +34,10 @@ type Vehicle = {
 interface TravellingDetailsFormProps {
   currentStep: number;
   task: Task;
+  setCurrentStep: (step: number) => void;
 }
 
-export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFormProps) => {
+export const TravellingDetailsForm = ({ currentStep,setCurrentStep,  task }: TravellingDetailsFormProps) => {
   const [formData, setFormData] = useState<TravellingDetails>({
     selectedVehicles: [],
     date: new Date(),
@@ -141,6 +142,9 @@ export const TravellingDetailsForm = ({ currentStep, task }: TravellingDetailsFo
 
       console.log('Submission successful:', response.data);
       toast.success('Travelling details submitted successfully!');
+      if(currentStep < 10){
+        setCurrentStep(currentStep + 1);
+      }
     } catch (error) {
       console.error('Error submitting travelling details:', error);
       setError(error.response?.data?.error || 'Failed to submit travelling details.');

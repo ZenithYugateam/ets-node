@@ -16,9 +16,10 @@ interface ReturnToOfficeData {
 interface ReturnToOfficeFormProps {
   currentStep: number;
   task: Task;
+  setCurrentStep: (step: number) => void;
 }
 
-export const ReturnToOfficeForm = ({ currentStep, task }: ReturnToOfficeFormProps) => {
+export const ReturnToOfficeForm = ({ currentStep,setCurrentStep, task }: ReturnToOfficeFormProps) => {
   const [formData, setFormData] = useState<ReturnToOfficeData>({
     timeReached: '',
     endReading: 0,
@@ -108,6 +109,9 @@ export const ReturnToOfficeForm = ({ currentStep, task }: ReturnToOfficeFormProp
         toast.error(`Error: ${result.error || 'Unknown error'}`);
       } else {
         toast.success('Submission successful!');
+        if(currentStep < 10){
+          setCurrentStep(currentStep + 1);
+        }
       }
     } catch (error) {
       console.error('Network error:', error);

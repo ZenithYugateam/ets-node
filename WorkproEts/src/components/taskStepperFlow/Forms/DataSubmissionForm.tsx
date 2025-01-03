@@ -15,9 +15,10 @@ interface Task {
 interface TaskStepperProps {
   currentStep: number;
   task: Task;
+  setCurrentStep: (step: number) => void;
 }
 
-export const DataSubmissionForm = ({ currentStep, task }: TaskStepperProps) => {
+export const DataSubmissionForm = ({ currentStep,setCurrentStep, task }: TaskStepperProps) => {
   const [projectSubmitted, setProjectSubmitted] = useState<boolean | null>(null);
   const [submissions, setSubmissions] = useState({
     droneSurveyData: { submitted: null, systemName: "", media: [] as File[], capturedImages: [] as string[] },
@@ -83,6 +84,10 @@ export const DataSubmissionForm = ({ currentStep, task }: TaskStepperProps) => {
 
       toast.success("Form submitted successfully!");
       console.log("Response:", response.data);
+
+      if(currentStep < 10){
+        setCurrentStep(currentStep + 1);
+      }
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error submitting form. Please try again.");

@@ -99,6 +99,9 @@ export const AfterFlightForm = ({ task, currentStep }: AfterFlightFormProps) => 
       } else {
         const result = await response.json();
         toast.success(`Submission successful! ${result.message}`);
+        if(currentStep < 10){
+          setCurrentStep(currentStep + 1);
+        }
       }
     } catch (error: any) {
       console.error('Error during submission:', error);
