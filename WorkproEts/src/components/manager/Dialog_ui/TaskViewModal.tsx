@@ -18,9 +18,10 @@ type Priority = "High" | "Medium" | "Low";
 type Status = "Completed" | "In Progress" | "Pending";
 
 interface Task {
+  employees: string[];
   projectName: string;
   taskName: string;
-  employeeName: string;
+  // employeeName: string[];
   priority: Priority;
   deadline: string;
   status: Status;
@@ -196,10 +197,16 @@ export function TaskViewModal({
                 <TaskDetailItem label="Task Name" value={task.taskName} />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <TaskDetailItem
-                  label="Employee Name"
-                  value={task.employeeName}
-                />
+              <TaskDetailItem
+  label="Employee Name"
+  value={
+    task.employees && task.employees.length > 0
+      ? task.employees.join(", ") // Display names as a comma-separated list
+      : "No employees assigned"
+  }
+/>
+
+
                 <TaskDetailItem
                   label="Deadline"
                   value={format(new Date(task.deadline), "PPP")}
