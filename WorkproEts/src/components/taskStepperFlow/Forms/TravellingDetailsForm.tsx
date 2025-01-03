@@ -115,12 +115,51 @@ export const TravellingDetailsForm = ({ currentStep,setCurrentStep,  task }: Tra
   const handleDeleteCapturedImage = (index: number) => {
     setCapturedImages((prevImages) => prevImages.filter((_, i) => i !== index));
   };
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
-
+  
+    // Validation
+    if (!transportMode) {
+      toast.error('Please select a transport mode!');
+      setLoading(false);
+      return;
+    }
+  
+    if (!formData.date || !formData.time) {
+      toast.error('Please select date and time!');
+      setLoading(false);
+      return;
+    }
+  
+    if (transportMode === 'Company' && formData.selectedVehicles.length === 0) {
+      toast.error('Please select a company vehicle!');
+      setLoading(false);
+      return;
+    }
+  
+    if (transportMode === 'Public' && (!formData.publicTransportDetails?.mode || !formData.publicTransportDetails?.billAmount)) {
+      toast.error('Please provide public transport details!');
+      setLoading(false);
+      return;
+    }
+  
+    if (
+      transportMode === 'Private' &&
+      (!formData.privateVehicleDetails || !formData.privateVehicleNumber || formData.readings <= 0)
+    ) {
+      toast.error('Please provide private vehicle details!');
+      setLoading(false);
+      return;
+    }
+  
+    if (formData.images.length === 0 && capturedImages.length === 0) {
+      toast.error('Please upload or capture at least one image!');
+      setLoading(false);
+      return;
+    }
+  
     try {
       const base64Images = await convertImagesToBase64(formData.images);
       const submissionData = {
@@ -137,12 +176,12 @@ export const TravellingDetailsForm = ({ currentStep,setCurrentStep,  task }: Tra
         privateVehicleDetails: formData.privateVehicleDetails,
         privateVehicleNumber: formData.privateVehicleNumber,
       };
-
+  
       const response = await axios.post('http://localhost:5001/api/submission', submissionData);
-
+  
       console.log('Submission successful:', response.data);
       toast.success('Travelling details submitted successfully!');
-      if(currentStep < 10){
+      if (currentStep < 10) {
         setCurrentStep(currentStep + 1);
       }
     } catch (error) {
@@ -153,6 +192,7 @@ export const TravellingDetailsForm = ({ currentStep,setCurrentStep,  task }: Tra
       setLoading(false);
     }
   };
+ 
 
   const handleAddVehicle = async () => {
     if (formData.privateVehicleDetails && formData.privateVehicleNumber && formData.readings) {

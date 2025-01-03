@@ -64,36 +64,48 @@ export const OnFieldDetailsForm = ({ currentStep ,setCurrentStep , task }: OnFie
   };
 
 
-const handleSubmit = async (event: React.FormEvent) => {
-  event.preventDefault();
-
-  try {
-    const payload = {
-      type: 'onFieldDetails',
-      currentStep: formData.currentStep,
-      onFieldDetails: {
-        location: formData.location,
-        isReporting: formData.isReporting,
-      },
-    };
-
-    const submitData = {
-      ...payload , managerTaskId : task._id
-    }
-
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
   
-    const response = await axios.post('http://localhost:5001/api/submission', submitData);
-
-    console.log('Submission successful:', response.data);
-    alert('On-field details submitted successfully!');
-    if(currentStep < 10){
-      setCurrentStep(currentStep + 1);
+    // Validation
+    if (!formData.location) {
+      alert('Please fetch your location before submitting!');
+      return;
     }
-  } catch (error) {
-    console.error('Error submitting on-field details:', error);
-    alert('Failed to submit on-field details. Please try again.');
-  }
-};
+  
+    if (formData.isReporting === null || formData.isReporting === undefined) {
+      alert('Please select whether you are reporting on the field!');
+      return;
+    }
+  
+    try {
+      const payload = {
+        type: 'onFieldDetails',
+        currentStep: formData.currentStep,
+        onFieldDetails: {
+          location: formData.location,
+          isReporting: formData.isReporting,
+        },
+      };
+  
+      const submitData = {
+        ...payload,
+        managerTaskId: task._id,
+      };
+  
+      const response = await axios.post('http://localhost:5001/api/submission', submitData);
+  
+      console.log('Submission successful:', response.data);
+      alert('On-field details submitted successfully!');
+      if (currentStep < 10) {
+        setCurrentStep(currentStep + 1);
+      }
+    } catch (error) {
+      console.error('Error submitting on-field details:', error);
+      alert('Failed to submit on-field details. Please try again.');
+    }
+  };
+  
 
 
   return (

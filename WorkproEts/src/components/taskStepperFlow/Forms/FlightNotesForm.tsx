@@ -14,7 +14,7 @@ interface FlightNotesFormProps {
   setCurrentStep: (step: number) => void;
 }
 
-export const FlightNotesForm = ({ task,setCurrentStep ,  currentStep }: FlightNotesFormProps) => {
+export const FlightNotesForm = ({ task, setCurrentStep, currentStep }: FlightNotesFormProps) => {
   const [formData, setFormData] = useState({
     crew: [],
     method: "",
@@ -116,6 +116,33 @@ export const FlightNotesForm = ({ task,setCurrentStep ,  currentStep }: FlightNo
   };
 
   const handleSubmit = async () => {
+    
+  
+    if (!formData.method) {
+      toast.error("Please specify the method of survey.");
+      return;
+    }
+  
+    if (!formData.sightName) {
+      toast.error("Please specify the site name.");
+      return;
+    }
+  
+    if (!formData.date) {
+      toast.error("Please select a date.");
+      return;
+    }
+  
+    if (!formData.flights || formData.flights.length === 0) {
+      toast.error("Please add at least one flight.");
+      return;
+    }
+  
+    if (!formData.images || formData.images.length === 0) {
+      toast.error("Please upload or capture at least one image.");
+      return;
+    }
+  
     try {
       const flightData = await Promise.all(
         formData.flights.map(async (flight) => ({
@@ -125,7 +152,7 @@ export const FlightNotesForm = ({ task,setCurrentStep ,  currentStep }: FlightNo
           flightImages: await convertImagesToBase64(flight.flightImages || []),
         }))
       );
-
+  
       const dataToSubmit = {
         type: "combinedFlightForm",
         projectSubmitted: false,
@@ -138,17 +165,21 @@ export const FlightNotesForm = ({ task,setCurrentStep ,  currentStep }: FlightNo
         currentStep: formData.currentStep,
         managerTaskId: formData.managerTaskId,
       };
-
+  
       console.log("Submitting data:", dataToSubmit);
-
-      const response = await axios.post("http://localhost:5001/api/submission", dataToSubmit);
+  
+      await axios.post("http://localhost:5001/api/submission", dataToSubmit);
       toast.success("Form submitted successfully!");
-      console.log("Submission successful:", response.data);
+  
+      if (currentStep < 10) {
+        setCurrentStep(currentStep + 1);
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Error submitting form. Please try again.");
     }
   };
+  
 
   const startCamera = () => {
     setShowCamera(true);
