@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { TaskStepperDisplay } from "./TaskStepperDisplay";
 import { Tooltip } from "@mui/material"; // For tooltips
 import { Search, Filter } from "lucide-react"; // For search and filter icons
-
+import {ReportView} from "../manager/Dialog_ui/ReportView";
 const ManagerTasksDisplay = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -396,7 +395,7 @@ const ManagerTasksDisplay = () => {
               style={{ minHeight: "400px", minWidth: "600px" }}
             >
               <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Task Details</h2>
-              <TaskStepperDisplay managerTaskId={selectedTaskId} />
+              <ReportView managerTaskId={selectedTaskId} type={""} />
               <button
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
                 onClick={() => setSelectedTaskId(null)}
