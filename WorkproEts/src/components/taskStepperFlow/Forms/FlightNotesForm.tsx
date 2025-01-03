@@ -41,7 +41,12 @@ export const FlightNotesForm = ({ task, currentStep }: FlightNotesFormProps) => 
   const [showCamera, setShowCamera] = useState(false);
 
   useEffect(() => {
-    setFormData((prevData) => ({ ...prevData, crew: task.selectedEmployees }));
+    if (Array.isArray(task.selectedEmployees)) {
+      setFormData((prevData) => ({ ...prevData, crew: task.selectedEmployees }));
+    } else {
+      console.warn("task.selectedEmployees is not an array:", task.selectedEmployees);
+      setFormData((prevData) => ({ ...prevData, crew: [] }));
+    }
   }, [task.selectedEmployees]);
 
   const handleAddFlight = () => {
@@ -62,41 +67,51 @@ export const FlightNotesForm = ({ task, currentStep }: FlightNotesFormProps) => 
   };
 
   const handleImageCapture = (image: string) => {
-    const byteString = atob(image.split(",")[1]);
-    const mimeString = image.split(",")[0].split(":")[1].split(";")[0];
-    const buffer = new ArrayBuffer(byteString.length);
-    const intArray = new Uint8Array(buffer);
-    for (let i = 0; i < byteString.length; i++) {
-      intArray[i] = byteString.charCodeAt(i);
-    }
-    const file = new File([buffer], `captured-image-${Date.now()}.jpg`, { type: mimeString });
+    try {
+      const byteString = atob(image.split(",")[1]);
+      const mimeString = image.split(",")[0].split(":")[1].split(";")[0];
+      const buffer = new ArrayBuffer(byteString.length);
+      const intArray = new Uint8Array(buffer);
+      for (let i = 0; i < byteString.length; i++) {
+        intArray[i] = byteString.charCodeAt(i);
+      }
+      const file = new File([buffer], `captured-image-${Date.now()}.jpg`, { type: mimeString });
 
-    setFormData((prevData) => ({
-      ...prevData,
-      images: [...prevData.images, file], // Update the images array in formData
-    }));
+      setFormData((prevData) => ({
+        ...prevData,
+        images: [...prevData.images, file],
+      }));
+    } catch (error) {
+      console.error("Error capturing image:", error);
+      toast.error("Failed to capture image.");
+    }
   };
 
   const handleImageUpload = (files: File[]) => {
     setFormData((prevData) => ({
       ...prevData,
-      images: [...prevData.images, ...files], // Add uploaded files to the images array in formData
+      images: [...prevData.images, ...files],
     }));
   };
 
   const convertImagesToBase64 = async (images: File[]): Promise<string[]> => {
-    const base64Images = await Promise.all(
-      images.map(
-        (image) =>
-          new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = (err) => reject(err);
-            reader.readAsDataURL(image);
-          })
-      )
-    );
-    return base64Images;
+    try {
+      const base64Images = await Promise.all(
+        images.map(
+          (image) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = (err) => reject(err);
+              reader.readAsDataURL(image);
+            })
+        )
+      );
+      return base64Images;
+    } catch (error) {
+      console.error("Error converting images to Base64:", error);
+      throw new Error("Failed to convert images to Base64.");
+    }
   };
 
   const handleSubmit = async () => {
@@ -106,19 +121,19 @@ export const FlightNotesForm = ({ task, currentStep }: FlightNotesFormProps) => 
           flightNo: flight.flightNo,
           takeoffTime: flight.takeoffTime,
           landingTime: flight.landingTime,
-          flightImages: await convertImagesToBase64(flight.flightImages),
+          flightImages: await convertImagesToBase64(flight.flightImages || []),
         }))
       );
 
       const dataToSubmit = {
         type: "combinedFlightForm",
         projectSubmitted: false,
-        crew: formData.crew,
+        crew: formData.crew || [],
         method: formData.method,
         sightName: formData.sightName,
         date: formData.date.toISOString(),
         flights: flightData,
-        images: await convertImagesToBase64(formData.images), // Convert and include images
+        images: await convertImagesToBase64(formData.images || []),
         currentStep: formData.currentStep,
         managerTaskId: formData.managerTaskId,
       };
@@ -144,7 +159,7 @@ export const FlightNotesForm = ({ task, currentStep }: FlightNotesFormProps) => 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <FormField label="Crew">
           <div className="flex flex-wrap gap-2">
-            {formData.crew.map((employee) => (
+            {formData.crew?.map((employee) => (
               <span
                 key={employee}
                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500 text-white"

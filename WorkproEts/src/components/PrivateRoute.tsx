@@ -6,17 +6,15 @@ interface PrivateRouteProps {
   requiredRoles: string[];
 }
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({
-  children,
-  requiredRoles,
-}) => {
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requiredRoles }) => {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
     const userId = sessionStorage.getItem("userId");
-    const role = JSON.parse(sessionStorage.getItem("role") || "null"); // Parse stored role
+    const role = JSON.parse(sessionStorage.getItem("role") || "null");
+    const userName = sessionStorage.getItem("userName");
 
-    console.log("Session Storage in PrivateRoute:", { userId, role });
+    console.log("Session Storage in PrivateRoute:", { userId, role, userName });
 
     if (userId && role && requiredRoles.includes(role)) {
       setIsAuthorized(true);

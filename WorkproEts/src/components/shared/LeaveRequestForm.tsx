@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar } from 'lucide-react';
 import { createLeaveRequest, getUserData } from '../../api/admin';
 import { toast } from 'react-toastify';
 
-interface LeaveFormData {
+export interface LeaveFormData {
   type: 'vacation' | 'sick' | 'personal';
   startDate: string;
   endDate: string;
@@ -18,56 +17,88 @@ const LeaveRequestForm: React.FC = () => {
     startDate: '',
     endDate: '',
     reason: '',
-    userid: '', 
-    username: '', // Initialize username
+    userid: '',
+    username: '',
   });
 
-  const [username, setUsername] = useState<string>(''); // State for the username
+  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Validate date range
+
+    // Validate the date range
     if (new Date(formData.startDate) > new Date(formData.endDate)) {
       toast.error('End date cannot be earlier than start date');
       return;
     }
 
+    // Ensure userid and username are present
+    if (!formData.userid || !formData.username) {
+      toast.error('User information is missing. Please try again.');
+      return;
+    }
+
     try {
+      setLoading(true);
       const requestData = {
         ...formData,
-        status: 'pending', // Set status to 'pending' before submitting
+        status: 'pending',
       };
-      const response = await createLeaveRequest(requestData); 
+
+      console.log('Submitting Leave Request:', requestData);
+
+      const response = await createLeaveRequest(requestData);
       toast.success('Leave request submitted successfully!');
+      setFormData({
+        type: 'vacation',
+        startDate: '',
+        endDate: '',
+        reason: '',
+        userid: formData.userid, // Keep userid and username
+        username: formData.username,
+      });
     } catch (error) {
+      console.error('Error submitting leave request:', error);
       toast.error(`Error submitting leave request: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Function to get user data (username)
   const getData = async () => {
-    const userId = sessionStorage.getItem('userId') || '';
-    const response = await getUserData(userId);
-    console.log('Response:', response);
-    
-    if (response && response.username) {
-      setUsername(response.username); // Set the username from the response
-      setFormData((prevData) => ({
-        ...prevData,
-        username: response.username, // Optionally set username in formData as well
-        userid: userId, // You can also store the userId in formData if necessary
-      }));
+    const userId = sessionStorage.getItem('userId');
+    if (!userId) {
+      toast.error('User ID not found. Please log in again.');
+      return;
+    }
+
+    try {
+      const response = await getUserData(userId);
+      console.log('User Data Response:', response);
+
+      if (response && response.username) {
+        setUsername(response.username);
+        setFormData((prevData) => ({
+          ...prevData,
+          username: response.username,
+          userid: userId,
+        }));
+      } else {
+        toast.error('Failed to fetch user data.');
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast.error('Error fetching user data. Please try again.');
     }
   };
 
-  // Fetch user data when the component mounts
   useEffect(() => {
     getData();
   }, []);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 bg-white p-8 rounded-lg shadow-lg">
-      {/* Display Username */}
       {username && (
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Leave Request for: {username}</h3>
@@ -81,7 +112,12 @@ const LeaveRequestForm: React.FC = () => {
           <label className="block text-sm font-semibold">Leave Type</label>
           <select
             value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value as 'vacation' | 'sick' | 'personal' })}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                type: e.target.value as 'vacation' | 'sick' | 'personal',
+              })
+            }
             className="mt-1 block w-full"
           >
             <option value="vacation">Vacation</option>
@@ -129,7 +165,13 @@ const LeaveRequestForm: React.FC = () => {
 
       {/* Submit Button */}
       <div className="flex justify-center">
-        <button type="submit" className="btn btn-primary">Submit Request</button>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={!formData.userid || !formData.username || loading}
+        >
+          {loading ? 'Submitting...' : 'Submit Request'}
+        </button>
       </div>
     </form>
   );

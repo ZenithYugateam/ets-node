@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { createLeaveRequest, getLeaveRequests, getUserData } from '../api/admin';
-import { Chip } from '@mui/material';
 import { Calendar, Clock, FileText, User } from 'lucide-react';
 
 interface LeaveRequest {
@@ -10,6 +9,7 @@ interface LeaveRequest {
   endDate: string;
   reason: string;
   status: string;
+  createdAt: string;
 }
 
 interface LeaveForm {
@@ -32,26 +32,48 @@ const LeaveRequests: React.FC = () => {
     username: '',
   });
 
-  const [userRole, setUserRole] = useState<string | null>('');
-  const [username, setUserName] = useState<string>('');
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [username, setUserName] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch user data on mount
   useEffect(() => {
     const fetchUserData = async () => {
       const userId = sessionStorage.getItem('userId');
+      const storedUserName = sessionStorage.getItem('userName'); // Get userName from session storage
+      const storedUserRole = sessionStorage.getItem('role'); // Get userRole from session storage
+
       if (!userId) {
-        alert('User ID is missing. Please log in again.');
+        setError('User ID is missing. Please log in again.');
         return;
       }
+
       try {
-        const response = await getUserData(userId);
-        setUserName(response.name);
-        setUserRole(response.role);
-        setLeaveForm((prevForm) => ({
-          ...prevForm,
-          username: response.name,
-          userid: response._id,
-        }));
-      } catch (error) {
+        if (storedUserName && storedUserRole) {
+          // If userName and userRole are available in sessionStorage, use them
+          setUserName(storedUserName);
+          setUserRole(storedUserRole);
+          setLeaveForm((prevForm) => ({
+            ...prevForm,
+            username: storedUserName,
+            userid: userId,
+          }));
+        } else {
+          // Fetch user data if not fully available in session storage
+          const response = await getUserData(userId);
+          sessionStorage.setItem('userName', response.name);
+          sessionStorage.setItem('userRole', response.role);
+          setUserName(response.name);
+          setUserRole(response.role);
+          setLeaveForm((prevForm) => ({
+            ...prevForm,
+            username: response.name,
+            userid: response._id,
+          }));
+        }
+      } catch (error: any) {
+        setError('Failed to fetch user data. Please try again later.');
         console.error('Error fetching user data:', error.message);
       }
     };
@@ -59,30 +81,34 @@ const LeaveRequests: React.FC = () => {
     fetchUserData();
   }, []);
 
+  // Fetch leave requests when user ID is available
   useEffect(() => {
+    if (!leaveForm.userid) return;
+
     const fetchLeaveRequests = async () => {
-      if (leaveForm.userid) {
-        try {
-          const data = await getLeaveRequests(leaveForm.userid);
-          // Sort the requests by creation date in descending order
-          const sortedData = data.sort(
-            (a: LeaveRequest, b: LeaveRequest) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          setLeaveRequests(sortedData);
-        } catch (error) {
-          console.error('Error fetching leave requests:', error.message);
-        }
+      setLoading(true);
+      try {
+        const data = await getLeaveRequests(leaveForm.userid);
+        const sortedData = data.sort(
+          (a: LeaveRequest, b: LeaveRequest) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setLeaveRequests(sortedData);
+        setLoading(false);
+      } catch (error: any) {
+        setError('Failed to fetch leave requests. Please try again later.');
+        setLoading(false);
+        console.error('Error fetching leave requests:', error.message);
       }
     };
-  
+
     fetchLeaveRequests();
   }, [leaveForm.userid]);
-  
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leaveForm.userid || !leaveForm.type || !leaveForm.startDate || !leaveForm.endDate || !leaveForm.reason) {
-      alert('Please fill in all fields.');
+      setError('Please fill in all fields.');
       return;
     }
 
@@ -98,15 +124,18 @@ const LeaveRequests: React.FC = () => {
       });
       const updatedRequests = await getLeaveRequests(leaveForm.userid);
       setLeaveRequests(updatedRequests);
-    } catch (error) {
+    } catch (error: any) {
+      setError('Failed to create leave request. Please try again later.');
       console.error('Error creating leave request:', error.message);
     }
   };
 
+  // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setLeaveForm({ ...leaveForm, [e.target.name]: e.target.value });
   };
 
+  // Render status chip
   const getStatusChip = (status: string) => {
     const styles = {
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -115,7 +144,11 @@ const LeaveRequests: React.FC = () => {
     };
 
     return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium border ${styles[status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+      <span
+        className={`px-3 py-1 rounded-full text-sm font-medium border ${
+          styles[status] || 'bg-gray-100 text-gray-800 border-gray-200'
+        }`}
+      >
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -123,12 +156,21 @@ const LeaveRequests: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg">
+          <p>{error}</p>
+        </div>
+      )}
+
+      {/* Leave Form Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
         <div className="flex items-center gap-3 mb-6">
           <User className="w-6 h-6 text-blue-600" />
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Leave Dashboard</h1>
-            <p className="text-gray-600">Welcome, {username} ({userRole || 'User'})</p>
+            <p className="text-gray-600">
+              Welcome, {username || 'Loading...'} ({userRole || 'User'})
+            </p>
           </div>
         </div>
 
@@ -206,6 +248,7 @@ const LeaveRequests: React.FC = () => {
         </form>
       </div>
 
+      {/* Leave Requests Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center gap-3 mb-6">
           <Clock className="w-6 h-6 text-blue-600" />
@@ -213,19 +256,29 @@ const LeaveRequests: React.FC = () => {
         </div>
 
         <div className="space-y-4">
-          {leaveRequests.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>Loading your leave requests...</p>
+            </div>
+          ) : leaveRequests.length > 0 ? (
             leaveRequests.map((request) => (
-              <div key={request._id} className="p-5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
+              <div
+                key={request._id}
+                className="p-5 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg font-medium text-gray-900 capitalize">{request.type} Leave</span>
+                      <span className="text-lg font-medium text-gray-900 capitalize">
+                        {request.type} Leave
+                      </span>
                       {getStatusChip(request.status)}
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Duration:</span>{' '}
-                        {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
+                        {new Date(request.startDate).toLocaleDateString()} -{' '}
+                        {new Date(request.endDate).toLocaleDateString()}
                       </p>
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Reason:</span> {request.reason}
