@@ -291,10 +291,24 @@ app.post("/api/leave-requests", async (req, res) => {
   try {
     const { type, startDate, endDate, reason, userid, username } = req.body;
 
-    if (new Date(startDate) > new Date(endDate)) {
-      return res.status(400).send("End date cannot be earlier than start date");
+    // Validate required fields
+    if (!type || !startDate || !endDate || !reason || !userid || !username) {
+      return res.status(400).json({ message: "All fields are required." });
     }
-   
+
+    // Validate date format and comparison
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ message: "Invalid date format." });
+    }
+
+    if (start > end) {
+      return res.status(400).json({ message: "End date cannot be earlier than start date." });
+    }
+
+    // Create and save the leave request
     const newLeaveRequest = new LeaveRequest({
       type,
       startDate,
@@ -302,15 +316,18 @@ app.post("/api/leave-requests", async (req, res) => {
       reason,
       userid,
       status: "pending",
-      username: username,
+      username,
     });
 
-    await newLeaveRequest.save();
-    res.status(201).send(newLeaveRequest);
+    const savedRequest = await newLeaveRequest.save();
+
+    res.status(201).json(savedRequest);
   } catch (error) {
-    res.status(500).send(`Error creating leave request: ${error.message}`);
+    console.error("Error creating leave request:", error); // Log the detailed error stack
+    res.status(500).json({ message: `Error creating leave request: ${error.message}` });
   }
 });
+
 
 app.get("/api/leave-requests", async (req, res) => {
   try {
