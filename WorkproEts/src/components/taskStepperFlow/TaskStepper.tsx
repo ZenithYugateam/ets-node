@@ -32,19 +32,19 @@ interface TaskStepperProps {
 
 export const TaskStepper = ({ currentStep, setCurrentStep, task, onClose }: TaskStepperProps) => {
   const forms = [
-    <DroneDetailsForm currentStep={currentStep} task={task} />,
-    <TravellingDetailsForm currentStep={currentStep} task={task} />,
-    <OnFieldDetailsForm currentStep={currentStep} task={task} />,
-    <FlightNotesForm currentStep={currentStep} task={task} />, // Combined form
-    <GettingOffFieldForm currentStep={currentStep} task={task} />,
-    <ReturnToOfficeForm currentStep={currentStep} task={task} />,
-    <DroneSubmissionForm currentStep={currentStep} task={task} />,
-    <DataSubmissionForm currentStep={currentStep} task={task} />,
-    <TaskProgressForm currentStep={currentStep} task={task} />,
+    <DroneDetailsForm currentStep={currentStep} setCurrentStep={setCurrentStep} task={task} />,
+    <TravellingDetailsForm currentStep={currentStep}setCurrentStep={setCurrentStep}  task={task} />,
+    <OnFieldDetailsForm currentStep={currentStep} setCurrentStep={setCurrentStep} task={task} />,
+    <FlightNotesForm currentStep={currentStep} setCurrentStep={setCurrentStep} task={task} />, 
+    <GettingOffFieldForm currentStep={currentStep} setCurrentStep={setCurrentStep} task={task} />,
+    <ReturnToOfficeForm currentStep={currentStep} setCurrentStep={setCurrentStep} task={task} />,
+    <DroneSubmissionForm currentStep={currentStep} setCurrentStep={setCurrentStep} task={task} />,
+    <DataSubmissionForm currentStep={currentStep} setCurrentStep={setCurrentStep} task={task} />,
+    <TaskProgressForm currentStep={currentStep}setCurrentStep={setCurrentStep}  task={task} />,
   ];
 
   const handleFinish = () => {
-    setTimeout(() => onClose(), 500); // Delay to give time for any animations
+    setTimeout(() => onClose(), 500); 
   };
 
   return (

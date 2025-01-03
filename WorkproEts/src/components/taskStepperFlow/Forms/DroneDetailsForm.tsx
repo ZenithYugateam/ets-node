@@ -114,10 +114,11 @@ const droneChecklistMapping: Record<string, { item: string; quantity?: number }[
 interface DroneDetailsFormProps {
   currentStep: number; 
   task: Task;
+  setCurrentStep: (step: number) => void;
 }
 
 
-export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) => {
+export const DroneDetailsForm = ({ currentStep, setCurrentStep,task }: DroneDetailsFormProps) => {
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<DroneDetails>({
     droneName: '',
@@ -224,6 +225,10 @@ export const DroneDetailsForm = ({ currentStep, task }: DroneDetailsFormProps) =
       });
       setCapturedImages([]);
       toast.success('Submission successful!');
+
+      if(currentStep < 10){
+        setCurrentStep(currentStep + 1);
+      }
     } catch (err) {
       console.error('Error submitting form:', err);
       setError('Failed to submit the form. Please try again.');

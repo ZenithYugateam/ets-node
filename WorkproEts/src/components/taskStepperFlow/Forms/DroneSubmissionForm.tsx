@@ -23,9 +23,10 @@ interface Submission {
 interface DroneSubmissionFormProps {
   currentStep: number;
   task: Task;
+  setCurrentStep: (step: number) => void;
 }
 
-export const DroneSubmissionForm = ({ currentStep, task }: DroneSubmissionFormProps) => {
+export const DroneSubmissionForm = ({ currentStep, setCurrentStep, task }: DroneSubmissionFormProps) => {
   const [checkedItems, setCheckedItems] = useState<string[]>([]);
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +97,10 @@ export const DroneSubmissionForm = ({ currentStep, task }: DroneSubmissionFormPr
       if (!response.ok) {
         const resData = await response.json();
         throw new Error(resData.error || resData.message || 'Failed to submit data');
+      }
+
+      if(currentStep < 10){
+        setCurrentStep(currentStep + 1);
       }
 
       // If successful:
