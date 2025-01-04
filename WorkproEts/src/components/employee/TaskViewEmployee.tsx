@@ -36,7 +36,8 @@ interface Task {
   _id: string;
   projectName: string;
   taskName: string;
-  employeeName: string;
+  employees:string[];
+  // employeeName: string;
   priority: Priority;
   deadline: string | null;
   description: string;
@@ -258,7 +259,7 @@ const TaskViewEmployee: React.FC = () => {
           if (updatedTask.deadline && updatedTask.acceptedAt) {
             const acceptedTime = new Date(updatedTask.acceptedAt).getTime();
             const deadlineTime = new Date(updatedTask.deadline).getTime();
-            const totalHours = (deadlineTime - acceptedTime) / 3600000; // Convert ms to hours
+            const totalHours = (deadlineTime - acceptedTime) / 3600000; 
 
             if (totalHours > 0) {
               updatedTask.estimatedHours = totalHours;
@@ -1071,10 +1072,15 @@ const TaskViewEmployee: React.FC = () => {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <TaskDetailItem
-                  label="Employee Name"
-                  value={selectedTask?.employeeName || "N/A"}
-                />
+              <TaskDetailItem
+  label="Employees"
+  value={
+    selectedTask?.employees?.length > 0 
+      ? selectedTask.employees.join(", ") 
+      : "N/A"
+  }
+/>
+
                 <TaskDetailItem
                   label="Deadline"
                   value={
