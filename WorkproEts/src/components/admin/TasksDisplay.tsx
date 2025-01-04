@@ -203,7 +203,7 @@ const ManagerTasksDisplay = () => {
                     <th className="px-4 py-2">Remarks</th>
                     <th className="px-4 py-2">Notes</th>
                     <th className="px-4 py-2">Selected Employees</th>
-                    <th className="px-4 py-2">Drone Required</th>
+                    {/* <th className="px-4 py-2">Drone Required</th> */}
                     {/* <th className="px-4 py-2">DGPS Required</th> */}
                     <th className="px-4 py-2">Estimated Hours</th>
                     <th className="px-4 py-2">Accepted</th>
@@ -315,7 +315,7 @@ const ManagerTasksDisplay = () => {
                       </td>
 
                       {/* Drone Required */}
-                      <tr key={task._id}>
+                      {/* <tr key={task._id}>
         <td className="px-6 py-4">
           {task.droneRequired ? (
             <span className="text-green-600 font-semibold">Yes</span>
@@ -323,7 +323,7 @@ const ManagerTasksDisplay = () => {
             <span className="text-red-600 font-semibold">No</span>
           )}
         </td>
-      </tr>
+      </tr> */}
 
                       {/* DGPS Required */}
                       {/* <td className="px-4 py-2">
