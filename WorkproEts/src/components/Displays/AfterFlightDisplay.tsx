@@ -28,7 +28,7 @@ export const AfterFlightDisplay = ({ managerTaskId }: AfterFlightDisplayProps) =
       try {
         setIsLoading(true);
   
-        const response = await axios.get('http://localhost:5001/api/submissions', {
+        const response = await axios.get('https://ets-node-1.onrender.com/api/submissions', {
           params: { type: 'afterFlight', managerTaskId },
         });
   
