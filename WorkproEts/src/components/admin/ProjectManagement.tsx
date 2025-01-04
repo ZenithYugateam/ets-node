@@ -88,18 +88,14 @@ const ProjectManagement: React.FC = () => {
   });
 
   // Fetch managers based on selected department
-  const {
-    data: managersData = [], // Provide default empty array
-    isLoading: managersLoading,
-    error: managersError,
-  } = useQuery(
+  const { data: managersData = [], isLoading: managersLoading, error: managersError } = useQuery(
     ["managers", formData.department],
     async () => {
       try {
-        if (!formData.department) return []; // Return empty array if no department selected
-
+        if (!formData.department) return []; // Return empty array if no department
+  
         const response = await fetch(
-          `https://ets-node-1.onrender.com/users/managers/${encodeURIComponent(
+          `https://ets-node-1.onrender.com/users/managers?departments=${encodeURIComponent(
             formData.department
           )}`
         );
@@ -107,7 +103,7 @@ const ProjectManagement: React.FC = () => {
           throw new Error("Error fetching managers");
         }
         const data = await response.json();
-        return data || []; // Ensure we return an array
+        return data || [];
       } catch (error: any) {
         toast.error(`Failed to fetch managers: ${error.message}`);
         return [];
