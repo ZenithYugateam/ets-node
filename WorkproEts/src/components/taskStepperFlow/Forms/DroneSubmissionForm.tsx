@@ -37,7 +37,7 @@ export const DroneSubmissionForm = ({ currentStep, setCurrentStep, task }: Drone
     const fetchData = async () => {
       const managerTaskId = task._id;
       try {
-        const response = await fetch('http://localhost:5001/api/droneDetailsList', {
+        const response = await fetch('https://ets-node-1.onrender.com/api/droneDetailsList', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export const DroneSubmissionForm = ({ currentStep, setCurrentStep, task }: Drone
     };
 
     try {
-      const response = await fetch('http://localhost:5001/api/submission', {
+      const response = await fetch('https://ets-node-1.onrender.com/api/submission', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

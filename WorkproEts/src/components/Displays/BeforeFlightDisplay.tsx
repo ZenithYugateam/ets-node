@@ -30,7 +30,7 @@ export const BeforeFlightDisplay = ({ managerTaskId }: BeforeFlightDisplayProps)
         setIsLoading(true);
 
         // Fetch before-flight details using the updated API
-        const response = await axios.get('http://localhost:5001/api/submissions', {
+        const response = await axios.get('https://ets-node-1.onrender.com/api/submissions', {
           params: { type: 'beforeFlight', managerTaskId },
         });
 

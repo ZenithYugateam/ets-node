@@ -16,7 +16,7 @@ const ManagerDashboard = () => {
   const getData = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5001/api/users/${sessionStorage.getItem("userId") || ""}`
+        `https://ets-node-1.onrender.com/api/users/${sessionStorage.getItem("userId") || ""}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch user data");
