@@ -10,6 +10,7 @@ const Worksheet = require("./Models/Worksheet")
 const BugReport = require("./Models/BugReport")
 const Vehicle = require("./Models/Vehicle")
 const SubmissionSchema = require("./Models/SubmissionSchema");
+const Form = require("./Models/Forms");
 
 const app = express();
 app.use(cors());
@@ -2299,6 +2300,150 @@ app.get('/api/get/submissions', async (req, res) => {
 });
 
 
+//Inventory amangement System 
+app.post('/create-form', async (req, res) => {
+  try {
+    const { category_name, user_questions } = req.body;
+
+    if (!category_name || !Array.isArray(user_questions)) {
+      return res.status(400).json({ error: 'Invalid data format' });
+    }
+
+    // Check if the category already exists
+    const existingForm = await Form.findOne({ category_name });
+
+    if (existingForm) {
+      // If exists, update user_questions and reset actual_values
+      const initialValues = user_questions.map(() => null);
+      existingForm.user_questions = user_questions;
+      existingForm.actual_values = user_questions;
+      await existingForm.save();
+
+      return res.status(200).json({
+        message: 'Form updated successfully',
+        updatedForm: existingForm,
+      });
+    }
+
+    // If not exists, create a new form
+    const initialValues = user_questions.map(() => null);
+
+    const newForm = new Form({
+      category_name,
+      total_count: 0,
+      user_questions,
+      actual_values: initialValues,
+    });
+
+    await newForm.save();
+    res.status(201).json({
+      message: 'Form created successfully',
+      newForm,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/forms', async (req, res) => {
+  const { category_name, total_count, user_questions, actual_values } = req.body;
+
+  try {
+    // Validate the incoming data
+    if (!category_name || !Array.isArray(user_questions)) {
+      return res.status(400).json({ message: 'Invalid data provided' });
+    }
+
+    // Find and update the form by category_name
+    const updatedForm = await Form.findOneAndUpdate(
+      { category_name }, // Query to find the document by category_name
+      {
+        category_name,
+        total_count,
+        user_questions,
+        actual_values,
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedForm) {
+      return res.status(404).json({ message: 'Form with the specified category_name not found' });
+    }
+
+    res.status(200).json({ message: 'Form updated successfully', form: updatedForm });
+  } catch (error) {
+    console.error('Error updating form:', error);
+    res.status(500).json({ message: 'An error occurred while updating the form', error });
+  }
+});
+
+app.get('/api/forms', async (req, res) => {
+  try {
+    const forms = await Form.find({});
+    res.json(forms);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// DELETE a form by category_name
+app.delete('/api/forms/:category_name', async (req, res) => {
+  try {
+    const { category_name } = req.params;
+    await Form.deleteOne({ category_name });
+    res.status(200).json({ message: 'Form deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+app.get("/api/categories", async (req, res) => {
+  try {
+    const categories = await Form.find({}, "category_name");
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Fetch category details by category_name
+app.get("/api/categories/:category_name", async (req, res) => {
+  const { category_name } = req.params;
+  try {
+    const category = await Form.findOne({ category_name });
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+    res.json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update the actual_values and total_count for a category
+app.post("/api/categories/:category_name/update", async (req, res) => {
+  const { category_name } = req.params;
+  const { actual_values, total_count } = req.body;
+
+  try {
+    const category = await Form.findOne({ category_name });
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    category.actual_values = actual_values || category.actual_values;
+    if (total_count !== undefined) {
+      category.total_count = total_count;
+    }
+
+    await category.save();
+    res.json({ message: "Category updated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 
 

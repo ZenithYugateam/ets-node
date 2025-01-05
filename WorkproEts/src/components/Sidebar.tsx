@@ -35,6 +35,9 @@ const Sidebar = () => {
       ? [{ to: '/leave-approvals', icon: Calendar, label: 'Leave Approvals' }]
       : [{ to: '/leave-requests', icon: Calendar, label: 'Leave Requests' }]),
     { to: '/work-sheets', icon: ClipboardList, label: 'Worksheet' },
+    ...(role === 'Admin' || role === 'Manager'
+      ? [{ to: '/inventory', icon: ClipboardList, label: 'IVMS' }]
+      : []),
   ];
 
   return (
