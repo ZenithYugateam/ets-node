@@ -203,8 +203,8 @@ const ManagerTasksDisplay = () => {
                     <th className="px-4 py-2">Remarks</th>
                     <th className="px-4 py-2">Notes</th>
                     <th className="px-4 py-2">Selected Employees</th>
-                    <th className="px-4 py-2">Drone Required</th>
-                    <th className="px-4 py-2">DGPS Required</th>
+                    {/* <th className="px-4 py-2">Drone Required</th> */}
+                    {/* <th className="px-4 py-2">DGPS Required</th> */}
                     <th className="px-4 py-2">Estimated Hours</th>
                     <th className="px-4 py-2">Accepted</th>
                     <th className="px-4 py-2">Accepted At</th>
@@ -309,28 +309,30 @@ const ManagerTasksDisplay = () => {
 
                       {/* Selected Employees */}
                       <td className="px-4 py-2">
-                        {Array.isArray(task.selectedEmployees) && task.selectedEmployees.length > 0
-                          ? task.selectedEmployees.join(", ")
+                        {Array.isArray(task.employees) && task.employees.length > 0
+                          ? task.employees.join(", ")
                           : "None"}
                       </td>
 
                       {/* Drone Required */}
-                      <td className="px-4 py-2">
-                        {task.droneRequired ? (
-                          <span className="text-green-600 font-semibold">Yes</span>
-                        ) : (
-                          <span className="text-red-600 font-semibold">No</span>
-                        )}
-                      </td>
+                      {/* <tr key={task._id}>
+        <td className="px-6 py-4">
+          {task.droneRequired ? (
+            <span className="text-green-600 font-semibold">Yes</span>
+          ) : (
+            <span className="text-red-600 font-semibold">No</span>
+          )}
+        </td>
+      </tr> */}
 
                       {/* DGPS Required */}
-                      <td className="px-4 py-2">
+                      {/* <td className="px-4 py-2">
                         {task.dgpsRequired ? (
                           <span className="text-green-600 font-semibold">Yes</span>
                         ) : (
                           <span className="text-red-600 font-semibold">No</span>
                         )}
-                      </td>
+                      </td> */}
 
                       {/* Estimated Hours */}
                       <td className="px-4 py-2">
