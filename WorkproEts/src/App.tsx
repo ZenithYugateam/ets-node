@@ -136,7 +136,7 @@ function App() {
                   path="/attendance-view"
                   element={
                     <PrivateRoute
-                    requiredRoles={["Admin"]}
+                    requiredRoles={["Admin", "Manager"]}
                     >
                       <Layout>
                       <Calendar />
@@ -148,7 +148,7 @@ function App() {
                   path="/attendance-view/:date"
                   element={
                     <PrivateRoute
-                    requiredRoles={["Admin"]}
+                    requiredRoles={["Admin", "Manager"]}
                     >
                       <Layout>
                       <DayDetails />
