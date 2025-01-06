@@ -18,7 +18,7 @@ const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({ open, onClose, ta
   const handleSave = async () => {
     setLoading(true);
     try {
-      await axios.put(`http://localhost:5001/api/manager-tasks/update-status`, {
+      await axios.put(`https://ets-node-1.onrender.com/api/manager-tasks/update-status`, {
         id: taskId,
         status,
       });
