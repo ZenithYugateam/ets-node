@@ -14,13 +14,39 @@ const TimeCard = ({ userId }: { userId: string }) => {
   const [breakReason, setBreakReason] = useState('');
 
   useEffect(() => {
+    const savedCheckInStatus = localStorage.getItem('isCheckedIn');
+    const savedCheckInTime = localStorage.getItem('checkInTime');
+    const savedOnBreakStatus = localStorage.getItem('isOnBreak');
+    const savedBreakStartTime = localStorage.getItem('breakStartTime');
+    const savedTotalPausedDuration = localStorage.getItem('totalPausedDuration');
+
+    if (savedCheckInStatus === 'true') {
+      setIsCheckedIn(true);
+      if (savedCheckInTime) setCheckInTime(new Date(savedCheckInTime));
+      if (savedOnBreakStatus === 'true') setIsOnBreak(true);
+      if (savedBreakStartTime) setBreakStartTime(new Date(savedBreakStartTime));
+      if (savedTotalPausedDuration) setTotalPausedDuration(Number(savedTotalPausedDuration));
+    }
+  }, []);
+
+
+  useEffect(() => {
+    localStorage.setItem('isCheckedIn', isCheckedIn.toString());
+    localStorage.setItem('checkInTime', checkInTime ? checkInTime.toISOString() : '');
+    localStorage.setItem('isOnBreak', isOnBreak.toString());
+    localStorage.setItem('breakStartTime', breakStartTime ? breakStartTime.toISOString() : '');
+    localStorage.setItem('totalPausedDuration', totalPausedDuration.toString());
+  }, [isCheckedIn, checkInTime, isOnBreak, breakStartTime, totalPausedDuration]);
+
+  
+  useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
 
     if (isCheckedIn && checkInTime && !isOnBreak) {
       interval = setInterval(() => {
         const now = new Date();
         const elapsedTime = now.getTime() - checkInTime.getTime();
-        const workingTime = elapsedTime - totalPausedDuration; // Subtract paused time
+        const workingTime = elapsedTime - totalPausedDuration;
         setDuration(workingTime);
       }, 1000);
     }
@@ -48,7 +74,7 @@ const TimeCard = ({ userId }: { userId: string }) => {
         setCheckInTime(now);
         setIsCheckedIn(true);
         setDuration(0);
-        setTotalPausedDuration(0); // Reset pause duration on check-in
+        setTotalPausedDuration(0);
         setBreakStartTime(null);
         toast.success('Checked in successfully!');
       } else if (response.status === 400) {
@@ -62,9 +88,7 @@ const TimeCard = ({ userId }: { userId: string }) => {
   };
 
   const handleCheckOut = async () => {
-    if (!window.confirm('Are you sure you want to check out?')) {
-      return;
-    }
+    if (!window.confirm('Are you sure you want to check out?')) return;
 
     try {
       const response = await fetch('https://ets-node-1.onrender.com/api/timelog/checkout', {
@@ -86,6 +110,7 @@ const TimeCard = ({ userId }: { userId: string }) => {
         setCheckInTime(null);
         setBreakStartTime(null);
         setTotalPausedDuration(0);
+        localStorage.clear();
         toast.success('Checked out successfully!');
       } else {
         const data = await response.json();
@@ -117,7 +142,7 @@ const TimeCard = ({ userId }: { userId: string }) => {
       });
 
       if (response.ok) {
-        setBreakStartTime(now); // Record break start time
+        setBreakStartTime(now);
         setIsOnBreak(true);
         toast.success('Break started successfully!');
       }
@@ -155,16 +180,8 @@ const TimeCard = ({ userId }: { userId: string }) => {
     } catch (err) {
       console.error('Error during end break:', err);
       toast.error('Error during end break.');
-    }finally{
-      setBreakReason("")
-    }
-  };
-
-  const handleTimeAction = () => {
-    if (isCheckedIn) {
-      handleCheckOut();
-    } else {
-      handleCheckIn();
+    } finally {
+      setBreakReason('');
     }
   };
 
@@ -228,7 +245,7 @@ const TimeCard = ({ userId }: { userId: string }) => {
         )}
 
         <button
-          onClick={handleTimeAction}
+          onClick={isCheckedIn ? handleCheckOut : handleCheckIn}
           className={`flex items-center px-4 py-2 rounded-lg ${
             isCheckedIn
               ? 'bg-red-50 text-red-600 hover:bg-red-100'
