@@ -29,13 +29,19 @@ const Sidebar = () => {
 
   const dashboardRoute = `/${role || 'default'}`;
 
+  console.log("user id : ", sessionStorage.getItem("userId"))
+
   const links = [
     { to: dashboardRoute, icon: LayoutDashboard, label: 'Dashboard' },
     ...(role === 'Admin'
       ? [{ to: '/leave-approvals', icon: Calendar, label: 'Leave Approvals' }]
       : [{ to: '/leave-requests', icon: Calendar, label: 'Leave Requests' }]),
     { to: '/work-sheets', icon: ClipboardList, label: 'Worksheet' },
-    ...(role === 'Admin'
+    ...(role === 'Admin' || 
+      (role == 'Manager'  && sessionStorage.getItem('userId') === '677285de51c34d16ee98fac7' )  || 
+      (role == 'Manager'  && sessionStorage.getItem('userId') === '6772870251c34d16ee98fad0' )  || 
+      (role == 'Manager'  && sessionStorage.getItem('userId') === '6772873751c34d16ee98fad3' )  ||
+      (role == 'Manager'  && sessionStorage.getItem('userId') === '6772865a51c34d16ee98faca' )  
       ? [{ to: '/attendance-view', icon: Calendar, label: 'Attendance View' }]
       : []), 
     ...(role === 'Admin' || role === 'Manager'
