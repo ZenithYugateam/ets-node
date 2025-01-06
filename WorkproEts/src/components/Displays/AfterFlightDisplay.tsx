@@ -22,23 +22,19 @@ export const AfterFlightDisplay = ({ managerTaskId }: AfterFlightDisplayProps) =
   const [afterFlightDetails, setAfterFlightDetails] = useState<AfterFlightDetails | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null); // For fullscreen image display
 
   useEffect(() => {
     const fetchAfterFlightDetails = async () => {
       try {
         setIsLoading(true);
-  
+
         const response = await axios.get('https://ets-node-1.onrender.com/api/submissions', {
           params: { type: 'afterFlight', managerTaskId },
         });
-  
-        console.log('API Raw Response:', response.data);
-  
+
         if (response.data && response.data.data && response.data.data.length > 0) {
           const submission = response.data.data[0];
-  
-          console.log('Mapped Flights:', submission.flights);
-  
           setAfterFlightDetails({
             crew: submission.crew || [],
             method: submission.method || 'N/A',
@@ -58,13 +54,10 @@ export const AfterFlightDisplay = ({ managerTaskId }: AfterFlightDisplayProps) =
       } finally {
         setIsLoading(false);
       }
-    };  
-  
+    };
+
     fetchAfterFlightDetails();
   }, [managerTaskId]);
-  
-  
-  
 
   if (isLoading) {
     return <p>Loading after-flight details...</p>;
@@ -142,7 +135,8 @@ export const AfterFlightDisplay = ({ managerTaskId }: AfterFlightDisplayProps) =
                 key={index}
                 src={image}
                 alt={`Uploaded ${index}`}
-                className="w-full h-auto rounded-md shadow-sm"
+                className="w-full h-auto rounded-md shadow-sm cursor-pointer"
+                onClick={() => setFullscreenImage(image)} // Open fullscreen on click
               />
             ))}
           </div>
@@ -150,6 +144,23 @@ export const AfterFlightDisplay = ({ managerTaskId }: AfterFlightDisplayProps) =
           <p className="text-sm text-gray-500">No images uploaded.</p>
         )}
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <img
+            src={fullscreenImage}
+            alt="Fullscreen View"
+            className="max-w-full max-h-full"
+          />
+          <button
+            onClick={() => setFullscreenImage(null)} // Close fullscreen
+            className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };

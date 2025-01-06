@@ -40,12 +40,13 @@ export const TravellingDetailsDisplay = ({
   const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null); // For fullscreen image
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch travelling details first to determine transport mode
+        // Fetch travelling details
         const travellingResponse = await axios.get(
           `https://ets-node-1.onrender.com/api/submissions/selected-vehicles/${managerTaskId}`
         );
@@ -62,13 +63,11 @@ export const TravellingDetailsDisplay = ({
         if (details.transportMode === 'Public') {
           setError(null);
         } else if (details.transportMode === 'Private') {
-          // Fetch private vehicles
           const privateResponse = await axios.get(
             `https://ets-node-1.onrender.com/api/private-vehicles/${userName}`
           );
           setPrivateVehicles(privateResponse.data || []);
         } else if (details.transportMode === 'Company') {
-          // Fetch all vehicles for company transport
           const allVehiclesResponse = await axios.get(`https://ets-node-1.onrender.com/api/vehicles`);
           setAllVehicles(allVehiclesResponse.data || []);
         }
@@ -111,12 +110,6 @@ export const TravellingDetailsDisplay = ({
     <div className="space-y-6">
       <h2 className="text-lg font-bold text-gray-800">Travelling Details</h2>
 
-      {/* Transport Mode */}
-      {/* <div>
-        <h3 className="text-sm font-medium text-gray-700">Transport Mode</h3>
-        <p className="text-sm text-gray-900">{transportMode || 'N/A'}</p>
-      </div> */}
-
       {/* Based on Transport Mode */}
       {transportMode === 'Public' && publicTransportDetails ? (
         <div>
@@ -135,8 +128,11 @@ export const TravellingDetailsDisplay = ({
                 <div key={vehicle.vehicleNumber} className="p-4 border rounded-md shadow-sm">
                   <p className="font-medium">{vehicle.vehicleName}</p>
                   <p className="text-sm text-gray-500">Number: {vehicle.vehicleNumber}</p>
-                  <p className="text-sm">Start Reading: {vehicle.startReading}</p>
-                  <p className="text-sm">End Reading: {vehicle.endReading}</p>
+                  <p className="text-sm">Start Reading: {vehicle.startReading} km</p>
+                  <p className="text-sm">End Reading: {vehicle.endReading} km</p>
+                  <p className="text-sm font-semibold text-indigo-600">
+                    Distance Travelled: {vehicle.endReading - vehicle.startReading} km
+                  </p>
                 </div>
               ))}
             </div>
@@ -153,7 +149,11 @@ export const TravellingDetailsDisplay = ({
                 <div key={vehicle.vehicleNumber} className="p-4 border rounded-md shadow-sm">
                   <p className="font-medium">{vehicle.vehicleName}</p>
                   <p className="text-sm text-gray-500">Number: {vehicle.vehicleNumber}</p>
-                  <p className="text-sm">Type: {vehicle.type}</p>
+                  <p className="text-sm">Start Reading: {vehicle.startReading} km</p>
+                  <p className="text-sm">End Reading: {vehicle.endReading} km</p>
+                  <p className="text-sm font-semibold text-indigo-600">
+                    Distance Travelled: {vehicle.endReading - vehicle.startReading} km
+                  </p>
                 </div>
               ))}
             </div>
@@ -206,7 +206,8 @@ export const TravellingDetailsDisplay = ({
                 key={index}
                 src={image}
                 alt={`Uploaded ${index}`}
-                className="w-full h-auto rounded-md shadow-sm"
+                className="w-full h-auto rounded-md shadow-sm cursor-pointer"
+                onClick={() => setFullscreenImage(image)} // Open fullscreen on click
               />
             ))}
           </div>
@@ -214,6 +215,23 @@ export const TravellingDetailsDisplay = ({
           <p className="text-sm text-gray-500">No images uploaded.</p>
         )}
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <img
+            src={fullscreenImage}
+            alt="Fullscreen View"
+            className="max-w-full max-h-full"
+          />
+          <button
+            onClick={() => setFullscreenImage(null)} // Close fullscreen
+            className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };
