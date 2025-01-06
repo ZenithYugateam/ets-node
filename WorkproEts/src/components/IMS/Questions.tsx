@@ -25,7 +25,7 @@ const Questions: React.FC<QuestionsProps> = ({ categoryName }) => {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/forms');
+        const response = await axios.get('https://ets-node-1.onrender.com/api/forms');
         setForms(response.data);
         setLoading(false);
 
@@ -122,7 +122,7 @@ const Questions: React.FC<QuestionsProps> = ({ categoryName }) => {
     if (!editableForm) return;
 
     try {
-      await axios.put('http://localhost:5001/api/forms', {
+      await axios.put('https://ets-node-1.onrender.com/api/forms', {
         category_name: editableForm.category_name,
         total_count: editableForm.total_count,
         user_questions: editableForm.user_questions,

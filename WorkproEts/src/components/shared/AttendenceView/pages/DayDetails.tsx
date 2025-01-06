@@ -32,7 +32,7 @@ export default function DayDetails() {
     const fetchAttendanceData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5001/api/attendance/${date}`);
+        const response = await axios.get(`https://ets-node-1.onrender.com/api/attendance/${date}`);
         
         const { managers, employees } = response.data;
         setAttendanceData({

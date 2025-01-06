@@ -18,7 +18,7 @@ export const TaskDrawer = ({ isOpen, onClose, task }: TaskDrawerProps) => {
     const fetchCurrentStep = async () => {
       if (isOpen) {
         try {
-          const response = await axios.post(`http://localhost:5001/api/latest-active-step`, {
+          const response = await axios.post(`https://ets-node-1.onrender.com/api/latest-active-step`, {
             managerTaskId: task._id,
           });
           const latestStep = response.data.latestActiveStep;

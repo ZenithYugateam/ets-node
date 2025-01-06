@@ -48,7 +48,7 @@ const FormCreator: React.FC<CategoryFormProps> = ({ categoryName2, onClose }) =>
     }));
 
     try {
-      const response = await axios.post('http://localhost:5001/create-form', {
+      const response = await axios.post('https://ets-node-1.onrender.com/create-form', {
         category_name: categoryName,
         user_questions: userQuestions,
       });

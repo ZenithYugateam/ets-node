@@ -34,7 +34,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ categoryName, onClose }) =>
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get<Category[]>('http://localhost:5001/api/categories');
+        const response = await axios.get<Category[]>('https://ets-node-1.onrender.com/api/categories');
         setCategories(response.data);
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -49,7 +49,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ categoryName, onClose }) =>
     if (selectedCategory) {
       const fetchCategoryDetails = async () => {
         try {
-          const response = await axios.get<FormDetails>(`http://localhost:5001/api/categories/${selectedCategory}`);
+          const response = await axios.get<FormDetails>(`https://ets-node-1.onrender.com/api/categories/${selectedCategory}`);
           const { total_count, user_questions, actual_values } = response.data;
 
           setCurrentTotalCount(total_count);
@@ -85,7 +85,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ categoryName, onClose }) =>
 
     try {
       setIsLoading(true);
-      await axios.post(`http://localhost:5001/api/categories/${selectedCategory}/update`, updatedData);
+      await axios.post(`https://ets-node-1.onrender.com/api/categories/${selectedCategory}/update`, updatedData);
       alert('Data updated successfully!');
       setIsLoading(false);
     } catch (error) {

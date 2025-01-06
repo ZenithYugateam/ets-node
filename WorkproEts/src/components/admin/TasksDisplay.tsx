@@ -30,7 +30,7 @@ const ManagerTasksDisplay = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await axios.get("http://localhost:5001/api/manager-tasks");
+        const response = await axios.get("https://ets-node-1.onrender.com/api/manager-tasks");
         setTasks(response.data.tasks || []);
       } catch (err) {
         setError(err.response?.data?.message || "Failed to fetch tasks");

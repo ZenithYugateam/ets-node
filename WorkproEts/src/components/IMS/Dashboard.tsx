@@ -25,7 +25,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/forms');
+        const response = await axios.get('https://ets-node-1.onrender.com/api/forms');
         setForms(response.data);
         setFilteredForms(response.data);
       } catch (error) {

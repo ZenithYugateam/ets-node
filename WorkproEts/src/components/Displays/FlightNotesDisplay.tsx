@@ -30,7 +30,7 @@ export const FlightNotesDisplay = ({ managerTaskId }: FlightNotesDisplayProps) =
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:5001/api/submissions", {
+        const response = await axios.get("https://ets-node-1.onrender.com/api/submissions", {
           params: { type: "combinedFlightForm", managerTaskId },
         });
         const submissions = response.data.data;

@@ -17,7 +17,7 @@ const CategoryList: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get<Category[]>('http://localhost:5001/api/forms'); // Adjust the API endpoint as needed
+        const response = await axios.get<Category[]>('https://ets-node-1.onrender.com/api/forms'); // Adjust the API endpoint as needed
         setCategories(response.data);
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -30,7 +30,7 @@ const CategoryList: React.FC = () => {
   // Handle category deletion
   const handleDelete = async (categoryName: string) => {
     try {
-      await axios.delete(`http://localhost:5001/api/forms/${categoryName}`); // Adjust the API endpoint as needed
+      await axios.delete(`https://ets-node-1.onrender.com/api/forms/${categoryName}`); // Adjust the API endpoint as needed
       setCategories(categories.filter(category => category.category_name !== categoryName));
     } catch (error) {
       console.error('Error deleting category:', error);
