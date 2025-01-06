@@ -23,6 +23,7 @@ export const BeforeFlightDisplay = ({ managerTaskId }: BeforeFlightDisplayProps)
   const [beforeFlightDetails, setBeforeFlightDetails] = useState<BeforeFlightDetails | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null); // For fullscreen image display
 
   useEffect(() => {
     const fetchBeforeFlightDetails = async () => {
@@ -143,7 +144,8 @@ export const BeforeFlightDisplay = ({ managerTaskId }: BeforeFlightDisplayProps)
                 key={index}
                 src={image}
                 alt={`Uploaded ${index}`}
-                className="w-full h-auto rounded-md shadow-sm"
+                className="w-full h-auto rounded-md shadow-sm cursor-pointer"
+                onClick={() => setFullscreenImage(image)} // Open fullscreen on click
               />
             ))}
           </div>
@@ -151,6 +153,23 @@ export const BeforeFlightDisplay = ({ managerTaskId }: BeforeFlightDisplayProps)
           <p className="text-sm text-gray-500">No images uploaded.</p>
         )}
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <img
+            src={fullscreenImage}
+            alt="Fullscreen View"
+            className="max-w-full max-h-full"
+          />
+          <button
+            onClick={() => setFullscreenImage(null)} // Close fullscreen
+            className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };

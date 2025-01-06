@@ -6,6 +6,7 @@ type ReturnToOfficeDetails = {
   timeReached: string;
   endReading: number;
   images: string[]; // Base64 strings or URLs
+  startReading?: number; // Optional field to calculate distance
 };
 
 interface ReturnToOfficeDisplayProps {
@@ -16,6 +17,7 @@ export const ReturnToOfficeDisplay = ({ managerTaskId }: ReturnToOfficeDisplayPr
   const [returnToOfficeDetails, setReturnToOfficeDetails] = useState<ReturnToOfficeDetails | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null); // For fullscreen image display
 
   useEffect(() => {
     const fetchReturnToOfficeDetails = async () => {
@@ -34,6 +36,7 @@ export const ReturnToOfficeDisplay = ({ managerTaskId }: ReturnToOfficeDisplayPr
             selectedVehicles: submission.selectedVehicles || [],
             timeReached: submission.timeReached || 'N/A',
             endReading: submission.endReading || 'N/A',
+            startReading: submission.startReading || null, // Optional field for distance calculation
             images: submission.images || [],
           });
         } else {
@@ -62,7 +65,13 @@ export const ReturnToOfficeDisplay = ({ managerTaskId }: ReturnToOfficeDisplayPr
     return <p className="text-red-500">{error}</p>;
   }
 
-  const { selectedVehicles, timeReached, endReading, images } = returnToOfficeDetails;
+  const { selectedVehicles, timeReached, endReading, startReading, images } = returnToOfficeDetails;
+
+  // Calculate distance traveled
+  const distanceTraveled =
+    typeof startReading === 'number' && typeof endReading === 'number'
+      ? endReading - startReading
+      : null;
 
   return (
     <div className="space-y-6">
@@ -93,8 +102,16 @@ export const ReturnToOfficeDisplay = ({ managerTaskId }: ReturnToOfficeDisplayPr
       {/* End Reading */}
       <div>
         <h3 className="text-sm font-medium text-gray-700">End Reading:</h3>
-        <p className="text-sm text-gray-900">{endReading}</p>
+        <p className="text-sm text-gray-900">{endReading} km</p>
       </div>
+
+      {/* Distance Traveled */}
+      {distanceTraveled !== null && (
+        <div>
+          <h3 className="text-sm font-medium text-gray-700">Distance Traveled:</h3>
+          <p className="text-sm text-indigo-600 font-semibold">{distanceTraveled} km</p>
+        </div>
+      )}
 
       {/* Images */}
       <div>
@@ -106,7 +123,8 @@ export const ReturnToOfficeDisplay = ({ managerTaskId }: ReturnToOfficeDisplayPr
                 key={index}
                 src={image}
                 alt={`Uploaded ${index}`}
-                className="w-full h-auto rounded-md shadow-sm"
+                className="w-full h-auto rounded-md shadow-sm cursor-pointer"
+                onClick={() => setFullscreenImage(image)} // Open fullscreen on click
               />
             ))}
           </div>
@@ -114,6 +132,23 @@ export const ReturnToOfficeDisplay = ({ managerTaskId }: ReturnToOfficeDisplayPr
           <p className="text-sm text-gray-500">No images uploaded.</p>
         )}
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <img
+            src={fullscreenImage}
+            alt="Fullscreen View"
+            className="max-w-full max-h-full"
+          />
+          <button
+            onClick={() => setFullscreenImage(null)} // Close fullscreen
+            className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };

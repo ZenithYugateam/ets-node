@@ -16,10 +16,17 @@ interface TaskStepperProps {
 
 export const TaskStepperDisplay = ({ managerTaskId }: TaskStepperProps) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
   const steps = [
-    { label: "Drone Details", component: <DroneDetailsDisplay managerTaskId={managerTaskId} /> },
-    { label: "Travelling Details", component: <TravellingDetailsDisplay managerTaskId={managerTaskId} userName={""} /> },
+    {
+      label: "Drone Details",
+      component: <DroneDetailsDisplay managerTaskId={managerTaskId} />,
+    },
+    {
+      label: "Travelling Details",
+      component: <TravellingDetailsDisplay managerTaskId={managerTaskId} userName={""} />,
+    },
     { label: "On-Field Details", component: <OnFieldDetailsDisplay managerTaskId={managerTaskId} /> },
     { label: "Before Flight Notes", component: <BeforeFlightDisplay managerTaskId={managerTaskId} /> },
     { label: "After Flight Notes", component: <AfterFlightDisplay managerTaskId={managerTaskId} /> },
@@ -33,6 +40,14 @@ export const TaskStepperDisplay = ({ managerTaskId }: TaskStepperProps) => {
   const handleStepClick = (index: number) => setCurrentStep(index);
   const handleNext = () => setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   const handlePrevious = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
+
+  const handleImageClick = (imageUrl: string) => {
+    setFullscreenImage(imageUrl);
+  };
+
+  const closeFullscreenImage = () => {
+    setFullscreenImage(null);
+  };
 
   return (
     <div className="flex flex-col space-y-4 bg-white shadow-md rounded-lg p-4 h-full max-h-full overflow-hidden">
@@ -76,7 +91,11 @@ export const TaskStepperDisplay = ({ managerTaskId }: TaskStepperProps) => {
 
       {/* Step Content */}
       <div className="flex-grow bg-gray-50 rounded-md p-4 border border-gray-200 shadow-inner overflow-auto">
-        {steps[currentStep].component}
+        {/* Passing click handler to components */}
+        {steps[currentStep].component &&
+          React.cloneElement(steps[currentStep].component as JSX.Element, {
+            onImageClick: handleImageClick, // Pass the click handler to child components
+          })}
       </div>
 
       {/* Navigation Buttons */}
@@ -96,6 +115,23 @@ export const TaskStepperDisplay = ({ managerTaskId }: TaskStepperProps) => {
           Next
         </button>
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <img
+            src={fullscreenImage}
+            alt="Fullscreen View"
+            className="max-w-full max-h-full"
+          />
+          <button
+            onClick={closeFullscreenImage}
+            className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };
