@@ -2376,10 +2376,7 @@ app.put('/api/forms', async (req, res) => {
 
   try {
     // Validate the incoming data
-    if (!category_name || !Array.isArray(user_questions)) {
-      return res.status(400).json({ message: 'Invalid data provided' });
-    }
-
+ 
     // Find and update the form by category_name
     const updatedForm = await Form.findOneAndUpdate(
       { category_name }, // Query to find the document by category_name
