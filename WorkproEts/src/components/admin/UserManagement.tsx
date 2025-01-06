@@ -155,7 +155,7 @@ if (!USER_ID) {
   const handleSaveDepartment = async () => {
     try {
       const response = await axios.post(
-        "https://ets-node-1.onrender.com/api/departments/add",
+        "http://localhost:5001/api/departments/add",
         departmentFormData
       );
 
@@ -180,7 +180,7 @@ if (!USER_ID) {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const response = await fetch("https://ets-node-1.onrender.com/api/usersData", {
+        const response = await fetch("http://localhost:5001/api/usersData", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ adminId: USER_ID }),
@@ -207,7 +207,7 @@ if (!USER_ID) {
       setIsLoading(true);
       try {
         const response = await axios.get(
-          "https://ets-node-1.onrender.com/api/departments"
+          "http://localhost:5001/api/departments"
         );
         const departmentsData = response.data;
 
@@ -250,7 +250,7 @@ if (!USER_ID) {
   
       // Fetch managers from the API
       const response = await axios.get(
-        `https://ets-node-1.onrender.com/users/managers?departments=${departmentsQuery}`
+        `http://localhost:5001/users/managers?departments=${departmentsQuery}`
       );
   
       console.debug("Response status:", response.status); // Debug
@@ -382,8 +382,8 @@ const handleSave = async () => {
     };
 
     const url = selectedUser?._id
-      ? `https://ets-node-1.onrender.com/api/users/edit/${selectedUser._id}`
-      : "https://ets-node-1.onrender.com/api/users/add";
+      ? `http://localhost:5001/api/users/edit/${selectedUser._id}`
+      : "http://localhost:5001/api/users/add";
     const method = selectedUser?._id ? "PUT" : "POST";
 
     // API call
@@ -428,7 +428,7 @@ const handleSave = async () => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
         const response = await fetch(
-          `https://ets-node-1.onrender.com/api/users/${userId}`,
+          `http://localhost:5001/api/users/${userId}`,
           {
             method: "DELETE",
           }

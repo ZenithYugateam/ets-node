@@ -24,7 +24,7 @@ export const TaskProgressForm = ({ currentStep,setCurrentStep, task }: TaskProgr
         managerTaskId,
       };
   
-      const response = await axios.post('https://ets-node-1.onrender.com/api/submission', payload);
+      const response = await axios.post('http://localhost:5001/api/submission', payload);
       console.log('Submission successful:', response.data);
       if(currentStep < 10){
         setCurrentStep(currentStep + 1);
@@ -38,7 +38,7 @@ export const TaskProgressForm = ({ currentStep,setCurrentStep, task }: TaskProgr
   const handleStatusChange = async (newStatus: Status) => {
     setStatus(newStatus);
     try {
-      const response = await axios.put(`https://ets-node-1.onrender.com/api/manager-tasks/update-status`, {
+      const response = await axios.put(`http://localhost:5001/api/manager-tasks/update-status`, {
         id: task._id, 
         status: newStatus,
       });

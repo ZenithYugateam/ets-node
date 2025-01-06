@@ -21,7 +21,7 @@ export const TaskProgressDisplay = ({ managerTaskId, type }: TaskProgressDisplay
         console.log("Fetching task progress with type:", type);
 
         // Fetch submission data using the provided API
-        const response = await axios.get("https://ets-node-1.onrender.com/api/submissions", {
+        const response = await axios.get("http://localhost:5001/api/submissions", {
           params: { type: "Submission_task_final", managerTaskId },
         });
 

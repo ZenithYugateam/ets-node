@@ -3,6 +3,7 @@ import { getUserData } from '../api/admin';
 import TimeCard from '../components/TimeCard'; 
 import TaskViewEmployee from '../components/employee/TaskViewEmployee';
 import { LogOut } from 'lucide-react';
+import { ToastContainer } from 'react-toastify';
 
 const EmployeeDashboard = () => {
   const [username, setUserName] = useState<string | null>(null); // Set initial state to null to differentiate between loading and no data.
@@ -23,7 +24,7 @@ const EmployeeDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching user data:', error.message);
-      setUserName('User'); // Fallback to a default name if data fetch fails.
+      setUserName('User'); 
     }
   };
 
@@ -51,8 +52,9 @@ const EmployeeDashboard = () => {
       </div>
 
       {/* Main Content */}
+      <ToastContainer />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TimeCard userId={sessionStorage.getItem('userId')} />
+        <TimeCard userId={sessionStorage.getItem('userId') || ""} />
       </div>
 
       <div className="overflow-x-auto">

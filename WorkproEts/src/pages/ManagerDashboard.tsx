@@ -5,6 +5,7 @@ import AddTaskManagements from "../components/manager/AddTaskManagements";
 import TaskManager from "../components/manager/TaskManager";
 import TimeCard from "../components/TimeCard";
 import ProjectManagement from "../components/manager/ProjectManagement";
+import { ToastContainer } from "react-toastify";
 
 const ManagerDashboard = () => {
   const [managerName, setManagerName] = useState<string | null>("Manager");
@@ -63,9 +64,11 @@ const ManagerDashboard = () => {
         </div>
       </div>
 
+      <ToastContainer />
+
       <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TimeCard userId={sessionStorage.getItem("userId")} />
+          <TimeCard userId={sessionStorage.getItem("userId") || ""} />
         </div>
 
         {/* Project Management Component */}

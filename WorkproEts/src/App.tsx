@@ -18,18 +18,16 @@ import LeaveApprovals from "./components/shared/LeaveApprovals";
 import WorksheetManagement from "./components/employee/WorksheetManagement";
 import { NotificationProvider } from "././components/context/NotificationContext"; // Import NotificationProvider
 import Dashboard from "./components/IMS/Dashboard";
-import Dashboard2 from "./components/IMS/Dashboard2";
+import DayDetails from "./components/shared/AttendenceView/pages/DayDetails";
+import Calendar from "./components/shared/AttendenceView/pages/Calender/Calender";
 
 const adminId = "647f1f77bcf86cd799439011";
 
-// Layout Component
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <>
       <Navbar />
-      {/* Sidebar is included here, only within the Layout for private routes */}
       <Sidebar />
-      {/* Main content with left margin to accommodate the fixed sidebar */}
       <main className="p-4 lg:ml-64 lg:p-8">{children}</main>
     </>
   );
@@ -130,6 +128,30 @@ function App() {
                     >
                       <Layout>
                         <WorksheetManagement />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/attendance-view"
+                  element={
+                    <PrivateRoute
+                    requiredRoles={["Admin"]}
+                    >
+                      <Layout>
+                      <Calendar />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/attendance-view/:date"
+                  element={
+                    <PrivateRoute
+                    requiredRoles={["Admin"]}
+                    >
+                      <Layout>
+                      <DayDetails />
                       </Layout>
                     </PrivateRoute>
                   }

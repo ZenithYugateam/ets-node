@@ -90,7 +90,7 @@ const TaskManager: React.FC = () => {
     const fetchTasks = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get<Task[]>("https://ets-node-1.onrender.com/api/tasks");
+        const response = await axios.get<Task[]>("http://localhost:5001/api/tasks");
         const allTasks = response.data;
 
         // Filter tasks for the current manager
@@ -205,7 +205,7 @@ const TaskManager: React.FC = () => {
     }
 
     try {
-      const response = await axios.put(`https://ets-node-1.onrender.com/api/tasks/${_id}`, { status: newStatus, ...dataToUpdate });
+      const response = await axios.put(`http://localhost:5001/api/tasks/${_id}`, { status: newStatus, ...dataToUpdate });
       console.log("Status updated response:", response.data);
       addNotification(`Task "${response.data.title}" status updated to "${newStatus}".`, "success");
 

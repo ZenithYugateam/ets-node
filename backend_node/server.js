@@ -11,12 +11,19 @@ const BugReport = require("./Models/BugReport")
 const Vehicle = require("./Models/Vehicle")
 const SubmissionSchema = require("./Models/SubmissionSchema");
 const Form = require("./Models/Forms");
+const TimeLog = require("./Models/TimeLog")
+
+const AttendenceViewRoute = require('./Routes/AttendenceView');
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '100mb' })); 
+app.use(express.json());
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 require('dotenv').config()
+
+
+
 mongoose
   .connect(
     process.env.MONGO_URL,
@@ -32,8 +39,7 @@ mongoose
     console.error("Error connecting to the ETS database:", error);
   });
 
-
-  const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage() });
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
@@ -51,6 +57,12 @@ transporter.verify((error, success) => {
     console.log('SMTP connection successful:', success);
   }
 });
+
+
+
+ //Routes : 
+
+ app.use(AttendenceViewRoute);
 
 
 const timesheetSchema = new mongoose.Schema({
@@ -909,53 +921,99 @@ app.get("/api/tasks/assignee/:userId", async (req, res) => {
 });
 
 
-// Time Log Schema
-const timeLogSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
-  checkIn: { type: Date },
-  checkOut: { type: Date },
-  duration: { type: Number }, // Total work time in milliseconds
-  breaks: [
-    {
-      start: { type: Date },
-      end: { type: Date },
-      reason: { type: String },
-    },
-  ],
-});
 
-const TimeLog = mongoose.model("TimeLog", timeLogSchema);
 
 app.post("/api/timelog/checkin", async (req, res) => {
-  const { userId } = req.body;
+  const { userId, role, name } = req.body;
 
   try {
-    // Validate if userId is provided and is a valid ObjectId
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid or missing User ID" });
     }
 
-    // Ensure the user exists in the User collection
+    // Ensure the user exists
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Create a new TimeLog for the user
+    // Get the start and end of the current day
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Check if the user already has a check-in for the current day
+    const existingTimeLog = await TimeLog.findOne({
+      userId,
+      checkIn: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    if (existingTimeLog) {
+      return res.status(400).json({ message: "User already checked in for today." });
+    }
+
+    // Create a new TimeLog entry
     const timeLog = new TimeLog({
       userId,
+      role,
+      name,
       checkIn: new Date(),
+      checkOut: null,
     });
+
     await timeLog.save();
 
     res.status(201).json({ message: "Checked in successfully", timeLog });
   } catch (error) {
     console.error("Error during check-in:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error checking in", error: error.message });
+    res.status(500).json({ message: "Error checking in", error: error.message });
   }
 });
+
+app.post("/api/timelog/checkout", async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    // Validate User ID
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid or missing User ID" });
+    }
+
+    // Find the active check-in log for the user
+    const timeLog = await TimeLog.findOne({ userId, checkOut: null });
+    if (!timeLog) {
+      return res.status(404).json({ message: "No active check-in found" });
+    }
+
+    const checkInDate = new Date(timeLog.checkIn);
+    const currentDate = new Date();
+
+    // Ensure check-out occurs on the same day as check-in
+    if (
+      checkInDate.getFullYear() !== currentDate.getFullYear() ||
+      checkInDate.getMonth() !== currentDate.getMonth() ||
+      checkInDate.getDate() !== currentDate.getDate()
+    ) {
+      return res.status(400).json({
+        message: "Check-out must occur on the same calendar day as check-in.",
+      });
+    }
+
+    // Update the checkout time and calculate the session duration
+    timeLog.checkOut = currentDate;
+    timeLog.duration = currentDate - timeLog.checkIn;
+
+    await timeLog.save();
+
+    res.status(200).json({ message: "Checked out successfully", timeLog });
+  } catch (error) {
+    console.error("Error during check-out:", error.message);
+    res.status(500).json({ message: "Error checking out", error: error.message });
+  }
+});
+
 app.post("/api/timelog/start-break", async (req, res) => {
   const { userId, reason } = req.body;
 
@@ -1013,43 +1071,9 @@ app.post("/api/timelog/end-break", async (req, res) => {
   }
 });
 
-app.post("/api/timelog/checkout", async (req, res) => {
-  const { userId, reason } = req.body; // Include 'reason' if it's part of the request
 
-  try {
-    // Validate if userId is provided and is a valid ObjectId
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid or missing User ID" });
-    }
 
-    // Find the most recent TimeLog entry for the user where checkOut is null
-    const timeLog = await TimeLog.findOne({ userId, checkOut: null });
-    if (!timeLog) {
-      return res.status(404).json({ message: "No active check-in found" });
-    }
 
-    // If a reason is provided, it indicates the user is starting a break
-    if (reason) {
-      timeLog.breaks.push({ start: new Date(), reason });
-      await timeLog.save();
-      return res
-        .status(200)
-        .json({ message: "Break started successfully", timeLog });
-    }
-
-    // Otherwise, proceed with check-out
-    timeLog.checkOut = new Date();
-    timeLog.duration = timeLog.checkOut - timeLog.checkIn;
-    await timeLog.save();
-
-    res.status(200).json({ message: "Checked out successfully", timeLog });
-  } catch (error) {
-    console.error("Error during check-out or break:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error processing the request", error: error.message });
-  }
-});
 
 app.post("/api/timelog/end-break", async (req, res) => {
   const { userId } = req.body;
@@ -1111,7 +1135,8 @@ app.post("/api/timelog/checkout", async (req, res) => {
       .json({ message: "Error checking out", error: error.message });
   }
 });
-// test 
+
+
 app.get('/api/users', async (req, res) => {
   try {
     const users = await User.find(); // Assuming User is your Mongoose model

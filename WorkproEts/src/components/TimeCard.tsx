@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock, LogIn, LogOut, Pause, Play } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const TimeCard = ({ userId }: { userId: string }) => {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -30,12 +32,16 @@ const TimeCard = ({ userId }: { userId: string }) => {
     const now = new Date();
 
     try {
-      const response = await fetch('https://ets-node-1.onrender.com/api/timelog/checkin', {
+      const response = await fetch('http://localhost:5001/api/timelog/checkin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({
+          userId,
+          role: sessionStorage.getItem('role')?.slice(1, -1),
+          name: sessionStorage.getItem('userName'),
+        }),
       });
 
       if (response.ok) {
@@ -44,20 +50,33 @@ const TimeCard = ({ userId }: { userId: string }) => {
         setDuration(0);
         setTotalPausedDuration(0); // Reset pause duration on check-in
         setBreakStartTime(null);
+        toast.success('Checked in successfully!');
+      } else if (response.status === 400) {
+        const data = await response.json();
+        toast.error(data.message || 'Error during check-in.');
       }
     } catch (err) {
       console.error('Error during check-in:', err);
+      toast.error('Error during check-in.');
     }
   };
 
   const handleCheckOut = async () => {
+    if (!window.confirm('Are you sure you want to check out?')) {
+      return;
+    }
+
     try {
-      const response = await fetch('https://ets-node-1.onrender.com/api/timelog/checkout', {
+      const response = await fetch('http://localhost:5001/api/timelog/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({
+          userId,
+          role: sessionStorage.getItem('role')?.slice(1, -1),
+          name: sessionStorage.getItem('userName'),
+        }),
       });
 
       if (response.ok) {
@@ -67,9 +86,14 @@ const TimeCard = ({ userId }: { userId: string }) => {
         setCheckInTime(null);
         setBreakStartTime(null);
         setTotalPausedDuration(0);
+        toast.success('Checked out successfully!');
+      } else {
+        const data = await response.json();
+        toast.error(data.message || 'Error during check-out.');
       }
     } catch (err) {
       console.error('Error during check-out:', err);
+      toast.error('Error during check-out.');
     }
   };
 
@@ -79,20 +103,27 @@ const TimeCard = ({ userId }: { userId: string }) => {
     const now = new Date();
 
     try {
-      const response = await fetch('https://ets-node-1.onrender.com/api/timelog/start-break', {
+      const response = await fetch('http://localhost:5001/api/timelog/start-break', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId, reason: breakReason }),
+        body: JSON.stringify({
+          userId,
+          reason: breakReason,
+          role: sessionStorage.getItem('role')?.slice(1, -1),
+          name: sessionStorage.getItem('userName'),
+        }),
       });
 
       if (response.ok) {
         setBreakStartTime(now); // Record break start time
         setIsOnBreak(true);
+        toast.success('Break started successfully!');
       }
     } catch (err) {
       console.error('Error during start break:', err);
+      toast.error('Error during start break.');
     }
   };
 
@@ -102,22 +133,30 @@ const TimeCard = ({ userId }: { userId: string }) => {
     const now = new Date();
 
     try {
-      const response = await fetch('https://ets-node-1.onrender.com/api/timelog/end-break', {
+      const response = await fetch('http://localhost:5001/api/timelog/end-break', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({
+          userId,
+          role: sessionStorage.getItem('role')?.slice(1, -1),
+          name: sessionStorage.getItem('userName'),
+        }),
       });
 
       if (response.ok) {
-        const pausedDuration = now.getTime() - breakStartTime.getTime(); // Calculate paused duration
-        setTotalPausedDuration((prev) => prev + pausedDuration); // Add paused duration to total
+        const pausedDuration = now.getTime() - breakStartTime.getTime();
+        setTotalPausedDuration((prev) => prev + pausedDuration);
         setBreakStartTime(null);
         setIsOnBreak(false);
+        toast.success('Break ended successfully!');
       }
     } catch (err) {
       console.error('Error during end break:', err);
+      toast.error('Error during end break.');
+    }finally{
+      setBreakReason("")
     }
   };
 

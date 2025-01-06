@@ -216,7 +216,7 @@ export const DroneDetailsForm = ({ currentStep, setCurrentStep,task }: DroneDeta
         type: 'DroneDetails',
       };
 
-      const response = await axios.post('https://ets-node-1.onrender.com/api/submission', submissionData);
+      const response = await axios.post('http://localhost:5001/api/submission', submissionData);
 
       setFormData({
         droneName: '',
