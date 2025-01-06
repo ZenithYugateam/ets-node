@@ -60,7 +60,7 @@ export const TravellingDetailsForm = ({ currentStep,setCurrentStep,  task }: Tra
       const fetchVehicles = async () => {
         setLoading(true);
         try {
-          const response = await axios.get('https://ets-node-1.onrender.com/api/getAllVechileData');
+          const response = await axios.get('http://localhost:5001/api/getAllVechileData');
           console.log(response.data)
           setVehicleList(response.data);
         } catch (err) {
@@ -177,7 +177,7 @@ export const TravellingDetailsForm = ({ currentStep,setCurrentStep,  task }: Tra
         privateVehicleNumber: formData.privateVehicleNumber,
       };
   
-      const response = await axios.post('https://ets-node-1.onrender.com/api/submission', submissionData);
+      const response = await axios.post('http://localhost:5001/api/submission', submissionData);
   
       console.log('Submission successful:', response.data);
       toast.success('Travelling details submitted successfully!');
@@ -207,7 +207,7 @@ export const TravellingDetailsForm = ({ currentStep,setCurrentStep,  task }: Tra
           endReading: formData.readings,
         };
 
-        const response = await axios.post('https://ets-node-1.onrender.com/api/vehicles', newVehicle);
+        const response = await axios.post('http://localhost:5001/api/vehicles', newVehicle);
 
         setVehicleList((prev) => [...prev, response.data.vehicle]);
         setFormData((prev) => ({ ...prev, privateVehicleDetails: '', privateVehicleNumber: '', readings: 0 }));
@@ -228,7 +228,7 @@ export const TravellingDetailsForm = ({ currentStep,setCurrentStep,  task }: Tra
       try {
         setFetchingPrivateVehicles(true);
         const response = await axios.post(
-          "https://ets-node-1.onrender.com/api/getPrivateVehiclesByName",{
+          "http://localhost:5001/api/getPrivateVehiclesByName",{
             name : sessionStorage.getItem('userName'),
           }
         );

@@ -1,0 +1,19 @@
+const mongoose = require('mongoose')
+const timeLogSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
+  name: { type: String, required: false, default: "" },
+  role: { type: String, required: false, default: "" },
+  checkIn: { type: Date },
+  checkOut: { type: Date },
+  duration: { type: Number }, // Duration in milliseconds
+  breaks: [
+    {
+      start: { type: Date },
+      end: { type: Date },
+      reason: { type: String },
+    },
+  ],
+});
+
+const TimeLog = mongoose.model("TimeLog", timeLogSchema);
+module.exports = TimeLog;

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://ets-node-1.onrender.com/api';
+const API_URL = 'http://localhost:5001/api';
 
 export const fetchDashboardStats = async () => {
   const { data } = await axios.get(`${API_URL}/admin/stats`);
