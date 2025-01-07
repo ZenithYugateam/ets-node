@@ -630,6 +630,16 @@ const TaskViewEmployee: React.FC = () => {
     },
     { field: "taskName", headerName: "Task Name", flex: 2, minWidth: 150 },
     {
+      field: "managerName",
+      headerName: "Assigned By",
+      flex: 1.5,
+      minWidth: 150,
+      renderCell: (params) => (
+        <span className="text-sm text-gray-700">{params.value || "N/A"}</span>
+      ),
+    },
+    
+    {
       field: "priority",
       headerName: "Priority",
       flex: 1,
@@ -963,36 +973,37 @@ const TaskViewEmployee: React.FC = () => {
         <>
           {/* Desktop View */}
           <div className="hidden lg:block overflow-x-auto">
-            <div style={{ minWidth: "1700px" }}>
-              <DataGrid
-                rows={filteredTasks}
-                columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-                getRowId={(row) => row._id}
-                checkboxSelection
-                onSelectionModelChange={handleRowSelection}
-                selectionModel={selectedRows}
-                autoHeight
-                sx={{
-                  "& .MuiDataGrid-root": {
-                    overflowX: "auto",
-                  },
-                  "& .MuiDataGrid-columnHeaders": {
-                    backgroundColor: "#f0f4f8",
-                    color: "#333",
-                  },
-                  "& .MuiDataGrid-columnHeaderTitle": {
-                    fontWeight: "bold",
-                  },
-                  "& .MuiDataGrid-cell": {
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  },
-                }}
-              />
-            </div>
+          <div style={{ minWidth: "1700px" }}>
+  <DataGrid
+    rows={filteredTasks}
+    columns={columns} // Make sure managerName column is included here
+    pageSize={5}
+    rowsPerPageOptions={[5, 10, 20]}
+    getRowId={(row) => row._id}
+    checkboxSelection
+    onSelectionModelChange={handleRowSelection}
+    selectionModel={selectedRows}
+    autoHeight
+    sx={{
+      "& .MuiDataGrid-root": {
+        overflowX: "auto",
+      },
+      "& .MuiDataGrid-columnHeaders": {
+        backgroundColor: "#f0f4f8",
+        color: "#333",
+      },
+      "& .MuiDataGrid-columnHeaderTitle": {
+        fontWeight: "bold",
+      },
+      "& .MuiDataGrid-cell": {
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      },
+    }}
+  />
+</div>
+
           </div>
 
           {/* Mobile View */}
