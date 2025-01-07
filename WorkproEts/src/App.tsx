@@ -1,5 +1,3 @@
-// src/App.tsx -->testing
-
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
@@ -16,10 +14,11 @@ import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./AuthContext";
 import LeaveApprovals from "./components/shared/LeaveApprovals";
 import WorksheetManagement from "./components/employee/WorksheetManagement";
-import { NotificationProvider } from "././components/context/NotificationContext"; // Import NotificationProvider
+import { NotificationProvider } from "././components/context/NotificationContext"; 
 import Dashboard from "./components/IMS/Dashboard";
 import DayDetails from "./components/shared/AttendenceView/pages/DayDetails";
 import Calendar from "./components/shared/AttendenceView/pages/Calender/Calender";
+import AccessList from "./components/shared/AccessComponents/AccessList";
 
 const adminId = "647f1f77bcf86cd799439011";
 
@@ -175,6 +174,19 @@ function App() {
                     >
                       <Layout>
                         <Timesheets />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+
+                <Route
+                  path="/access-components"
+                  element={
+                    <PrivateRoute
+                      requiredRoles={["Admin"]}
+                    >
+                      <Layout>
+                        <AccessList />
                       </Layout>
                     </PrivateRoute>
                   }

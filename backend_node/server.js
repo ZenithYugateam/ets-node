@@ -112,7 +112,7 @@ const Department = mongoose.model("Department", departmentSchema);
 
 const userSchema = new mongoose.Schema(
   {
-    adminId: { type: String }, // ID of the admin creating the user
+    adminId: { type: String }, 
     name: { type: String, required: true, trim: true }, // User's name with trimming to remove excess spaces
     password: { type: String, required: true }, // Hashed password should be stored (consider bcrypt for hashing)
     email: { type: String, required: true, unique: true, lowercase: true }, // Ensure email is unique and case-insensitive
@@ -122,22 +122,26 @@ const userSchema = new mongoose.Schema(
       match: [/^\d{10}$/, "Please enter a valid 10-digit phone number"] // Add validation for 10-digit phone number
     },
     role: { type: String, required: true, enum: ["Admin", "Manager", "Employee"] }, // Ensure role is limited to valid options
-    departments: [{ type: String, required: true }], // Array of department names
-    subDepartments: [{ type: String }], // Array of sub-department names
+    departments: [{ type: String, required: true }],
+    subDepartments: [{ type: String }], 
     managers: [
       {
         id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
         name: { type: String, required: true },
-        _id: false, // Prevent creating new _id for each manager entry
+        _id: false, 
       },
-    ], // Array of manager objects (with validation for name and id)
-    status: { type: String, required: true, enum: ["active", "inactive"] }, // User status with only valid options
-    deleted: { type: Boolean, default: false }, // Logical deletion flag
-    createdAt: { type: Date, default: Date.now }, // Auto-set on creation
-    updatedAt: { type: Date, default: Date.now }, // Auto-set on update
+    ], 
+    status: { type: String, required: true, enum: ["active", "inactive"] }, 
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+    accessList: {
+      type: Map,
+      of: Boolean, 
+      default: {} 
+    },
   },
   {
-    timestamps: true, // Automatically manages createdAt and updatedAt fields
+    timestamps: true, 
   }
 );
 
@@ -2464,6 +2468,54 @@ app.post("/api/categories/:category_name/update", async (req, res) => {
     res.json({ message: "Category updated successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/users-get-data", async (req, res) => {
+  console.log("calling")
+  try {
+    const users = await User.find({ deleted: false });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+
+// Assuming Express.js
+app.patch("/users/:userId/access-list", async (req, res) => {
+  const { userId } = req.params;
+  const { componentId, isVisible } = req.body;
+
+  try {
+    // Update the user's accessList in the database
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: { [`accessList.${componentId}`]: isVisible },
+      },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Access list updated successfully." });
+  } catch (error) {
+    console.error("Error updating access list:", error);
+    res.status(500).json({ error: "Failed to update access list." });
+  }
+});
+
+app.get("/users/:userId/access-list", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    res.status(200).json({ accessList: user.accessList || {} });
+  } catch (error) {
+    console.error("Error fetching access list:", error);
+    res.status(500).json({ error: "Failed to fetch access list." });
   }
 });
 
