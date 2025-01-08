@@ -2474,7 +2474,7 @@ app.post("/api/categories/:category_name/update", async (req, res) => {
 app.get("/users-get-data", async (req, res) => {
   console.log("calling")
   try {
-    const users = await User.find({ deleted: false });
+    const users = await User.find({});
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch users" });
