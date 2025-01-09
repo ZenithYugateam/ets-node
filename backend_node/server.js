@@ -994,14 +994,13 @@ app.post("/api/timelog/checkout", async (req, res) => {
     const checkInDate = new Date(timeLog.checkIn);
     const currentDate = new Date();
 
-    // Ensure check-out occurs on the same day as check-in
-    if (
-      checkInDate.getFullYear() !== currentDate.getFullYear() ||
-      checkInDate.getMonth() !== currentDate.getMonth() ||
-      checkInDate.getDate() !== currentDate.getDate()
-    ) {
+    // Calculate the difference in hours between check-in and current time
+    const diffInHours = (currentDate - checkInDate) / (1000 * 60 * 60);
+
+    // Ensure check-out occurs within 24 hours of check-in
+    if (diffInHours > 24) {
       return res.status(400).json({
-        message: "Check-out must occur on the same calendar day as check-in.",
+        message: "Check-out must occur within 24 hours of check-in.",
       });
     }
 
@@ -1017,6 +1016,7 @@ app.post("/api/timelog/checkout", async (req, res) => {
     res.status(500).json({ message: "Error checking out", error: error.message });
   }
 });
+
 
 app.post("/api/timelog/start-break", async (req, res) => {
   const { userId, reason } = req.body;
@@ -1111,34 +1111,6 @@ app.post("/api/timelog/end-break", async (req, res) => {
   }
 });
 
-app.post("/api/timelog/checkout", async (req, res) => {
-  const { userId } = req.body;
-
-  try {
-    // Validate if userId is provided and is a valid ObjectId
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: "Invalid or missing User ID" });
-    }
-
-    // Find the most recent TimeLog entry for the user where checkOut is null
-    const timeLog = await TimeLog.findOne({ userId, checkOut: null });
-    if (!timeLog) {
-      return res.status(404).json({ message: "No active check-in found" });
-    }
-
-    // Update the TimeLog with check-out time and duration
-    timeLog.checkOut = new Date();
-    timeLog.duration = timeLog.checkOut - timeLog.checkIn;
-    await timeLog.save();
-
-    res.status(200).json({ message: "Checked out successfully", timeLog });
-  } catch (error) {
-    console.error("Error during check-out:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error checking out", error: error.message });
-  }
-});
 
 
 app.get('/api/users', async (req, res) => {
