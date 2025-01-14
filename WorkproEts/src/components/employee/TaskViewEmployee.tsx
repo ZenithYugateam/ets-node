@@ -121,16 +121,14 @@ const getNotificationHash = (taskId: string, threshold: number): number => {
 };
 
 // Convert hours => "HH:MM:SS"
-function formatHours(hours: number) {
+function formatHours(hours: number, p0: string) {
   const positiveHours = Math.abs(hours);
   const totalSeconds = Math.floor(positiveHours * 3600);
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
 
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(
-    s
-  ).padStart(2, "0")}`;
+  return `${h}h:${String(m).padStart(2, "0")}m:${String(s).padStart(2, "0")}s `;
 }
 
 export function TaskDetailItem({
@@ -1180,7 +1178,7 @@ const TaskViewEmployee: React.FC = () => {
                         }
                       >
                         {selectedTask.timeUsed !== undefined
-                          ? formatHours(selectedTask.timeUsed)
+                          ? formatHours((selectedTask.timeUsed),"HH:mm")
                           : ""}{" "}
                       </span>
                       {selectedTask.estimatedHours > 0
