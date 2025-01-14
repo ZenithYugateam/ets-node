@@ -12,8 +12,9 @@ import {
   DialogTitle,
 } from "../../../ui/dialog";
 import { ScrollArea } from "../../../ui/scroll-area";
-import { ReportView } from "./ReportView"; // Ensure correct path for ReportView
+import { ReportView } from "./ReportView"; // Ensure the path is correct
 
+// Types
 type Priority = "High" | "Medium" | "Low";
 type Status = "Completed" | "In Progress" | "Pending";
 
@@ -29,7 +30,7 @@ interface Task {
   notes: string[];
   estimatedHours: number;
   completedAt?: string;
-  acceptedAt?: string; // make sure this is available when accepted
+  acceptedAt?: string; // ensure this is available when accepted
   timeUsed?: number;   // in hours
   timeLeft?: number;   // leftover hours
 }
@@ -71,16 +72,31 @@ const priorityStyles = {
   Low: "bg-green-100 text-green-700 hover:bg-green-100",
 } as const;
 
-/**
- * Formats a number of hours into a string like "1H:32M:09S".
- * You can further adjust this function for a cuter look.
- */
+
+function calculateTimeRemaining(deadlineTimestamp: number): { time: string; urgencyLevel: string } {
+  const now = Date.now();
+  const diff = deadlineTimestamp - now;
+  if (diff <= 0) return { time: "Expired", urgencyLevel: "critical" };
+  const hours = Math.floor(diff / (3600 * 1000));
+  const minutes = Math.floor((diff % (3600 * 1000)) / (60 * 1000));
+  const seconds = Math.floor((diff % (60 * 1000)) / 1000);
+  const formattedTime = `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  let urgency = "low";
+  if (diff < 3600000) { // Less than 1 hour remaining
+    urgency = "critical";
+  } else if (diff < 7200000) { // Less than 2 hours remaining
+    urgency = "high";
+  }
+  return { time: formattedTime, urgencyLevel: urgency };
+}
+
+
 function formatTime(hours: number): string {
   const totalSeconds = Math.floor(hours * 3600);
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
-  return `${h}H:${String(m).padStart(2, "0")}M:${String(s).padStart(2, "0")}S `;
+  return `${h}h:${String(m).padStart(2, "0")}m:${String(s).padStart(2, "0")}s `;
 }
 
 export function TaskDetailItem({ label, value, valueColor, className }: TaskDetailItemProps) {
@@ -94,10 +110,7 @@ export function TaskDetailItem({ label, value, valueColor, className }: TaskDeta
 
 export function TaskStatusBadge({ status, className }: TaskStatusBadgeProps) {
   return (
-    <Badge
-      variant="secondary"
-      className={cn("px-3 py-1 font-medium", statusStyles[status], className)}
-    >
+    <Badge variant="secondary" className={cn("px-3 py-1 font-medium", statusStyles[status], className)}>
       {status}
     </Badge>
   );
@@ -105,40 +118,48 @@ export function TaskStatusBadge({ status, className }: TaskStatusBadgeProps) {
 
 export function TaskPriorityBadge({ priority, className }: TaskPriorityBadgeProps) {
   return (
-    <Badge
-      variant="secondary"
-      className={cn("px-3 py-1 font-medium", priorityStyles[priority], className)}
-    >
+    <Badge variant="secondary" className={cn("px-3 py-1 font-medium", priorityStyles[priority], className)}>
       {priority}
     </Badge>
   );
 }
 
+/**
+ * Computes time metrics for a completed task.
+ * - If acceptedAt and completedAt are available, calculates timeUsed and timeLeft.
+ * - If acceptedAt is missing, assumes the task was accepted exactly estimatedHours before completion.
+ * - Additionally, if timeLeft is negative and the deadline is in the future, it recalculates timeLeft based on the deadline (end-of-day).
+ */
 function computeCompletedTaskMetrics(task: Task): Task {
   if (task.status === "Completed" && task.completedAt) {
     const completedTime = new Date(task.completedAt).getTime();
-    let acceptedTime: number;
-    let timeUsedHours: number;
-    let timeLeftHours: number;
-
-    if (task.estimatedHours > 0) {
-      // Use acceptedAt if available; otherwise, fallback.
-      acceptedTime = task.acceptedAt
-        ? new Date(task.acceptedAt).getTime()
-        : completedTime - task.estimatedHours * 3600000;
-      timeUsedHours = (completedTime - acceptedTime) / 3600000;
-      timeLeftHours = task.estimatedHours - timeUsedHours;
-    } else {
-      // No estimated hours provided (or 0), compute time left from deadline.
+    const acceptedTime = task.acceptedAt
+      ? new Date(task.acceptedAt).getTime()
+      : completedTime - task.estimatedHours * 3600000;
+    const timeUsedHours = (completedTime - acceptedTime) / 3600000;
+    let timeLeftHours = task.estimatedHours - timeUsedHours;
+    if (task.deadline && timeLeftHours < 0) {
       const deadlineDate = new Date(task.deadline);
-      // Set deadline to end of the day
       const deadlineTime = deadlineDate.setHours(23, 59, 59, 999);
-      timeUsedHours = (completedTime - (task.acceptedAt ? new Date(task.acceptedAt).getTime() : completedTime)) / 3600000;
       timeLeftHours = (deadlineTime - completedTime) / 3600000;
     }
     return { ...task, timeUsed: timeUsedHours, timeLeft: timeLeftHours };
   }
   return task;
+}
+
+/**
+ * For tasks that are pending or in progress, compute the time remaining from the deadline.
+ * Assumes the deadline is considered at the end of the day.
+ */
+function computePendingTimeRemaining(task: Task): { time: string; urgencyLevel: string } {
+  if (task.deadline) {
+    const deadlineDate = new Date(task.deadline);
+    deadlineDate.setHours(23, 59, 59, 999);
+    const result = calculateTimeRemaining(deadlineDate.getTime());
+    return result;
+  }
+  return { time: "N/A", urgencyLevel: "low" };
 }
 
 export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProps) {
@@ -185,8 +206,11 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
 
   if (!task) return null;
 
-  // Compute metrics for completed tasks (with fallback logic as described)
+  // For completed tasks, compute metrics.
   const taskWithMetrics = task.status === "Completed" ? computeCompletedTaskMetrics(task) : task;
+
+  // For pending/in progress tasks, calculate time remaining from deadline.
+  const pendingTime = task.status !== "Completed" ? computePendingTimeRemaining(task) : { time: taskWithMetrics.displayTimeRemaining, urgencyLevel: taskWithMetrics.displayUrgencyLevel };
 
   return (
     <>
@@ -204,14 +228,7 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
                 </div>
               </div>
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onClose}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-4 h-4"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </Button>
@@ -220,6 +237,7 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
           <Separator className="my-4" />
           <ScrollArea className="px-6 pb-6 max-h-[calc(80vh-8rem)]">
             <div className="grid gap-6">
+              {/* Task Details */}
               <div className="grid gap-4 md:grid-cols-2">
                 <TaskDetailItem label="Project Name" value={taskWithMetrics.projectName} />
                 <TaskDetailItem label="Task Name" value={taskWithMetrics.taskName} />
@@ -236,64 +254,84 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
                 <TaskDetailItem label="Deadline" value={format(new Date(taskWithMetrics.deadline), "PPP")} />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
+                {/* Assigned Manager Field */}
+                <TaskDetailItem label="Assigned Manager" value={taskWithMetrics.managerName || "N/A"} />
                 <TaskDetailItem label="Estimated Hours" value={`${taskWithMetrics.estimatedHours.toFixed(2)} hrs`} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-1">
-                  <span className="text-sm font-medium text-muted-foreground">Priority</span>
-                  <div className="pt-1">
-                    <TaskPriorityBadge priority={taskWithMetrics.priority} />
-                  </div>
-                </div>
-              </div>
+              <TaskDetailItem
+                label="Time Remaining"
+                value={
+                  taskWithMetrics.status !== "Completed"
+                    ? pendingTime.time
+                    : taskWithMetrics.displayTimeRemaining || "Completed"
+                }
+                valueColor={
+                  taskWithMetrics.status !== "Completed"
+                    ? pendingTime.urgencyLevel === "critical"
+                      ? "text-red-500"
+                      : pendingTime.urgencyLevel === "high"
+                      ? "text-yellow-500"
+                      : "text-green-500"
+                    : taskWithMetrics.displayUrgencyLevel === "critical"
+                    ? "text-red-500"
+                    : taskWithMetrics.displayUrgencyLevel === "high"
+                    ? "text-yellow-500"
+                    : "text-green-500"
+                }
+              />
 
-              {/* Render Completed Details */}
+              {/* Completed Task Metrics */}
               {taskWithMetrics.status === "Completed" && (
                 <>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <TaskDetailItem
-                      label="Completed At"
-                      value={
-                        taskWithMetrics.completedAt
-                          ? format(new Date(taskWithMetrics.completedAt), "MM/dd/yyyy hh:mm a")
-                          : "N/A"
-                      }
-                    />
-                    <TaskDetailItem
-                      label="Time Used"
-                      value={
-                        taskWithMetrics.timeUsed !== undefined && taskWithMetrics.timeUsed > 0
-                          ? formatTime(taskWithMetrics.timeUsed)
-                          : "N/A"
-                      }
-                    />
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <TaskDetailItem
-                      label="Time Left"
-                      value={
-                        taskWithMetrics.timeLeft !== undefined
-                          ? taskWithMetrics.timeLeft >= 0
-                            ? `${formatTime(taskWithMetrics.timeLeft)} remaining`
-                            : `${formatTime(Math.abs(taskWithMetrics.timeLeft))} over the estimate!`
-                          : "N/A"
-                      }
-                      valueColor={
+                  <TaskDetailItem
+                    label="Completed At"
+                    value={
+                      taskWithMetrics.completedAt
+                        ? format(new Date(taskWithMetrics.completedAt), "MM/dd/yyyy HH:mm a")
+                        : "Not Recorded"
+                    }
+                  />
+                  <div className="mt-2 p-2 rounded-md">
+                    <p className="font-semibold text-gray-700">
+                      Time Used:{" "}
+                      <span className={
+                        taskWithMetrics.estimatedHours > 0 && taskWithMetrics.timeUsed
+                          ? taskWithMetrics.timeUsed > taskWithMetrics.estimatedHours
+                            ? "text-red-500"
+                            : "text-green-600"
+                          : "text-green-600"
+                      }>
+                        {taskWithMetrics.timeUsed !== undefined ? formatTime(taskWithMetrics.timeUsed) : "N/A"}{" "}
+                      </span>
+                      {taskWithMetrics.estimatedHours > 0
+                        ? `/${formatTime(taskWithMetrics.estimatedHours)}`
+                        : ""}{" "}
+                    </p>
+                    <p className="font-semibold text-gray-700">
+                      Time Left:{" "}
+                      <span className={
                         taskWithMetrics.timeLeft !== undefined
                           ? taskWithMetrics.timeLeft >= 0
                             ? "text-green-600"
                             : "text-red-500"
-                          : undefined
-                      }
-                    />
+                          : "text-gray-500"
+                      }>
+                        {taskWithMetrics.timeLeft !== undefined ? formatTime(Math.abs(taskWithMetrics.timeLeft)) : "N/A"}{" "}
+                      </span>
+                      {taskWithMetrics.timeLeft !== undefined
+                        ? taskWithMetrics.timeLeft >= 0
+                          ? "remaining"
+                          : taskWithMetrics.estimatedHours > 0
+                          ? " over the estimate!"
+                          : " over the deadline!"
+                        : "N/A"}
+                    </p>
                   </div>
                 </>
               )}
 
-              <div className="space-y-1">
-                <span className="text-sm font-medium text-muted-foreground">Description</span>
-                <p className="text-sm leading-relaxed text-foreground">{taskWithMetrics.description}</p>
-              </div>
+              <TaskDetailItem label="Description" value={taskWithMetrics.description || "No description available"} />
+
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">Remarks</span>
                 <div className="space-y-2">
@@ -308,20 +346,22 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
                   )}
                 </div>
               </div>
+
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">Notes</span>
                 <div className="space-y-2">
-                  {notes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No notes yet</p>
-                  ) : (
-                    notes.map((note, index) => (
+                  {taskWithMetrics.notes && taskWithMetrics.notes.length > 0 ? (
+                    taskWithMetrics.notes.map((note, index) => (
                       <div key={index} className="p-2 bg-gray-100 rounded-md">
                         <p>{note}</p>
                       </div>
                     ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No notes yet</p>
                   )}
                 </div>
               </div>
+
               <div className="space-y-1">
                 <span className="text-sm font-medium text-muted-foreground">Add Remark *</span>
                 <textarea
@@ -332,6 +372,7 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
                   placeholder="Type your remarks here..."
                 />
               </div>
+
               <div className="flex justify-end space-x-4">
                 <Button
                   onClick={handleSend}
@@ -340,6 +381,7 @@ export function TaskViewModal({ task, open, onClose, taskId }: TaskViewModalProp
                   Send
                 </Button>
               </div>
+
               {/* Report View Component */}
               <div className="mt-6">
                 <h3 className="text-lg font-semibold">Task Report</h3>
