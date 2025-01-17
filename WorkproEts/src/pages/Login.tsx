@@ -1,4 +1,4 @@
-import React, {  useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import dynamic from "next/dynamic";
 
@@ -10,10 +10,12 @@ const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); 
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true); 
 
     try {
       const response = await fetch("https://ets-node-1.onrender.com/api/auth/login", {
@@ -23,7 +25,6 @@ const LoginForm = () => {
       });
 
       const data = await response.json();
-   
 
       if (response.ok) {
         sessionStorage.setItem("userId", data.user.id);
@@ -31,26 +32,20 @@ const LoginForm = () => {
         sessionStorage.setItem("userName", data.user.name);
         sessionStorage.setItem("department", JSON.stringify(data.user.departments));
 
-
         navigate(`/${data.user.role.toLowerCase()}`);
       } else {
         setError(data.message || "Login failed");
       }
     } catch (err) {
       setError("An error occurred during login. Please try again.");
+    } finally {
+      setLoading(false); 
     }
   };
 
   return (
     <div className="relative w-full h-screen">
-     
       <div className="absolute bottom-0 right-0 w-[150px] h-[50px] backdrop-blur-lg bg-transparent z-10 opacity-0" />
-
-       {/* <Spline 
-          scene="https://prod.spline.design/ekowqXV5-POZ3l-G/scene.splinecode"
-          className="w-full h-full"
-        />*/}
-
       <div className="absolute inset-0 flex justify-center items-center">
         <form
           onSubmit={handleLogin}
@@ -95,11 +90,23 @@ const LoginForm = () => {
           <button
             type="submit"
             className="w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            disabled={loading} 
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
       </div>
+
+      {loading && (
+        <div className="absolute inset-0 bg-gray-100 bg-opacity-75 flex justify-center items-center z-20">
+          <img
+          src="/gifs/LoginAnimation.gif"
+            alt="Loading..."
+            className="w-40 h-40"
+          />
+        </div>
+      )}
+
     </div>
   );
 };
