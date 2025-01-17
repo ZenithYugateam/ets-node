@@ -24,7 +24,15 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, requiredRoles }) 
   }, [requiredRoles]);
 
   if (isAuthorized === null) {
-    return <div>Loading...</div>; // Display loading spinner or placeholder
+    return (
+      <div className="absolute inset-0 bg-gray-100 bg-opacity-75 flex justify-center items-center z-20">
+        <img
+          src="/gifs/DashBoardAnimation.gif" 
+          alt="Loading..."
+          className="w-60 h-600"
+        />
+      </div>
+    );
   }
 
   if (!isAuthorized) {
