@@ -47,7 +47,7 @@ const transporter = nodemailer.createTransport({
   secure: true, 
   auth: {
     user: 'sharan.medamoni4243@gmail.com', 
-    pass: 'kdmsbrhqqxkbytei', 
+    pass: 'ksspazhtvymnzful', 
   },
 });
 transporter.verify((error, success) => {
@@ -1015,8 +1015,7 @@ app.post("/api/timelog/checkout", async (req, res) => {
     console.error("Error during check-out:", error.message);
     res.status(500).json({ message: "Error checking out", error: error.message });
   }
-});
-
+})
 
 app.post("/api/timelog/start-break", async (req, res) => {
   const { userId, reason } = req.body;
