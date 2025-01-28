@@ -19,7 +19,7 @@ import Dashboard from "./components/IMS/Dashboard";
 import DayDetails from "./components/shared/AttendenceView/pages/DayDetails";
 import Calendar from "./components/shared/AttendenceView/pages/Calender/Calender";
 import AccessList from "./components/shared/AccessComponents/AccessList";
-import VisualAttendence from "./components/shared/Visualizations/Attendence/visualAttendence";
+import VisualAttendence from "./components/shared/Visualizations/Attendence/VisualAttendence";
 
 const adminId = "647f1f77bcf86cd799439011";
 
