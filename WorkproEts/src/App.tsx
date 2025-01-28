@@ -19,6 +19,7 @@ import Dashboard from "./components/IMS/Dashboard";
 import DayDetails from "./components/shared/AttendenceView/pages/DayDetails";
 import Calendar from "./components/shared/AttendenceView/pages/Calender/Calender";
 import AccessList from "./components/shared/AccessComponents/AccessList";
+import VisualAttendence from "./components/shared/Visualizations/Attendence/visualAttendence";
 
 const adminId = "647f1f77bcf86cd799439011";
 
@@ -37,15 +38,11 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         {" "}
-        {/* Wrap NotificationProvider around the entire app */}
         <ErrorBoundary>
           <BrowserRouter>
             <div className="min-h-screen bg-gray-50">
               <Routes>
-                {/* Public Route: No Layout, hence no Navbar or Sidebar */}
                 <Route path="/" element={<LoginForm />} />
-
-                {/* Profile is assumed to be a private route */}
                 <Route
                   path="/profile"
                   element={
@@ -155,7 +152,6 @@ function App() {
                     </PrivateRoute>
                   }
                 />
-                {/*Inventory amangement system */}
                 <Route
                   path="/inventory"
                   element={
@@ -191,8 +187,18 @@ function App() {
                     </PrivateRoute>
                   }
                 />
-
-                {/* You can add a 404 Not Found route here if desired */}
+                 <Route
+                  path="/visualization"
+                  element={
+                    <PrivateRoute
+                      requiredRoles={["Admin" , "Manager"]}
+                    >
+                      <Layout>
+                        <VisualAttendence />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
               </Routes>
             </div>
           </BrowserRouter>

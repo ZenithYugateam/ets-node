@@ -14,6 +14,7 @@ const Form = require("./Models/Forms");
 const TimeLog = require("./Models/TimeLog")
 
 const AttendenceViewRoute = require('./Routes/AttendenceView');
+const AttendenceGraphsRoute = require('./Routes/AttendenceGraphs');
 
 const app = express();
 app.use(cors());
@@ -63,6 +64,7 @@ transporter.verify((error, success) => {
  //Routes : 
 
  app.use(AttendenceViewRoute);
+ app.use('/api/attendance-graphs',AttendenceGraphsRoute);
 
 
 const timesheetSchema = new mongoose.Schema({
