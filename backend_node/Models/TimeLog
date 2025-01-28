@@ -5,7 +5,7 @@ const timeLogSchema = new mongoose.Schema({
   role: { type: String, required: false, default: "" },
   checkIn: { type: Date },
   checkOut: { type: Date },
-  duration: { type: Number }, // Duration in milliseconds
+  duration: { type: Number },
   breaks: [
     {
       start: { type: Date },

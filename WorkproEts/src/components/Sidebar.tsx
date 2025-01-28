@@ -73,6 +73,11 @@ const Sidebar = () => {
     ...(role === 'Admin'
       ? [{ to: '/access-components', icon: ClipboardList, label: 'Access Components', key: 'accessComponents' }]
       : []),
+
+    // Visualizations (Admin and Manager only)
+    ...(role === 'Admin'
+      ? [{ to: '/visualization', icon: ClipboardList, label: 'Visual Graphs', key: 'VisualGraphs' }]
+      : []),
   
     // IVMS (Admin and Manager only)
     ...(role === 'Admin' || role === 'Manager'
