@@ -20,6 +20,7 @@ import DayDetails from "./components/shared/AttendenceView/pages/DayDetails";
 import Calendar from "./components/shared/AttendenceView/pages/Calender/Calender";
 import AccessList from "./components/shared/AccessComponents/AccessList";
 import VisualAttendence from "./components/shared/Visualizations/Attendence/VisualAttendence";
+import Stepper from "./components/DnamyicStepper/Stepper";
 
 const adminId = "647f1f77bcf86cd799439011";
 
@@ -43,6 +44,7 @@ function App() {
             <div className="min-h-screen bg-gray-50">
               <Routes>
                 <Route path="/" element={<LoginForm />} />
+                <Route path="/StepperDynamic" element={<Stepper />} />
                 <Route
                   path="/profile"
                   element={

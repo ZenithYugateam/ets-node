@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased text-gray-900;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors;
+  }
+  
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+}
+
+.react-flow__node {
+  @apply select-none;
+}
+
+.react-flow__handle {
+  @apply !bg-blue-500 transition-all hover:scale-110 hover:!bg-blue-600 cursor-crosshair;
+}
+
+.react-flow__node.selected {
+  @apply ring-2 ring-blue-500 ring-offset-2;
+}
+
+.react-flow__edge-path {
+  @apply stroke-[3px] stroke-blue-400;
+}
+
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge:hover .react-flow__edge-path {
+  @apply stroke-blue-600;
+}
+
+.react-flow__edge-textbg {
+  @apply fill-white;
+}
+
+.react-flow__controls {
+  @apply !bg-white !border !border-gray-200 !shadow-lg !rounded-lg overflow-hidden;
+}
+
+.react-flow__controls-button {
+  @apply !border-gray-200 !bg-white hover:!bg-gray-50 !w-8 !h-8;
+}
+
+.react-flow__minimap {
+  @apply !bg-white !border !border-gray-200 !shadow-lg !rounded-lg;
+}
+
+.react-flow__background {
+  @apply !bg-gray-50;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 640px) {
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+}
