@@ -1,13 +1,13 @@
-// TaskViewEmployee.tsx
-
+import { Clear } from "@mui/icons-material";
+import EditIcon from "@mui/icons-material/Edit";
 import { Button as MuiButton } from "@mui/material";
 import Box from "@mui/material/Box";
-import { AlertTriangle, Eye, ChevronDown, Search } from "lucide-react";
 import CircularProgress from "@mui/material/CircularProgress";
 import { DataGrid, GridColDef, GridSelectionModel } from "@mui/x-data-grid";
 import axios from "axios";
 import { format } from "date-fns";
-import React, { useEffect, useState, useContext } from "react";
+import { AlertTriangle, ChevronDown, Eye, Search } from "lucide-react";
+import React, { useContext, useEffect, useState } from "react";
 import { Separator } from "../../../src/ui/Separator";
 import { cn } from "../../lib/utils";
 import { Badge } from "../../ui/badge";
@@ -19,15 +19,13 @@ import {
   DialogTitle,
 } from "../../ui/dialog";
 import { ScrollArea } from "../../ui/scroll-area";
-import UpdateStatusModal from "./UpdateStatusModal";
-import EditIcon from "@mui/icons-material/Edit";
-import { TaskDrawer } from "../taskStepperFlow/TaskDrawer";
 import {
   calculateTimeRemaining,
   UrgencyLevel,
 } from "../../utils/calculateTimeRemaining";
 import { NotificationContext } from "../context/NotificationContext";
-import { Clear } from "@mui/icons-material";
+import { TaskDrawer } from "../taskStepperFlow/TaskDrawer";
+import UpdateStatusModal from "./UpdateStatusModal";
 
 // Types
 type Priority = "Low" | "Medium" | "High";
@@ -1312,7 +1310,7 @@ const TaskViewEmployee: React.FC = () => {
       <UpdateStatusModal
         open={statusModalOpen}
         onClose={() => setStatusModalOpen(false)}
-        taskId={selectedTaskForStatus?._id || ""}
+        task={selectedTaskForStatus || null}
         currentStatus={selectedTaskForStatus?.status || "Pending"}
         fetchTasks={() => {
           if (userName) {

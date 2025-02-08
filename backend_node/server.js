@@ -15,6 +15,7 @@ const TimeLog = require("./Models/TimeLog")
 
 const AttendenceViewRoute = require('./Routes/AttendenceView');
 const AttendenceGraphsRoute = require('./Routes/AttendenceGraphs');
+const performanceScoreRoutes = require('./Routes/performanceScoreRoutes');
 
 const app = express();
 app.use(cors());
@@ -65,6 +66,7 @@ transporter.verify((error, success) => {
 
  app.use(AttendenceViewRoute);
  app.use('/api/attendance-graphs',AttendenceGraphsRoute);
+ app.use('/api/tasks/score', performanceScoreRoutes);
 
 
 const timesheetSchema = new mongoose.Schema({
