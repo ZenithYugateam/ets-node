@@ -1,0 +1,47 @@
+const mongoose = require("mongoose");
+
+const PerformanceScoreSchema = new mongoose.Schema({
+  taskIds: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "Task",
+    default: [],
+  },
+  userId: {
+    type: String,
+    required: true,
+  },
+  userName: {
+    type: String,
+    required: true,
+  },
+  TotalScore: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  MonthlyScore: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  difficulty: {
+    type: String,
+    enum: ["Easy", "Medium", "High"],
+    default: "Easy",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+PerformanceScoreSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+module.exports = mongoose.model("PerformanceScore", PerformanceScoreSchema);
