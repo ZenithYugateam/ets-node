@@ -31,45 +31,60 @@ export function Pipeline() {
     selectedNode,
   } = useStore();
 
+  // Get the current flow
   const currentFlow = flows.find(f => f.id === currentFlowId);
+
+  // Debugging logs to check if the flow and nodes exist
+  console.log("Current Flow:", currentFlow);
+  console.log("Nodes in Current Flow:", currentFlow?.nodes);
+  console.log("Edges in Current Flow:", currentFlow?.edges);
+
+  if (!currentFlow) {
+    console.warn("No current flow found!");
+    return <div className="p-4 text-red-500">No flow available</div>;
+  }
+
+  // Ensure nodes and edges are always defined
+  const nodes = currentFlow.nodes || [];
+  const edges = currentFlow.edges || [];
+
   const { project, zoomIn, zoomOut } = useReactFlow();
 
+  // Handle node position changes
   const onNodesChange = useCallback(
-    (changes) => {
-      if (!currentFlow) return;
-      
+    (changes: any[]) => {
       setNodes(
-        changes.reduce((acc, change) => {
+        changes.reduce((acc: any[], change: { type: string; dragging: any; id: any; position: any; }) => {
           if (change.type === 'position' && change.dragging) {
-            return acc.map((node) =>
+            return acc.map((node: { id: any; }) =>
               node.id === change.id
                 ? { ...node, position: change.position }
                 : node
             );
           }
           return acc;
-        }, currentFlow.nodes)
+        }, nodes)
       );
     },
-    [currentFlow, setNodes]
+    [nodes, setNodes]
   );
 
+  // Handle edge changes (removal)
   const onEdgesChange = useCallback(
-    (changes) => {
-      if (!currentFlow) return;
-      
+    (changes: any[]) => {
       setEdges(
-        changes.reduce((acc, change) => {
+        changes.reduce((acc: any[], change: { type: string; id: any; }) => {
           if (change.type === 'remove') {
-            return acc.filter((edge) => edge.id !== change.id);
+            return acc.filter((edge: { id: any; }) => edge.id !== change.id);
           }
           return acc;
-        }, currentFlow.edges)
+        }, edges)
       );
     },
-    [currentFlow, setEdges]
+    [edges, setEdges]
   );
 
+  // Handle connecting nodes with edges
   const onConnect = useCallback(
     (params: Connection | Edge) => {
       const edge: PipelineEdge = {
@@ -83,6 +98,7 @@ export function Pipeline() {
     [addEdge]
   );
 
+  // Handle edge clicks (deletion)
   const onEdgeClick = useCallback(
     (_: React.MouseEvent, edge: Edge) => {
       removeEdge(edge.id);
@@ -90,42 +106,43 @@ export function Pipeline() {
     [removeEdge]
   );
 
+  // Add a new node dynamically
   const addNewNode = useCallback(() => {
     if (!currentFlow) return;
-    
-    const lastNode = currentFlow.nodes[currentFlow.nodes.length - 1];
+  
+    const lastNode = nodes.length > 0 ? nodes[nodes.length - 1] : null; // Ensure lastNode is valid
     const ySpacing = 150;
-    
+  
     const newNode: PipelineNode = {
-      id: `${currentFlow.nodes.length + 1}`,
+      id: `${nodes.length + 1}`,
       type: 'custom',
-      position: project({ 
+      position: project({
         x: 250,
-        y: lastNode.position.y + ySpacing
+        y: lastNode ? lastNode.position.y + ySpacing : 100, // Fallback to y=100 if no lastNode
       }),
       data: { label: 'New Step', description: 'Add description here' },
     };
-    
-    const newEdge: PipelineEdge = {
-      id: `e${lastNode.id}-${newNode.id}`,
-      source: lastNode.id,
-      target: newNode.id,
-      animated: true,
-    };
-    
+  
     addNode(newNode);
-    addEdge(newEdge);
-  }, [currentFlow, project, addNode, addEdge]);
-
-  if (!currentFlow) return null;
+  
+    if (lastNode) {
+      const newEdge: PipelineEdge = {
+        id: `e${lastNode.id}-${newNode.id}`,
+        source: lastNode.id,
+        target: newNode.id,
+        animated: true,
+      };
+      addEdge(newEdge);
+    }
+  }, [currentFlow, nodes, project, addNode, addEdge])
 
   return (
     <div className={`h-[calc(100vh-4rem)] md:h-[calc(100vh-8rem)] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-all duration-300 ${
       selectedNode ? 'md:mr-[600px]' : ''
     }`}>
       <ReactFlow
-        nodes={currentFlow.nodes}
-        edges={currentFlow.edges}
+        nodes={nodes}
+        edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -185,6 +202,8 @@ export function Pipeline() {
           </div>
         </div>
       </ReactFlow>
+      
+      {/* Add Node Button */}
       <button
         onClick={addNewNode}
         className="fixed md:absolute bottom-6 right-6 bg-blue-600 text-white p-3 md:p-4 rounded-full shadow-xl hover:bg-blue-700 transition-all hover:scale-105 z-10"
