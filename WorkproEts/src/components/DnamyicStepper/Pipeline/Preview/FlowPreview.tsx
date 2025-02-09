@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { Eye, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { Question } from '../types';
 
 interface FlowPreviewProps {
@@ -8,9 +8,11 @@ interface FlowPreviewProps {
 }
 
 export function FlowPreview({ onClose }: FlowPreviewProps) {
-  const { nodes } = useStore();
+  const { flows, currentFlowId } = useStore();
   const [currentStep, setCurrentStep] = useState(0);
 
+  const currentFlow = flows.find(f => f.id === currentFlowId);
+  const nodes = currentFlow?.nodes || [];
   const currentNode = nodes[currentStep];
   const totalSteps = nodes.length;
 
@@ -23,18 +25,16 @@ export function FlowPreview({ onClose }: FlowPreviewProps) {
         return (
           <input
             type={question.type === 'email' ? 'email' : question.type === 'url' ? 'url' : question.type === 'phone' ? 'tel' : 'text'}
-            placeholder={question.placeholder || `Enter ${question.type === 'shortAnswer' ? 'text' : question.type}`}
+            placeholder={`Enter ${question.type === 'shortAnswer' ? 'text' : question.type}`}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled
           />
         );
       case 'paragraph':
         return (
           <textarea
-            placeholder={question.placeholder || "Enter your answer"}
+            placeholder="Enter your answer"
             rows={4}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled
           />
         );
       case 'multipleChoice':
@@ -46,7 +46,6 @@ export function FlowPreview({ onClose }: FlowPreviewProps) {
                   type="radio"
                   name={question.id}
                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  disabled
                 />
                 <span className="text-gray-700">{option}</span>
               </label>
@@ -61,7 +60,6 @@ export function FlowPreview({ onClose }: FlowPreviewProps) {
                 <input
                   type="checkbox"
                   className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                  disabled
                 />
                 <span className="text-gray-700">{option}</span>
               </label>
@@ -72,7 +70,6 @@ export function FlowPreview({ onClose }: FlowPreviewProps) {
         return (
           <select
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled
           >
             <option value="">Select an option</option>
             {question.options?.map((option, index) => (
@@ -87,7 +84,6 @@ export function FlowPreview({ onClose }: FlowPreviewProps) {
           <input
             type="date"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled
           />
         );
       case 'time':
@@ -95,7 +91,6 @@ export function FlowPreview({ onClose }: FlowPreviewProps) {
           <input
             type="time"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled
           />
         );
       case 'location':
@@ -115,11 +110,13 @@ export function FlowPreview({ onClose }: FlowPreviewProps) {
     }
   };
 
+  if (!currentNode) return null;
+
   return (
     <div className="fixed inset-0 bg-white z-50 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="border-b border-gray-200 p-4 flex items-center justify-between bg-white">
-        <h2 className="text-xl font-bold text-gray-800">Flow Preview</h2>
+        <h2 className="text-xl font-bold text-gray-800">Flow Preview: {currentFlow?.name}</h2>
         <button
           onClick={onClose}
           className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
