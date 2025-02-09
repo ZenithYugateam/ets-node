@@ -1,31 +1,31 @@
 import React from 'react';
-import { TrendingUp, Target, Clock } from 'lucide-react';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { Target } from 'lucide-react';
 
-const metrics = [
-  { id: 1, label: 'Tasks Completed', value: '23', trend: '+15%' },
-  { id: 2, label: 'Productivity Score', value: '92%', trend: '+5%' },
-  { id: 3, label: 'Attendance Rate', value: '96%', trend: '+2%' },
+const data = [
+  { subject: 'Productivity', A: 120, fullMark: 150 },
+  { subject: 'Quality', A: 98, fullMark: 150 },
+  { subject: 'Timeliness', A: 86, fullMark: 150 },
+  { subject: 'Communication', A: 99, fullMark: 150 },
+  { subject: 'Initiative', A: 85, fullMark: 150 },
+  { subject: 'Teamwork', A: 65, fullMark: 150 },
 ];
 
-const PerformanceMetrics = () => {
+export const PerformanceMetrics = () => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {metrics.map((metric) => (
-        <div key={metric.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm font-medium text-gray-600">{metric.label}</p>
-              <p className="mt-2 text-2xl font-semibold text-gray-900">{metric.value}</p>
-            </div>
-            <div className="flex items-center text-sm text-green-600">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              {metric.trend}
-            </div>
-          </div>
-        </div>
-      ))}
+    <div className="bg-white p-6 rounded-lg shadow-lg">
+      <div className="flex items-center gap-2 mb-4">
+        <Target className="text-blue-600" />
+        <h2 className="text-xl font-bold text-gray-800">Performance Metrics</h2>
+      </div>
+      <div className="w-full">
+        <RadarChart outerRadius={90} width={500} height={300} data={data}>
+          <PolarGrid />
+          <PolarAngleAxis dataKey="subject" />
+          <PolarRadiusAxis angle={30} domain={[0, 150]} />
+          <Radar name="Employee" dataKey="A" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+        </RadarChart>
+      </div>
     </div>
   );
 };
-
-export default PerformanceMetrics;

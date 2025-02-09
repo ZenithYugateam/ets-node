@@ -6,8 +6,14 @@ import ProjectManagement from '../components/admin/ProjectManagement';
 import LeaveApprovals from '../components/shared/LeaveApprovals';
 import { fetchDashboardStats, fetchUsers, fetchDepartments } from '../api/admin';
 import { toast } from 'react-toastify';
-;
 import TasksDisplay from '../components/admin/TasksDisplay';
+import PerformanceDashboard from '../components/admin/PerformanceDashboard';
+
+
+import WorksheetManagement from '../components/employee/WorksheetManagement';
+import { BreakTimeAnalysis } from '../components/BreakTimeAnalysis';
+import { PerformanceMetrics } from '../components/PerformanceMetrics';
+
 interface User {
   _id: string;
   name: string;
@@ -160,7 +166,7 @@ const AdminDashboard = () => {
       {/* Admin components */}
       <UserManagement adminId={localStorage.getItem('userId')} />
       <ProjectManagement />
-      
+     < PerformanceDashboard />
       <TasksDisplay />
     </div>
   );
