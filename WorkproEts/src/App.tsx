@@ -14,13 +14,22 @@ import PrivateRoute from "./components/PrivateRoute";
 import { AuthProvider } from "./AuthContext";
 import LeaveApprovals from "./components/shared/LeaveApprovals";
 import WorksheetManagement from "./components/employee/WorksheetManagement";
-import { NotificationProvider } from "././components/context/NotificationContext"; 
+import { NotificationProvider } from "./components/context/NotificationContext";
 import Dashboard from "./components/IMS/Dashboard";
 import DayDetails from "./components/shared/AttendenceView/pages/DayDetails";
 import Calendar from "./components/shared/AttendenceView/pages/Calender/Calender";
 import AccessList from "./components/shared/AccessComponents/AccessList";
 import VisualAttendence from "./components/shared/Visualizations/Attendence/VisualAttendence";
 import Stepper from "./components/DnamyicStepper/Stepper";
+import PerformanceDashboard from "./components/admin/PerformanceDashboard";
+
+// New pages (do not replace any existing ones)
+import BreakTimeAnalysisPage from "./pages/BreakTimeAnalysisPage";
+import LeaveTrackerPage from "./pages/LeaveTrackerPage";
+import Overview from "./pages/Overview";
+import PerformanceMetricsPage from "./pages/PerformanceMetricsPage";
+import ProjectTimeLogsPage from "./pages/ProjectTimeLogsPage";
+import WorksheetsPage from "./pages/WorksheetsPage";
 
 const adminId = "647f1f77bcf86cd799439011";
 
@@ -38,19 +47,19 @@ function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        {" "}
         <ErrorBoundary>
           <BrowserRouter>
             <div className="min-h-screen bg-gray-50">
               <Routes>
+                {/* Public Routes */}
                 <Route path="/" element={<LoginForm />} />
                 <Route path="/StepperDynamic" element={<Stepper />} />
+
+                {/* Profile */}
                 <Route
                   path="/profile"
                   element={
-                    <PrivateRoute
-                      requiredRoles={["Admin", "Manager", "Employee"]}
-                    >
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
                       <Layout>
                         <Profile />
                       </Layout>
@@ -121,9 +130,7 @@ function App() {
                 <Route
                   path="/work-sheets"
                   element={
-                    <PrivateRoute
-                      requiredRoles={["Admin", "Manager", "Employee"]}
-                    >
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
                       <Layout>
                         <WorksheetManagement />
                       </Layout>
@@ -131,13 +138,21 @@ function App() {
                   }
                 />
                 <Route
+                  path="/PerformanceDashboard"
+                  element={
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+                      <Layout>
+                        <PerformanceDashboard />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
                   path="/attendance-view"
                   element={
-                    <PrivateRoute
-                    requiredRoles={["Admin", "Manager"]}
-                    >
+                    <PrivateRoute requiredRoles={["Admin", "Manager"]}>
                       <Layout>
-                      <Calendar />
+                        <Calendar />
                       </Layout>
                     </PrivateRoute>
                   }
@@ -145,11 +160,9 @@ function App() {
                 <Route
                   path="/attendance-view/:date"
                   element={
-                    <PrivateRoute
-                    requiredRoles={["Admin", "Manager"]}
-                    >
+                    <PrivateRoute requiredRoles={["Admin", "Manager"]}>
                       <Layout>
-                      <DayDetails />
+                        <DayDetails />
                       </Layout>
                     </PrivateRoute>
                   }
@@ -167,36 +180,101 @@ function App() {
                 <Route
                   path="/timesheets"
                   element={
-                    <PrivateRoute
-                      requiredRoles={["Admin", "Manager", "Employee"]}
-                    >
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
                       <Layout>
                         <Timesheets />
                       </Layout>
                     </PrivateRoute>
                   }
                 />
-
                 <Route
                   path="/access-components"
                   element={
-                    <PrivateRoute
-                      requiredRoles={["Admin"]}
-                    >
+                    <PrivateRoute requiredRoles={["Admin"]}>
                       <Layout>
                         <AccessList />
                       </Layout>
                     </PrivateRoute>
                   }
                 />
-                 <Route
+                <Route
                   path="/visualization"
                   element={
-                    <PrivateRoute
-                      requiredRoles={["Admin" , "Manager"]}
-                    >
+                    <PrivateRoute requiredRoles={["Admin", "Manager"]}>
                       <Layout>
                         <VisualAttendence />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+
+                {/* New Page Routes */}
+                <Route
+                  path="/break-time-analysis"
+                  element={
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+                      <Layout>
+                        <BreakTimeAnalysisPage />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+              <Route
+                  path="/worksheets"
+                  element={
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+                      <Layout>
+                        <WorksheetsPage />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/leave-tracker"
+                  element={
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+                      <Layout>
+                        <LeaveTrackerPage />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/overview"
+                  element={
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+                      <Layout>
+                        <Overview />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/performance-metrics"
+                  element={
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+                      <Layout>
+                        <PerformanceMetricsPage />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/project-time-logs"
+                  element={
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+                      <Layout>
+                        <ProjectTimeLogsPage />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/worksheets-new"
+                  element={
+                    <PrivateRoute requiredRoles={["Admin", "Manager", "Employee"]}>
+                      <Layout>
+                        <WorksheetsPage />
                       </Layout>
                     </PrivateRoute>
                   }
